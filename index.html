@@ -1,0 +1,965 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Aman Core Loop Prototype</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* Layout idea: the map is home. A goal strip says how close you are to winning; one side panel shows either this season's to-do list or a single power. Everything else lives behind tabs. */
+:root {
+  --bg: #eef0f6;
+  --surface: #ffffff;
+  --sunk: #f5f6fa;
+  --ink: #1b1f3a;
+  --muted: #5b6182;
+  --line: #d6d9e8;
+  --accent: #e7a01c;      /* marigold: the federation */
+  --accent-ink: #3b2600;
+  --river: #2779a3;
+  --good: #23794a;
+  --warn: #a35f00;
+  --bad: #b93535;
+  --company: #8c2b4c;     /* the Company */
+  --font-display: "Bricolage Grotesque", "Trebuchet MS", system-ui, sans-serif;
+  --font-body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --r: 10px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --bg: #111326; --surface: #1a1d36; --sunk: #151830; --ink: #e8e9f5; --muted: #9da3c6; --line: #2f3359;
+    --accent: #f0b03a; --accent-ink: #2b1c00; --river: #62b6dc; --good: #62c690; --warn: #e6a550; --bad: #f08080; --company: #e57ba1;
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #111326; --surface: #1a1d36; --sunk: #151830; --ink: #e8e9f5; --muted: #9da3c6; --line: #2f3359;
+  --accent: #f0b03a; --accent-ink: #2b1c00; --river: #62b6dc; --good: #62c690; --warn: #e6a550; --bad: #f08080; --company: #e57ba1;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body { background: var(--bg); color: var(--ink); font-family: var(--font-body); font-size: 14px; line-height: 1.45; }
+h1, h2, h3 { font-family: var(--font-display); margin: 0; text-wrap: balance; }
+h2 { font-size: 17px; font-weight: 700; }
+h3 { font-size: 12px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); font-family: var(--font-body); font-weight: 600; }
+p { margin: 0; }
+button { font: inherit; color: inherit; cursor: pointer; }
+button:focus-visible, summary:focus-visible, [tabindex]:focus-visible, input:focus-visible { outline: 2px solid var(--river); outline-offset: 2px; }
+.num { font-variant-numeric: tabular-nums; }
+.wrap { max-width: 1180px; margin: 0 auto; padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+.ic { width: 14px; height: 14px; vertical-align: -2px; flex: none; }
+.ic-water { color: var(--river); } .ic-energy { color: var(--warn); } .ic-food { color: var(--good); } .ic-capital { color: var(--muted); } .ic-inf { color: var(--accent); }
+
+/* top bar */
+.top { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 10px 16px; display: flex; flex-wrap: wrap; align-items: center; gap: 10px 20px; }
+.brand { display: flex; align-items: center; gap: 12px; }
+.brand h1 { font-size: 24px; font-weight: 700; line-height: 1; }
+.brand .ghost { font-size: 12.5px; padding: 4px 9px; }
+.when { display: flex; flex-direction: column; gap: 4px; }
+.when b { font-family: var(--font-display); font-size: 15px; }
+.when b span { font-family: var(--font-body); font-weight: 400; font-size: 12px; color: var(--muted); margin-left: 4px; }
+.track { display: flex; gap: 3px; align-items: flex-end; }
+.track i { display: block; width: 13px; height: 5px; border-radius: 2px; background: var(--line); }
+.track i.mon { height: 10px; background: color-mix(in srgb, var(--river) 45%, var(--line)); }
+.track i.done { background: var(--muted); }
+.track i.now { background: var(--accent); }
+.track i.gap { margin-right: 5px; }
+.res { display: flex; flex-wrap: wrap; gap: 6px; margin-left: auto; }
+.chip { background: var(--sunk); border: 1px solid var(--line); border-radius: 8px; padding: 4px 9px; display: flex; align-items: center; gap: 6px; }
+.chip b { font-size: 16px; font-family: var(--font-display); }
+.chip em { font-style: normal; font-size: 11px; color: var(--muted); }
+.chip.low b { color: var(--bad); }
+.chip.inf { border-color: var(--accent); }
+.primary { background: var(--accent); color: var(--accent-ink); border: 0; border-radius: 8px; padding: 9px 16px; font-weight: 700; font-family: var(--font-display); font-size: 15px; }
+.primary:hover { filter: brightness(1.06); }
+.ghost { background: transparent; border: 1px solid var(--line); border-radius: 8px; padding: 5px 10px; color: var(--muted); }
+.ghost:hover { color: var(--ink); border-color: var(--muted); }
+
+/* goal strip */
+.goal { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 10px 16px; display: flex; flex-wrap: wrap; align-items: center; gap: 10px 18px; }
+.goal .big { display: flex; align-items: baseline; gap: 8px; }
+.goal .big b { font-family: var(--font-display); font-size: 30px; line-height: 1; }
+.goal .big span { color: var(--muted); max-width: 20ch; line-height: 1.2; font-size: 12.5px; }
+.pills { display: flex; flex-wrap: wrap; gap: 6px; flex: 1; }
+.pill { background: var(--sunk); border: 1px solid var(--line); border-radius: 8px; padding: 5px 10px; display: flex; flex-direction: column; gap: 3px; text-align: left; min-width: 118px; }
+.pill:hover, .pill.sel { border-color: var(--river); }
+.pill b { font-size: 12.5px; font-weight: 600; }
+.pill.member { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.pill.client { border-color: var(--company); }
+.dots { display: inline-flex; gap: 3px; align-items: center; font-size: 11px; color: var(--muted); }
+.dots i { width: 8px; height: 8px; border-radius: 50%; border: 1.5px solid var(--muted); display: block; }
+.dots i.on { background: var(--good); border-color: var(--good); }
+.pill.member .dots { color: var(--accent-ink); }
+
+/* views */
+.views { display: flex; flex-wrap: wrap; gap: 2px; align-items: center; }
+.views button { background: none; border: 0; border-bottom: 2px solid transparent; padding: 4px 10px; font-family: var(--font-display); font-weight: 700; font-size: 15px; color: var(--muted); }
+.views button[aria-selected="true"] { color: var(--ink); border-color: var(--accent); }
+.views .say { margin-left: auto; font-size: 13px; color: var(--muted); max-width: 60ch; text-align: right; }
+.home { display: grid; grid-template-columns: minmax(0, 7fr) minmax(320px, 5fr); gap: 12px; align-items: start; }
+@media (max-width: 860px) { .home { grid-template-columns: 1fr; } .res { margin-left: 0; } .views .say { margin-left: 0; text-align: left; } }
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 14px 16px; display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.panel > header { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
+.panel > header small { color: var(--muted); display: block; }
+.sec { display: flex; flex-direction: column; gap: 7px; }
+
+/* map */
+.map svg { width: 100%; height: auto; display: block; max-height: 560px; border-radius: 8px; --season: #6fae5a; }
+.map svg.s-Monsoon { --season: #3f7fb0; } .map svg.s-Autumn { --season: #d59a2b; } .map svg.s-Winter { --season: #9aa7c7; } .map svg.dry { --season: #c98a2b; }
+.map .sea { fill: color-mix(in srgb, var(--river) 13%, var(--surface)); }
+.map .land { fill: color-mix(in srgb, var(--season) 16%, var(--sunk)); stroke: color-mix(in srgb, var(--season) 30%, var(--line)); stroke-width: 2; stroke-linejoin: round; }
+.map .zone { fill: var(--accent); }
+.map .grip { fill: url(#stripes); }
+.map .river { fill: none; stroke: var(--river); stroke-linecap: round; opacity: .75; }
+.map .shimmer { fill: none; stroke: var(--surface); stroke-width: 1.2; stroke-linecap: round; stroke-dasharray: 3 14; opacity: .8; }
+.map text { font-family: var(--font-body); font-size: 11px; fill: var(--ink); paint-order: stroke; stroke: color-mix(in srgb, var(--surface) 75%, transparent); stroke-width: 3px; stroke-linejoin: round; }
+.map text.seat { fill: var(--muted); font-size: 9.5px; }
+.map text.rl { fill: var(--river); font-size: 9.5px; font-style: italic; }
+.map text.cap { font-size: 10.5px; fill: var(--muted); font-weight: 600; }
+.map .node { cursor: pointer; }
+.map .node .base { fill: var(--surface); stroke: var(--line); stroke-width: 4; }
+.map .node .ring { fill: none; stroke: var(--muted); stroke-width: 4; stroke-linecap: round; }
+.map .node.member .base { fill: var(--accent); }
+.map .node.member .ring { stroke: var(--accent-ink); }
+.map .node.client .ring { stroke: var(--company); }
+.map .halo { fill: none; stroke: transparent; stroke-width: 2; }
+.map .node.sel .halo, .map .node:hover .halo { stroke: var(--river); }
+.map .node text.t { font-size: 12px; font-weight: 600; text-anchor: middle; dominant-baseline: central; stroke: none; }
+.map .node.member text.t { fill: var(--accent-ink); }
+.map .gd { fill: var(--surface); stroke: var(--muted); stroke-width: 1.2; }
+.map .gd.on { fill: var(--good); stroke: var(--good); }
+.map .home .base { fill: var(--accent); stroke: var(--accent-ink); stroke-width: 1.5; }
+.map .rln { stroke-width: 2; opacity: .8; stroke-linecap: round; }
+.map .rln.neg { stroke: var(--bad); stroke-dasharray: 5 5; }
+.map .rln.pos { stroke: var(--good); }
+.map .rln.strong { stroke-width: 4; }
+.map .rail { fill: none; stroke: var(--ink); stroke-width: 1.6; opacity: .75; }
+.map .ties { fill: none; stroke: var(--ink); stroke-width: 6; stroke-dasharray: 1.5 6; opacity: .75; }
+.map .power { fill: none; stroke: var(--warn); stroke-width: 1.8; stroke-dasharray: 6 3; }
+.map .dam { fill: var(--ink); stroke: var(--surface); stroke-width: 1; }
+.map .dam.plan { fill: var(--surface); stroke: var(--ink); stroke-dasharray: 2 2; }
+.map .seal circle { fill: var(--surface); stroke: var(--river); stroke-width: 1.6; }
+.map .seal path { fill: none; stroke: var(--river); stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+.map .fort { fill: var(--company); stroke: var(--surface); stroke-width: 1; }
+.map .fort.plan { fill: var(--surface); stroke: var(--company); stroke-dasharray: 2 2; }
+.map .co-base path { fill: var(--company); }
+.map .co-base text { fill: var(--company); font-weight: 600; font-size: 10px; }
+.map .ask circle { fill: var(--surface); stroke: var(--river); stroke-width: 1.6; }
+.map .pbadge rect { fill: var(--accent); }
+.map .pbadge text { fill: var(--accent-ink); font-size: 9.5px; font-weight: 700; text-anchor: middle; stroke: none; }
+.map .rain { stroke: var(--river); stroke-width: 1.2; stroke-linecap: round; opacity: .55; }
+.map .tok circle { stroke: var(--surface); stroke-width: 1.5; }
+.map .tok.you circle { fill: var(--accent); } .map .tok.you use { color: var(--accent-ink); }
+.map .tok.co circle { fill: var(--surface); stroke: var(--company); } .map .tok.co use { color: var(--company); }
+.map .fl { font-family: var(--font-display); font-size: 15px; font-weight: 700; stroke: var(--surface); stroke-width: 3.5px; }
+.map .fl.up { fill: var(--good); } .map .fl.down { fill: var(--bad); }
+.map .burst { fill: none; stroke: var(--accent); stroke-width: 3; }
+@media (prefers-reduced-motion: no-preference) {
+  .map .shimmer { animation: flow 2.2s linear infinite; }
+  .map .rain { animation: rain .9s linear infinite; }
+  .map .land, .map .zone, .map .river { transition: fill .6s, opacity .6s, stroke-width .6s; }
+}
+@keyframes flow { to { stroke-dashoffset: -17; } }
+@keyframes rain { from { transform: translate(6px, -16px); opacity: 0; } 30% { opacity: .6; } to { transform: translate(-6px, 16px); opacity: 0; } }
+.legend { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 11px; color: var(--muted); }
+.legend span { display: inline-flex; align-items: center; gap: 5px; }
+.legend svg { width: 16px; height: 12px; flex: none; }
+
+/* playback, suggestions, attention */
+.mapwrap { position: relative; }
+.caption { position: absolute; left: 8px; right: 8px; bottom: 8px; display: flex; align-items: center; gap: 10px; padding: 9px 12px; border-radius: 9px; background: var(--surface); border: 1px solid var(--line); border-left: 4px solid var(--muted); box-shadow: 0 4px 16px rgba(10, 12, 30, .18); font-weight: 500; }
+.caption.good { border-left-color: var(--good); } .caption.bad { border-left-color: var(--bad); } .caption.warn { border-left-color: var(--company); } .caption.ask { border-left-color: var(--river); } .caption.plan { border-left-color: var(--accent); }
+.caption .step { color: var(--muted); font-size: 12px; white-space: nowrap; }
+.caption .txt { flex: 1; }
+.map .spot { fill: none; stroke: var(--ink); stroke-width: 2.5; stroke-dasharray: 6 5; }
+.map .sugg { cursor: pointer; }
+.map .sugg .casing { fill: none; stroke: var(--surface); stroke-width: 6; stroke-linecap: round; opacity: .9; }
+.map .sugg .line { fill: none; stroke: var(--ink); stroke-width: 2.4; stroke-linecap: round; }
+.map .sugg .nb { fill: var(--ink); stroke: var(--surface); stroke-width: 1.5; }
+.map .sugg text { fill: var(--surface); font-size: 10px; font-weight: 700; text-anchor: middle; stroke: none; }
+.map .sugg:hover .line, .map .sugg:focus .line { stroke: var(--river); stroke-width: 3.4; }
+.map .sugg:hover .nb, .map .sugg:focus .nb { fill: var(--river); }
+.map .ready { fill: none; stroke: var(--good); stroke-width: 2.5; }
+.map .agent { color: var(--company); }
+.map .agent circle { fill: var(--surface); stroke: var(--company); stroke-width: 1.6; }
+.map .agent.blocked { opacity: .55; }
+.map .agent.blocked path { stroke: var(--company); stroke-width: 1.6; }
+.nbadge { display: inline-flex; align-items: center; justify-content: center; width: 18px; height: 18px; border-radius: 50%; background: var(--ink); color: var(--surface); font-size: 11px; font-weight: 700; flex: none; }
+.sug .act > span:first-child { display: inline-flex; gap: 7px; align-items: center; }
+@media (prefers-reduced-motion: no-preference) {
+  .map .spot { animation: spin 6s linear infinite; transform-box: fill-box; transform-origin: center; }
+  .map .ready { animation: pulse 1.6s ease-in-out infinite; }
+  .map .agent:not(.blocked), .map .ask { animation: nudge 1.6s ease-in-out infinite; }
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes pulse { 0%, 100% { opacity: .25; } 50% { opacity: 1; } }
+@keyframes nudge { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-2.5px); } }
+
+/* dossier */
+.dossier-head { display: flex; gap: 12px; align-items: center; }
+.dossier-head .who { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.dossier-head .who small { color: var(--muted); }
+.portrait { width: 76px; height: 76px; flex: none; }
+.moodrow { display: flex; gap: 12px; align-items: center; }
+.speech { flex: 1; position: relative; background: var(--sunk); border-radius: 10px; padding: 9px 12px; font-size: 14px; font-style: italic; }
+.speech::before { content: ""; position: absolute; left: 22px; top: -7px; border: 7px solid transparent; border-top: 0; border-bottom-color: var(--sunk); }
+.speech b { display: block; font-style: normal; font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin-bottom: 2px; }
+.dial { width: 136px; flex: none; }
+.dial text { font-family: var(--font-display); fill: var(--ink); }
+.gtiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(84px, 1fr)); gap: 6px; }
+.gt { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 3px; padding: 8px 4px; border-radius: 9px; border: 1.5px solid var(--bad); background: var(--surface); }
+.gt.ok { border-color: var(--good); background: color-mix(in srgb, var(--good) 9%, var(--surface)); }
+.gt .gi { width: 34px; height: 34px; border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 2px solid var(--bad); color: var(--bad); }
+.gt.ok .gi { background: var(--good); border-color: var(--good); color: var(--surface); }
+.gt .gi svg { width: 17px; height: 17px; }
+.gt b { font-size: 12px; font-weight: 600; line-height: 1.2; }
+.gt small { font-size: 11.5px; color: var(--muted); line-height: 1.2; }
+.gt:not(.ok) small { color: var(--bad); font-weight: 600; }
+.gauges { display: flex; gap: 10px; flex-wrap: wrap; }
+.gauge { flex: 1; min-width: 150px; display: flex; gap: 10px; align-items: center; padding: 8px 10px; border-radius: 9px; background: var(--sunk); }
+.gauge > svg { width: 30px; height: 52px; flex: none; }
+.gauge b { display: block; font-size: 13px; }
+.gauge small { color: var(--muted); font-size: 11.5px; display: block; }
+.star { width: 100%; max-width: 330px; height: auto; display: block; }
+.star text { font-family: var(--font-body); font-size: 10.5px; fill: var(--ink); }
+.star text.r { font-size: 9.5px; font-weight: 600; }
+.planbox { display: flex; gap: 10px; align-items: center; }
+.planbox .cd { width: 34px; height: 34px; border-radius: 8px; background: var(--accent); color: var(--accent-ink); font-family: var(--font-display); font-weight: 700; font-size: 18px; display: flex; align-items: center; justify-content: center; flex: none; }
+.planbox div { display: flex; flex-direction: column; gap: 2px; }
+.act .nbadge { margin-right: 6px; }
+
+/* to-do, adviser */
+.todo { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.todo li { display: flex; gap: 10px; align-items: center; justify-content: space-between; padding: 7px 10px; border-radius: 8px; background: var(--sunk); border-left: 3px solid var(--muted); }
+.todo li.co { border-color: var(--company); } .todo li.ask { border-color: var(--river); } .todo li.good { border-color: var(--good); } .todo li.plan { border-color: var(--accent); }
+.todo li.done { opacity: .6; }
+.news { display: flex; flex-direction: column; gap: 5px; }
+.news p { padding-left: 14px; position: relative; }
+.news p::before { content: ""; position: absolute; left: 0; top: .5em; width: 7px; height: 7px; border-radius: 50%; background: var(--muted); }
+.news p.good::before { background: var(--good); } .news p.bad::before { background: var(--bad); } .news p.warn::before { background: var(--company); }
+.newsys { border: 1px solid var(--accent); border-radius: 8px; padding: 9px 12px; background: color-mix(in srgb, var(--accent) 10%, var(--surface)); max-width: 65ch; }
+.adv { border: 1px solid var(--line); border-radius: 9px; padding: 10px 12px; display: flex; flex-direction: column; gap: 8px; }
+.adv header { display: flex; justify-content: space-between; align-items: center; }
+.sw { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted); cursor: pointer; }
+.sw input { accent-color: var(--accent); width: 15px; height: 15px; margin: 0; }
+.sug { display: flex; flex-direction: column; gap: 3px; }
+.sug small { color: var(--muted); padding-left: 2px; }
+
+/* actions */
+.acts { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 6px; }
+.act { text-align: left; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 7px 10px; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 2px 8px; }
+.act > span:first-child { font-weight: 600; font-size: 13px; }
+.act small { flex-basis: 100%; color: var(--muted); font-size: 11.5px; }
+.cost { display: inline-flex; gap: 7px; font-size: 12.5px; font-weight: 600; white-space: nowrap; }
+.cost span { display: inline-flex; align-items: center; gap: 2px; }
+.act:not([aria-disabled="true"]):hover { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+.act[aria-disabled="true"] { cursor: not-allowed; background: transparent; }
+.act[aria-disabled="true"] > span:first-child, .act[aria-disabled="true"] .cost { opacity: .5; }
+.act.key:not([aria-disabled="true"]) { border-color: var(--good); }
+.detail { min-height: 52px; font-size: 13px; padding: 8px 10px; border-radius: 8px; background: var(--sunk); color: var(--muted); }
+.detail b { color: var(--ink); }
+.detail .no { color: var(--bad); }
+
+/* power panel */
+.tag { font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 20px; border: 1px solid var(--line); color: var(--muted); white-space: nowrap; }
+.tag.member { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.tag.co { border-color: var(--company); color: var(--company); }
+.gates { display: grid; grid-template-columns: auto 1fr auto; gap: 5px 10px; align-items: center; }
+.mark { width: 18px; height: 18px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; color: #fff; background: var(--good); }
+.mark.no { background: transparent; border: 1.5px solid var(--bad); color: var(--bad); }
+.gates .v { color: var(--muted); text-align: right; }
+.gates .v.no { color: var(--bad); font-weight: 600; }
+.bar { display: block; height: 6px; background: var(--line); border-radius: 3px; position: relative; grid-column: 2 / 4; margin-top: -2px; }
+.bar > i { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 3px; background: var(--muted); }
+.bar > u { position: absolute; left: 55%; top: -3px; bottom: -3px; width: 2px; background: var(--ink); opacity: .6; }
+.needs { display: grid; grid-template-columns: auto auto 1fr; gap: 4px 10px; align-items: baseline; font-size: 13px; }
+.needs small { color: var(--muted); }
+.pips { display: inline-flex; gap: 3px; vertical-align: middle; }
+.pips i { width: 9px; height: 9px; border-radius: 50%; border: 1.5px solid var(--muted); display: block; }
+.pips i.on { background: var(--accent); border-color: var(--accent); }
+.rels .neg { color: var(--bad); font-weight: 600; } .rels .pos { color: var(--good); font-weight: 600; }
+.planbox { border-left: 3px solid var(--accent); background: var(--sunk); border-radius: 0 8px 8px 0; padding: 8px 10px; font-size: 13px; }
+.planbox span { color: var(--muted); }
+.up { color: var(--good); } .down { color: var(--bad); }
+
+/* other views */
+.rows { display: flex; flex-direction: column; gap: 6px; }
+.row { display: grid; grid-template-columns: 1fr auto auto; gap: 6px 12px; align-items: center; padding: 8px 10px; border-radius: 8px; background: var(--sunk); }
+.row small { grid-column: 1 / -1; color: var(--muted); }
+.relchip { font-size: 11.5px; font-weight: 600; padding: 2px 9px; border-radius: 20px; border: 1px solid var(--line); color: var(--muted); }
+.relchip.neg { border-color: var(--bad); color: var(--bad); } .relchip.pos { border-color: var(--good); color: var(--good); }
+.cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 10px; }
+.card { border: 1px solid var(--line); border-radius: 9px; padding: 12px; display: flex; flex-direction: column; gap: 6px; background: var(--sunk); }
+.card b { font-family: var(--font-display); font-size: 15px; }
+.card .catch { color: var(--warn); }
+.card .why { color: var(--muted); font-size: 12.5px; }
+.card .act { margin-top: auto; }
+.charter div { display: flex; justify-content: space-between; gap: 10px; padding: 8px 0; border-bottom: 1px dashed var(--line); }
+.charter div span { color: var(--muted); }
+ul.lines { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; max-width: 80ch; }
+ul.lines li { padding-left: 14px; position: relative; }
+ul.lines li::before { content: ""; position: absolute; left: 0; top: .5em; width: 7px; height: 7px; border-radius: 50%; background: var(--muted); }
+ul.lines li.good::before { background: var(--good); } ul.lines li.bad::before { background: var(--bad); } ul.lines li.warn::before { background: var(--company); }
+ul.lines li small { color: var(--muted); margin-right: 6px; }
+details summary { cursor: pointer; font-weight: 600; }
+details > *:not(summary) { margin-top: 8px; }
+.note { color: var(--muted); font-size: 12.5px; max-width: 70ch; }
+
+/* overlay */
+.veil { position: fixed; inset: 0; background: rgba(10, 12, 30, .6); display: flex; align-items: center; justify-content: center; padding: 16px; z-index: 10; }
+.dlg { background: var(--surface); border-radius: 12px; max-width: 620px; width: 100%; max-height: 100%; overflow-y: auto; padding: 22px; display: flex; flex-direction: column; gap: 14px; border-top: 5px solid var(--accent); }
+.dlg.co { border-top-color: var(--company); }
+.dlg h2 { font-size: 22px; }
+.dlg p { max-width: 62ch; }
+.helprow { display: flex; gap: 12px; align-items: center; }
+.helprow .gi { width: 34px; height: 34px; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: var(--good); color: var(--surface); flex: none; }
+.helprow .gi svg { width: 17px; height: 17px; }
+.opts { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 10px; }
+.opts.two { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.opt { text-align: left; background: var(--sunk); border: 1px solid var(--line); border-radius: 9px; padding: 12px; display: flex; flex-direction: column; gap: 6px; }
+.opt:not(:disabled):hover { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+.opt:disabled { opacity: .5; cursor: not-allowed; }
+.opt b { font-family: var(--font-display); font-size: 16px; }
+.opt small { color: var(--muted); }
+.opt ul { margin: 0; padding: 0; list-style: none; font-size: 12.5px; display: flex; flex-direction: column; gap: 2px; }
+.stats { display: flex; flex-wrap: wrap; gap: 8px; }
+@media (max-width: 480px) { .opts.two { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-water" viewBox="0 0 16 16"><path fill="currentColor" d="M8 1.5C5.2 5.3 3 8 3 10.5a5 5 0 0 0 10 0C13 8 10.8 5.3 8 1.5z"/></symbol>
+  <symbol id="i-energy" viewBox="0 0 16 16"><path fill="currentColor" d="M9.5 1 3.5 9h4l-1 6 6-8h-4z"/></symbol>
+  <symbol id="i-food" viewBox="0 0 16 16"><path fill="currentColor" d="M8 15V9.2C5 9 3 6.5 3 3c3 0 4.6 1.6 5 3.6C8.4 5.2 10 4 13 4c0 3.4-2 5.6-4.2 5.8V15z"/></symbol>
+  <symbol id="i-capital" viewBox="0 0 16 16"><circle cx="8" cy="8" r="6" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="8" cy="8" r="2" fill="currentColor"/></symbol>
+  <symbol id="i-co" viewBox="0 0 16 16"><path fill="currentColor" d="M3 1.5v13h1.8v-5l8.2-3.2-8.2-3.3V1.5z"/></symbol>
+  <symbol id="i-trust" viewBox="0 0 16 16"><path fill="currentColor" d="M8 14C2 9.6 1.5 6.6 1.5 5.2A3.3 3.3 0 0 1 8 4.3a3.3 3.3 0 0 1 6.5.9c0 1.4-.5 4.4-6.5 8.8z"/></symbol>
+  <symbol id="i-needs" viewBox="0 0 16 16"><path fill="currentColor" d="M2 2.6h12v2.6H2zM2 6.7h12v2.6H2zM2 10.8h12v2.6H2z"/></symbol>
+  <symbol id="i-rival" viewBox="0 0 16 16"><circle cx="3.6" cy="8" r="2.6" fill="currentColor"/><circle cx="12.4" cy="8" r="2.6" fill="currentColor"/><path d="M6 8h4" stroke="currentColor" stroke-width="1.6" stroke-dasharray="1.4 1.2"/></symbol>
+  <symbol id="i-inf" viewBox="0 0 16 16"><path fill="currentColor" d="M8 1.5 14.5 8 8 14.5 1.5 8z"/></symbol>
+</svg>
+<div class="wrap" id="app"></div>
+<script src="engine.js"></script>
+<script>
+(function () {
+  'use strict';
+  var A = window.Aman, S, sel = null, view = 'home', said = '', hover = null, play = null, SUG = [], modal = null;
+  var prefs = { seenHelp: false, adviser: true, details: !!(window.matchMedia && window.matchMedia('(hover: none)').matches) };
+  try { var p = JSON.parse(localStorage.getItem('aman-prefs') || '{}'); if (typeof p.adviser === 'boolean') prefs.adviser = p.adviser; if (typeof p.details === 'boolean') prefs.details = p.details; if (p.seenHelp === true) prefs.seenHelp = true; } catch (e) {}
+  function savePrefs() { try { localStorage.setItem('aman-prefs', JSON.stringify(prefs)); } catch (e) {} }
+
+  var POS = { indus: [104, 112], himal: [212, 62], ganga: [222, 140], delta: [322, 150], coast: [196, 350] };
+  var LBL = { indus: [0, -34, 'middle'], himal: [30, -6, 'start'], ganga: [0, 46, 'middle'], delta: [8, -38, 'middle'], coast: [32, 4, 'start'] };
+  var RESN = { water: 'Water', energy: 'Energy', food: 'Food', capital: 'Capital', inf: 'Influence' };
+
+  function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+  function cap(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
+  function ic(k) { return '<svg class="ic ic-' + k + '"><use href="#i-' + k + '"/></svg>'; }
+  function costText(c) { return Object.keys(c).map(function (k) { return c[k] + ' ' + RESN[k]; }).join(' + '); }
+  function costHtml(c) { return '<span class="cost" aria-label="Costs ' + esc(costText(c)) + '">' + Object.keys(c).map(function (k) { return '<span>' + c[k] + ic(k) + '</span>'; }).join('') + '</span>'; }
+  function pipsHtml(n, max) { var h = '<span class="pips" aria-label="' + n + ' of ' + max + '">'; for (var i = 0; i < max; i++) h += '<i' + (i < n ? ' class="on"' : '') + '></i>'; return h + '</span>'; }
+  function stateOf(f) { if (f.member) return ['member', 'Member']; if (f.grip >= 3) return ['co', 'Rogue']; if (f.grip === 2) return ['co', 'Company client']; if (f.grip === 1) return ['co', 'Taking Company money']; return ['', 'Independent']; }
+  function lines(arr) { return '<ul class="lines">' + arr.map(function (l) { return '<li class="' + l.kind + '">' + (l.turn ? '<small class="num">S' + l.turn + '</small>' : '') + esc(l.text) + '</li>'; }).join('') + '</ul>'; }
+  function seasons(n) { return n + (n === 1 ? ' season' : ' seasons'); }
+  function blockLeft(f) { return Math.max(0, A.BLOCK_GAIN - (f.trust - f.trustAtStart)); }
+
+  function newGame() {
+    S = A.create((Math.random() * 2147483647) | 0);
+    sel = null; view = 'home'; hover = null; modal = prefs.seenHelp ? null : 'help';
+    said = 'You lead the Deccan Compact. Win four of the five powers over in twelve seasons.';
+    render();
+  }
+
+  /* An action button: name and cost only. The effect shows on hover or focus, or inline when Details is on. */
+  function actBtn(a, opt) {
+    opt = opt || {};
+    var hint = a.hint || '', off = !a.ok;
+    return '<button class="act' + (opt.key ? ' key' : '') + '" data-do="act" data-id="' + a.id + '" aria-disabled="' + off + '" data-name="' + esc(opt.label || a.label) + '" data-hint="' + esc(hint) + '" data-why="' + esc(off ? (a.why || '') : '') + '" data-cost="' + esc(costText(a.cost)) + '">' +
+      '<span>' + (opt.n ? '<span class="nbadge">' + opt.n + '</span>' : '') + esc(opt.label || a.label) + '</span>' + costHtml(a.cost) +
+      (prefs.details || opt.inline ? '<small>' + esc(off ? (a.why || '') : hint) + '</small>' : '') + '</button>';
+  }
+
+  function top() {
+    var y = A.yields(S), t = '';
+    for (var i = 1; i <= A.MAX_TURNS; i++) {
+      var c = [];
+      if (i % 4 === 2) c.push('mon');
+      if (i < S.turn) c.push('done');
+      if (i === S.turn) c.push('now');
+      if (i % 4 === 0 && i < A.MAX_TURNS) c.push('gap');
+      t += '<i class="' + c.join(' ') + '"></i>';
+    }
+    function chip(k) {
+      var d = y[k];
+      return '<div class="chip' + (S.res[k] + d < 0 ? ' low' : '') + '" title="' + RESN[k] + ': ' + S.res[k] + ' now, ' + (d >= 0 ? '+' : '') + d + ' next season">' + ic(k) + '<b class="num">' + S.res[k] + '</b><em class="num">' + (d >= 0 ? '+' : '') + d + '</em></div>';
+    }
+    return '<div class="top"><div class="brand"><h1>Aman</h1><button class="ghost" data-do="asknew">New game</button></div>' +
+      '<div class="when"><b>' + A.season(S) + ' ' + A.year(S) + '<span>season ' + S.turn + ' of ' + A.MAX_TURNS + '</span></b><div class="track" title="Tall bars are monsoon seasons">' + t + '</div></div>' +
+      '<div class="res">' + chip('water') + chip('energy') + chip('food') + chip('capital') +
+      '<div class="chip inf" title="Influence left this season. Every action costs some.">' + ic('inf') + '<b class="num">' + S.influence + '</b><em>Influence left</em></div></div>' +
+      '<button class="primary" data-do="end"' + (S.phase !== 'actions' ? ' disabled' : '') + '>End season</button></div>';
+  }
+
+  function goal() {
+    var n = A.members(S).length;
+    var h = '<div class="goal"><div class="big"><b class="num">' + n + ' of 4</b><span>powers in the federation. Four wins the game.</span></div><div class="pills">';
+    A.ORDER.forEach(function (id) {
+      var f = S.factions[id], g = A.gates(S, id), ok = g.filter(function (x) { return x.ok; }).length;
+      h += '<button class="pill' + (f.member ? ' member' : '') + (f.grip >= 2 ? ' client' : '') + (sel === id && view === 'home' ? ' sel' : '') + '" data-do="sel" data-f="' + id + '"><b>' + esc(A.FACTIONS[id].name) + '</b>' +
+        (f.member ? '<span class="dots">Member</span>' : '<span class="dots" aria-label="' + ok + ' of ' + g.length + ' gates open">' + g.map(function (x) { return '<i' + (x.ok ? ' class="on"' : '') + '></i>'; }).join('') + ' ' + ok + '/' + g.length + ' gates</span>') + '</button>';
+    });
+    return h + '</div><button class="ghost" data-do="help">How to win</button></div>';
+  }
+
+  function nav() {
+    var u = A.unlocked(S), tabs = [['home', 'Map']];
+    if (u.relations) tabs.push(['relations', 'Relations']);
+    tabs.push(['build', 'Projects and research'], ['charter', 'Charter'], ['record', 'Record']);
+    return '<div class="views" role="tablist">' + tabs.map(function (t) { return '<button role="tab" data-do="view" data-v="' + t[0] + '" aria-selected="' + (view === t[0]) + '">' + t[1] + '</button>'; }).join('') +
+      '<span class="say" role="status" aria-live="polite">' + esc(said) + '</span></div>';
+  }
+
+  var LAND = 'M48 120 Q40 80 90 56 Q130 30 175 30 Q230 20 262 44 Q300 52 345 92 Q372 120 360 160 Q340 178 318 184 Q296 200 286 232 Q262 290 240 326 Q222 372 206 394 Q188 372 176 330 Q158 290 132 252 Q110 236 96 214 Q70 200 62 176 Q46 150 48 120 Z';
+  var HOME = [192, 252], CO = [58, 322];
+  var ZONE = { indus: [104, 116, 64, 62], himal: [222, 60, 74, 34], ganga: [222, 142, 54, 40], delta: [326, 150, 46, 40], coast: [206, 338, 44, 62] };
+  var MONSOON_TEXT = { failed: 'the rains fail', normal: 'steady rain', good: 'heavy rain' };
+
+  function revealed(kind, id) {
+    if (!play) return true;
+    for (var i = 0; i < play.q.length; i++) {
+      var e = play.q[i];
+      if ((kind === 'court' && e.co === 'court' && e.at.indexOf(id) >= 0) || (kind === 'ask' && e.kind === 'ask' && e.at[0] === id)) return i <= play.i;
+    }
+    return true;
+  }
+
+  /* ---------- season playback: events play on the map one at a time ---------- */
+  function buildQueue() {
+    var q = [], prev = A.season({ turn: S.turn - 1 }) + ' ' + A.year({ turn: S.turn - 1 }), now = A.season(S) + ' ' + A.year(S);
+    S.lastResolution.forEach(function (e) { q.push({ when: 'End of ' + prev, kind: e.kind, text: e.text, at: e.f ? [e.f].concat(e.f2 ? [e.f2] : []) : [], d: e.d, co: e.co }); });
+    S.briefing.forEach(function (b) {
+      if (b.kind === 'new') return;
+      var text = b.co === 'court' ? 'The Company sends an agent to ' + b.fs.map(function (id) { return A.FACTIONS[id].name; }).join(' and ') + '.' : b.text;
+      q.push({ when: now, kind: b.kind, text: text, at: b.fs || (b.f ? [b.f] : []), co: b.co });
+    });
+    return q;
+  }
+  function stopPlay() { if (play) { clearTimeout(play.timer); play = null; } }
+  function stepFx() {
+    var layer = document.getElementById('fx'), ev = play && play.q[play.i];
+    if (!layer || !ev) return;
+    if (ev.d) ev.at.forEach(function (id, i) { floatNum(layer, POS[id], ev.d, i); });
+    if (ev.co === 'court' || ev.co === 'grip') ev.at.forEach(function (id, i) { fly(layer, CO, [POS[id][0] - 25, POS[id][1] - 17], 'co', 'co', i * 150); });
+  }
+  function startPlay() {
+    stopPlay();
+    var q = buildQueue();
+    if (!q.length || S.phase === 'over') return false;
+    play = { q: q, i: 0, timer: null, dur: q.length > 7 ? 1500 : 1900 };
+    (function tick() {
+      render(); stepFx();
+      play.timer = setTimeout(function () {
+        if (!play) return;
+        play.i += 1;
+        if (play.i >= play.q.length) { play = null; render(); return; }
+        tick();
+      }, play.dur);
+    })();
+    return true;
+  }
+
+  function map() {
+    var u = A.unlocked(S), sea = A.season(S), i;
+    var h = '<svg viewBox="0 0 400 420" class="s-' + sea + (S.monsoon === 'failed' ? ' dry' : '') + '" role="img" aria-label="Map of the five powers and your home state. Gold glow shows trust in you.">' +
+      '<defs><clipPath id="landclip"><path d="' + LAND + '"/></clipPath>' +
+      '<filter id="soft" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="13"/></filter>' +
+      '<marker id="ah" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="4.6" markerHeight="4.6" orient="auto"><path d="M0 0 L10 5 L0 10 z" fill="var(--ink)"/></marker>' +
+      '<pattern id="stripes" width="7" height="7" patternUnits="userSpaceOnUse" patternTransform="rotate(40)"><rect width="3" height="7" fill="var(--company)"/></pattern></defs>' +
+      '<rect class="sea" width="400" height="420"/>' +
+      '<path class="land" d="' + LAND + '"/><ellipse class="land" cx="240" cy="402" rx="10" ry="13"/>';
+
+    // territory: gold glow grows with trust; maroon stripes grow with the Company's grip
+    h += '<g clip-path="url(#landclip)"><g filter="url(#soft)"><ellipse class="zone" cx="' + HOME[0] + '" cy="' + HOME[1] + '" rx="46" ry="42" opacity=".85"/>';
+    A.ORDER.forEach(function (id) {
+      var f = S.factions[id], z = ZONE[id], op = f.member ? 0.85 : Math.max(0, Math.min(0.5, (f.trust - 25) / 60));
+      h += '<ellipse class="zone" cx="' + z[0] + '" cy="' + z[1] + '" rx="' + z[2] + '" ry="' + z[3] + '" opacity="' + op.toFixed(2) + '"/>';
+    });
+    h += '</g>';
+    A.ORDER.forEach(function (id) {
+      var f = S.factions[id], z = ZONE[id];
+      if (f.grip > 0) h += '<ellipse class="grip" cx="' + z[0] + '" cy="' + z[1] + '" rx="' + (z[2] * (0.5 + f.grip * 0.17)).toFixed(0) + '" ry="' + (z[3] * (0.5 + f.grip * 0.17)).toFixed(0) + '" opacity="' + (0.22 + f.grip * 0.2).toFixed(2) + '"/>';
+    });
+    h += '</g>';
+
+    // rivers: width is the water reaching each power
+    var wi = 2 + S.factions.indus.pips.water * 1.5, wg = 2 + S.factions.delta.pips.flow * 1.5;
+    var R1 = 'M160 36 Q124 76 104 112 Q88 150 78 196', R2 = 'M212 62 Q202 104 222 140', R3 = 'M222 140 Q272 164 322 150 Q333 168 327 184';
+    h += '<path class="river" d="' + R1 + '" stroke-width="' + wi + '"/><path class="river" d="' + R2 + '" stroke-width="4.5"/><path class="river" d="' + R3 + '" stroke-width="' + wg + '"/>' +
+      '<path class="shimmer" d="' + R1 + '"/><path class="shimmer" d="' + R2 + '"/><path class="shimmer" d="' + R3 + '"/>' +
+      '<text class="rl" x="150" y="64">Indus</text><text class="rl" x="262" y="176">Ganges</text>';
+
+    // what has been built
+    if (S.projects.rail) { var rp = 'M226 152 L' + (HOME[0] + 8) + ' ' + HOME[1] + ' L202 336'; h += '<path class="rail" d="' + rp + '"/><path class="ties" d="' + rp + '"><title>Subcontinental Rail</title></path>'; }
+    if (S.projects.hydro) h += '<path class="power" d="M214 100 L252 178 L' + (HOME[0] - 6) + ' ' + HOME[1] + ' L190 336"><title>Hydro Grid power lines</title></path>';
+    var damBuilt = S.projects.hydro || S.plansDone.dams, damPlan = S.factions.himal.plan && A.planOf(S, 'himal').key === 'dams';
+    if (damBuilt || damPlan) h += '<path class="dam' + (damBuilt ? '' : ' plan') + '" d="M197 109 H217 L214 118 H200 Z"><title>' + (damBuilt ? 'Dam on the upper Ganges' : 'Karnali dams under construction') + '</title></path>';
+    function seal(x, y, t) { return '<g class="seal"><title>' + t + '</title><circle cx="' + x + '" cy="' + y + '" r="6.5"/><path d="M' + (x - 3) + ' ' + y + ' l2 2.4 l4 -4.6"/></g>'; }
+    if (S.projects.induswater) h += seal(132, 72, 'Indus Water Treaty');
+    if (S.projects.flow) h += seal(272, 160, 'River Flow Compact');
+    var fortBuilt = S.plansDone.forts, fortPlan = S.factions.indus.plan && A.planOf(S, 'indus').key === 'forts';
+    if (fortBuilt || fortPlan) h += '<path class="fort' + (fortBuilt ? '' : ' plan') + '" d="M152 132 V121 H155 V124 H158 V121 H161 V124 H164 V121 H167 V132 Z"><title>' + (fortBuilt ? 'Border forts' : 'Border forts under construction') + '</title></path>';
+
+    // ties: trouble always shows; friendships show for the selected power
+    if (u.relations) A.PAIRS.forEach(function (p) {
+      var r = A.rel(S, p[0], p[1]); if (!r) return;
+      if (r > 0 && sel !== p[0] && sel !== p[1]) return;
+      var a = POS[p[0]], b = POS[p[1]];
+      h += '<line class="rln ' + (r < 0 ? 'neg' : 'pos') + (Math.abs(r) > 1 ? ' strong' : '') + '" x1="' + a[0] + '" y1="' + a[1] + '" x2="' + b[0] + '" y2="' + b[1] + '"><title>' + esc(A.FACTIONS[p[0]].name + ' and ' + A.FACTIONS[p[1]].name + ': ' + A.REL_NAMES[r]) + '</title></line>';
+    });
+
+    // the Company waits offshore
+    if (u.company) h += '<g class="co-base"><title>The Company, offshore</title><path d="M' + (CO[0] - 14) + ' ' + CO[1] + ' h28 l-5 8 h-18 z M' + (CO[0] - 2) + ' ' + (CO[1] - 12) + ' h4 v11 h-4 z M' + (CO[0] + 2) + ' ' + (CO[1] - 11) + ' l9 4 l-9 4 z"/><text x="' + CO[0] + '" y="' + (CO[1] + 21) + '" text-anchor="middle">The Company</text></g>';
+
+    h += '<g class="home"><circle class="base" cx="' + HOME[0] + '" cy="' + HOME[1] + '" r="9"/><text x="' + HOME[0] + '" y="' + (HOME[1] + 23) + '" text-anchor="middle" font-weight="600">You: Deccan Compact</text></g>';
+    A.ORDER.forEach(function (id) {
+      var f = S.factions[id], d = A.FACTIONS[id], p = POS[id], l = LBL[id], C = 2 * Math.PI * 20, g = A.gates(S, id);
+      var cls = 'node' + (f.member ? ' member' : '') + (f.grip >= 2 ? ' client' : '') + (sel === id ? ' sel' : '');
+      h += '<g class="' + cls + '" data-do="sel" data-f="' + id + '" tabindex="0" role="button" aria-label="' + esc(d.name) + ', trust ' + f.trust + (f.request ? ', asks for ' + f.request.res : '') + '">' +
+        '<circle class="halo" cx="' + p[0] + '" cy="' + p[1] + '" r="27"/>' +
+        '<circle class="base" cx="' + p[0] + '" cy="' + p[1] + '" r="20"/>' +
+        '<circle class="ring" cx="' + p[0] + '" cy="' + p[1] + '" r="20" stroke-dasharray="' + (C * f.trust / 100).toFixed(1) + ' ' + C.toFixed(1) + '" transform="rotate(-90 ' + p[0] + ' ' + p[1] + ')"/>' +
+        '<text class="t" x="' + p[0] + '" y="' + p[1] + '">' + f.trust + '</text>';
+      if (!f.member) g.forEach(function (x, i) { h += '<circle class="gd' + (x.ok ? ' on' : '') + '" cx="' + (p[0] - (g.length - 1) * 4.5 + i * 9) + '" cy="' + (p[1] + 29) + '" r="3"/>'; });
+      h += '<text x="' + (p[0] + l[0]) + '" y="' + (p[1] + l[1]) + '" text-anchor="' + l[2] + '" font-weight="600">' + esc(d.name) + '</text>';
+      if (f.request && revealed('ask', id)) h += '<g class="ask"><title>Asks for 2 ' + cap(f.request.res) + '</title><circle cx="' + (p[0] + 22) + '" cy="' + (p[1] - 18) + '" r="9"/><use href="#i-' + f.request.res + '" class="ic-' + f.request.res + '" x="' + (p[0] + 16) + '" y="' + (p[1] - 24) + '" width="12" height="12"/></g>';
+      if (S.companyTargets.indexOf(id) >= 0 && revealed('court', id)) {
+        var bl = f.countered || blockLeft(f) === 0, ax = p[0] - 25, ay = p[1] - 17;
+        h += '<g class="agent' + (bl ? ' blocked' : '') + '"><title>' + (bl ? 'Company agent: blocked this season' : 'Company agent: courting this power') + '</title><circle cx="' + ax + '" cy="' + ay + '" r="9"/><use href="#i-co" x="' + (ax - 5.5) + '" y="' + (ay - 5.5) + '" width="11" height="11"/>' + (bl ? '<path d="M' + (ax - 7) + ' ' + (ay + 7) + ' L' + (ax + 7) + ' ' + (ay - 7) + '"/>' : '') + '</g>';
+      }
+      if (!play && A.canJoin(S, id)) h += '<circle class="ready" cx="' + p[0] + '" cy="' + p[1] + '" r="31"><title>Ready to join</title></circle>';
+      if (f.plan) h += '<g class="pbadge"><title>Its own plan lands in ' + seasons(f.plan.eta) + '</title><rect x="' + (p[0] + 14) + '" y="' + (p[1] + 10) + '" width="14" height="14" rx="3"/><text x="' + (p[0] + 21) + '" y="' + (p[1] + 21) + '">' + f.plan.eta + '</text></g>';
+      h += '</g>';
+    });
+
+    // weather
+    if (S.monsoon) {
+      var n = { failed: 9, normal: 34, good: 70 }[S.monsoon], seed = S.turn * 9301 + 49297;
+      h += '<g aria-hidden="true">';
+      for (i = 0; i < n; i++) {
+        seed = (seed * 9301 + 49297) % 233280; var x = 10 + seed / 233280 * 380;
+        seed = (seed * 9301 + 49297) % 233280; var y = 10 + seed / 233280 * 390;
+        h += '<line class="rain" x1="' + x.toFixed(0) + '" y1="' + y.toFixed(0) + '" x2="' + (x - 4).toFixed(0) + '" y2="' + (y + 11).toFixed(0) + '" style="animation-delay:-' + (i % 9) * 0.1 + 's"/>';
+      }
+      h += '</g>';
+    }
+    // the council's suggestions, drawn as numbered routes from your capital
+    if (!play) SUG.forEach(function (x, i) {
+      var to = x.act.f ? POS[x.act.f] : (x.act.a ? [(POS[x.act.a][0] + POS[x.act.b][0]) / 2, (POS[x.act.a][1] + POS[x.act.b][1]) / 2] : null);
+      if (!to) return;
+      var dx = to[0] - HOME[0], dy = to[1] - HOME[1], len = Math.sqrt(dx * dx + dy * dy) || 1, ux = dx / len, uy = dy / len, gap = x.act.f ? 34 : 12;
+      var a = [HOME[0] + ux * 13, HOME[1] + uy * 13], b = [to[0] - ux * gap, to[1] - uy * gap], bend = (i % 2 ? 1 : -1) * (14 + i * 7);
+      var c = [(a[0] + b[0]) / 2 - uy * bend, (a[1] + b[1]) / 2 + ux * bend], m = [0.25 * a[0] + 0.5 * c[0] + 0.25 * b[0], 0.25 * a[1] + 0.5 * c[1] + 0.25 * b[1]];
+      var d = 'M' + a[0].toFixed(1) + ' ' + a[1].toFixed(1) + ' Q' + c[0].toFixed(1) + ' ' + c[1].toFixed(1) + ' ' + b[0].toFixed(1) + ' ' + b[1].toFixed(1);
+      h += '<g class="sugg" data-do="act" data-id="' + x.id + '" tabindex="0" role="button" aria-label="Suggestion ' + (i + 1) + ': ' + esc(x.label) + '"><title>' + esc(x.label + '. ' + x.why) + '</title>' +
+        '<path class="casing" d="' + d + '"/><path class="line" d="' + d + '" marker-end="url(#ah)"/><circle class="nb" cx="' + m[0].toFixed(1) + '" cy="' + m[1].toFixed(1) + '" r="8"/><text x="' + m[0].toFixed(1) + '" y="' + (m[1] + 3.5).toFixed(1) + '">' + (i + 1) + '</text></g>';
+    });
+    if (play) (play.q[play.i].at || []).forEach(function (id) { h += '<circle class="spot" cx="' + POS[id][0] + '" cy="' + POS[id][1] + '" r="35"/>'; });
+    h += '<text class="cap" x="12" y="20">' + sea + ' ' + A.year(S) + (S.monsoon ? ': ' + MONSOON_TEXT[S.monsoon] : '') + '</text>';
+    h += '<g id="fx" aria-hidden="true"></g></svg>';
+
+    var lg = '<span><svg viewBox="0 0 16 12"><circle cx="8" cy="6" r="5.5" fill="var(--accent)" opacity=".7"/></svg>Gold glow: trust in you</span>' +
+      '<span><svg viewBox="0 0 16 12"><path d="M1 6 H15" stroke="var(--river)" stroke-width="4" stroke-linecap="round"/></svg>River width: water reaching a power</span>' +
+      '<span><svg viewBox="0 0 16 12"><circle cx="4" cy="6" r="2.6" fill="var(--good)"/><circle cx="12" cy="6" r="2.6" fill="none" stroke="var(--muted)" stroke-width="1.2"/></svg>Gates open</span>';
+    if (u.company) lg += '<span><svg viewBox="0 0 16 16" style="height:14px;color:var(--company)"><use href="#i-co"/></svg>Company agent. Stripes: its grip</span>';
+    if (u.relations) lg += '<span><svg viewBox="0 0 16 12"><path d="M1 6 H15" stroke="var(--bad)" stroke-width="2" stroke-dasharray="4 3"/></svg>Tense or rival</span>';
+    if (u.plans) lg += '<span><svg viewBox="0 0 16 12"><rect x="2" y="0" width="12" height="12" rx="3" fill="var(--accent)"/></svg>Seasons until its plan lands</span>';
+    if (prefs.adviser && SUG.length && !play) lg += '<span><span class="nbadge" style="width:14px;height:14px;font-size:9px">1</span>Council suggestion: select to act</span>';
+    var capt = '';
+    if (play) { var ev = play.q[play.i]; capt = '<div class="caption ' + ev.kind + '" role="status"><span class="step num">' + ev.when + ' &middot; ' + (play.i + 1) + ' of ' + play.q.length + '</span><span class="txt">' + esc(ev.text) + '</span><button class="ghost" data-do="skip">Skip</button></div>'; }
+    return '<section class="panel map"><div class="mapwrap">' + h + capt + '</div><div class="legend">' + lg + '</div></section>';
+  }
+
+  /* ---------- motion on the map: tokens travel, numbers float, joins burst ---------- */
+  var REDUCE = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+  var NS = 'http://www.w3.org/2000/svg';
+  function sv(name, attrs) { var el = document.createElementNS(NS, name); Object.keys(attrs || {}).forEach(function (k) { el.setAttribute(k, attrs[k]); }); return el; }
+  function snapshot() {
+    var o = { turn: S.turn, trust: {}, member: {}, targets: S.companyTargets.slice() };
+    A.ORDER.forEach(function (id) { o.trust[id] = S.factions[id].trust; o.member[id] = S.factions[id].member; });
+    return o;
+  }
+  function fly(layer, from, to, cls, icon, delay, done) {
+    if (REDUCE || !layer.animate) { if (done) done(); return; }
+    var g = sv('g', { 'class': 'tok ' + cls });
+    g.appendChild(sv('circle', { r: 8 }));
+    g.appendChild(sv('use', { href: '#i-' + icon, x: -5.5, y: -5.5, width: 11, height: 11 }));
+    layer.appendChild(g);
+    var an = g.animate([{ transform: 'translate(' + from[0] + 'px,' + from[1] + 'px)' }, { transform: 'translate(' + to[0] + 'px,' + to[1] + 'px)' }], { duration: 620, delay: delay || 0, easing: 'ease-in-out', fill: 'both' });
+    an.onfinish = function () { g.remove(); if (done) done(); };
+  }
+  function floatNum(layer, pos, d, i) {
+    var t = sv('text', { 'class': 'fl num ' + (d > 0 ? 'up' : 'down'), x: pos[0], y: pos[1] - 26, 'text-anchor': 'middle' });
+    t.textContent = (d > 0 ? '+' : '') + d;
+    layer.appendChild(t);
+    if (!t.animate) { setTimeout(function () { t.remove(); }, 1500); return; }
+    var an = t.animate(REDUCE ? [{ opacity: 1 }, { opacity: 1, offset: 0.8 }, { opacity: 0 }] : [{ transform: 'translateY(6px)', opacity: 0 }, { transform: 'translateY(0)', opacity: 1, offset: 0.15 }, { transform: 'translateY(-4px)', opacity: 1, offset: 0.75 }, { transform: 'translateY(-14px)', opacity: 0 }], { duration: 1900, delay: (i || 0) * 60, fill: 'both' });
+    an.onfinish = function () { t.remove(); };
+  }
+  function burst(layer, pos) {
+    if (REDUCE || !layer.animate) return;
+    [0, 220].forEach(function (delay) {
+      var c = sv('circle', { 'class': 'burst', cx: pos[0], cy: pos[1], r: 20 });
+      c.style.transformOrigin = pos[0] + 'px ' + pos[1] + 'px';
+      layer.appendChild(c);
+      c.animate([{ transform: 'scale(1)', opacity: 0.9 }, { transform: 'scale(3.2)', opacity: 0 }], { duration: 900, delay: delay, easing: 'ease-out', fill: 'both' }).onfinish = function () { c.remove(); };
+    });
+  }
+  function playFx(before, act) {
+    var layer = document.getElementById('fx');
+    if (!layer) return;
+    function numbers() {
+      var l = document.getElementById('fx'); if (!l) return;
+      var i = 0;
+      A.ORDER.forEach(function (id) {
+        var d = S.factions[id].trust - before.trust[id];
+        if (d) floatNum(l, POS[id], d, i++);
+        if (S.factions[id].member && !before.member[id]) burst(l, POS[id]);
+      });
+    }
+    var dests = [];
+    if (act) { if (act.f) dests.push(act.f); if (act.a) dests.push(act.a, act.b); }
+    if (dests.length) {
+      var icon = act.res || (act.type === 'counter' ? 'capital' : 'inf');
+      dests.forEach(function (id, i) { fly(layer, HOME, POS[id], 'you', icon, 0, i === 0 ? numbers : null); });
+    } else numbers();
+  }
+
+  function todoItems() {
+    var t = [];
+    A.ORDER.forEach(function (id) { if (A.canJoin(S, id)) t.push({ k: 'good', f: id, text: A.FACTIONS[id].name + ' is ready to join. Invite it.' }); });
+    S.companyTargets.forEach(function (id) {
+      var f = S.factions[id], left = blockLeft(f);
+      if (f.countered || left === 0) t.push({ k: 'co done', f: id, text: 'Company deal with ' + A.FACTIONS[id].name + ': blocked.' });
+      else t.push({ k: 'co', f: id, text: 'The Company is courting ' + A.FACTIONS[id].name + '. Gain ' + left + ' more trust there, or counter it.' });
+    });
+    A.ORDER.forEach(function (id) {
+      var f = S.factions[id];
+      if (f.request) t.push({ k: 'ask', f: id, text: A.FACTIONS[id].name + ' asks for 2 ' + cap(f.request.res) + '.' });
+      if (f.plan && f.plan.eta === 1) t.push({ k: 'plan', f: id, text: A.FACTIONS[id].name + ' finishes its plan this season: ' + A.planOf(S, id).name.toLowerCase() + '.' });
+    });
+    return t;
+  }
+
+  function seasonPanel() {
+    var news = S.briefing.filter(function (b) { return b.kind === 'info' || b.kind === 'good' || b.kind === 'bad'; });
+    var intro = S.briefing.filter(function (b) { return b.kind === 'new'; });
+    var plans = S.briefing.filter(function (b) { return b.kind === 'plan'; });
+    var t = todoItems();
+    var h = '<section class="panel"><header><div><h2>This season</h2><small>' + A.season(S) + ' ' + A.year(S) + '</small></div></header>';
+    intro.forEach(function (b) { h += '<p class="newsys">' + esc(b.text) + '</p>'; });
+    h += '<div class="news">' + news.concat(plans).map(function (b) { return '<p class="' + b.kind + '">' + esc(b.text) + '</p>'; }).join('') + '</div>';
+    h += '<div class="sec"><h3>Needs your attention</h3>' + (t.length ? '<ul class="todo">' + t.map(function (x) {
+      return '<li class="' + x.k + '"><span>' + esc(x.text) + '</span><button class="ghost" data-do="sel" data-f="' + x.f + '">Open</button></li>';
+    }).join('') + '</ul>' : '<p class="note">Nothing urgent. Work toward your next member.</p>') + '</div>';
+    h += adviser();
+    if (S.lastResolution.length || (S.lastVote && S.lastVoteTurn === S.turn - 1)) {
+      var r = S.lastResolution.slice();
+      if (S.lastVote && S.lastVoteTurn === S.turn - 1) r.unshift({ kind: S.lastVote.passed ? 'info' : 'warn', text: S.lastVote.msg });
+      h += '<details><summary>What happened last season (' + r.length + ')</summary>' + lines(r) + '<div><button class="ghost" data-do="replay">Replay on the map</button></div></details>';
+    }
+    return h + '</section>';
+  }
+
+  function adviser() {
+    var h = '<div class="adv"><header><h3>Your council suggests</h3><label class="sw"><input type="checkbox" id="adviser-switch" role="switch" data-do="pref" data-p="adviser"' + (prefs.adviser ? ' checked' : '') + '>Adviser</label></header>';
+    if (!prefs.adviser) return h + '<p class="note">The adviser is off. You are on your own.</p></div>';
+    if (S.influence < 1) return h + '<p class="note">No Influence left. End the season.</p></div>';
+    if (!SUG.length) return h + '<p class="note">Nothing stands out. Build trust where you are closest, or end the season and save your resources.</p></div>';
+    SUG.forEach(function (x, i) { h += '<div class="sug">' + actBtn(x.act, { label: x.label, n: i + 1 }) + '<small>' + esc(x.why) + '</small></div>'; });
+    return h + '</div>';
+  }
+
+  var HUE = { indus: '#b3562b', himal: '#4b6cb7', delta: '#1f8a8a', ganga: '#5a8f3c', coast: '#7a4fa3' };
+  var TITLE = { indus: 'First Speaker of the League', himal: 'Chair of the Accord', delta: 'President of the Republic', ganga: 'Chief Minister of the Union', coast: 'Chancellor of the Ports' };
+  var SHORT = { indus: 'Indus', himal: 'Himalayan', delta: 'Delta', ganga: 'Gangetic', coast: 'Coastal' };
+  function moodOf(id) {
+    var f = S.factions[id], k = f.trust < 25 ? 0 : f.trust < 40 ? 1 : f.trust < A.JOIN_TRUST ? 2 : f.trust < 75 ? 3 : 4;
+    var word = ['Hostile', 'Wary', 'Cautious', 'Warm', 'Committed'][k];
+    var quote = ['Your envoys are not welcome here.', 'We judge you by what you do.', 'You have our attention. Keep going.', 'We could build something together.', 'We stand with the federation.'][k];
+    if (f.grip >= 3) { k = 0; word = 'Hostile'; quote = 'The Company pays better than promises.'; }
+    else if (f.request) quote = 'We need 2 ' + cap(f.request.res) + '. Will you help?';
+    else if (A.canJoin(S, id)) quote = 'We are ready to sign the charter.';
+    else if (f.member && A.needTotal(S, id) < A.JOIN_NEEDS) quote = 'The federation is not meeting our needs.';
+    else if (f.grip === 2) quote = 'The Company has been generous to us.';
+    return { k: k, word: word, quote: quote };
+  }
+  /* A stylized line portrait. The expression follows trust. */
+  function portrait(id, k) {
+    var hue = HUE[id], t = [2.2, 1, 0, -0.6, -1][k], c = [-4.5, -2.2, 0, 3, 5][k];
+    var hair = {
+      indus: '<path d="M27 37 Q26 19 42 19 Q58 19 57 37 Q52 27 42 27 Q32 27 27 37Z"/>',
+      himal: '<path d="M27 39 Q24 18 44 19 Q59 20 57 35 Q50 24 37 28 Q30 30 27 39Z"/>',
+      delta: '<circle cx="42" cy="15" r="5.5"/><path d="M27 37 Q26 19 42 19 Q58 19 57 37 Q52 27 42 27 Q32 27 27 37Z"/>',
+      ganga: '<path d="M28 33 Q30 21 42 21 Q54 21 56 33 Q50 25 42 25 Q34 25 28 33Z" opacity=".55"/>',
+      coast: '<path d="M26 48 Q21 18 42 19 Q63 18 58 48 L54 48 Q57 28 42 27 Q27 28 30 48Z"/>'
+    }[id];
+    var extra = id === 'ganga' ? '<g fill="none" stroke="var(--ink)" stroke-width="1.3"><circle cx="36" cy="38.5" r="4.6"/><circle cx="48" cy="38.5" r="4.6"/><path d="M40.6 38.5h2.8"/></g>' : '';
+    return '<svg class="portrait" viewBox="0 0 84 84" role="img" aria-label="Leader portrait, mood: ' + ['hostile', 'wary', 'cautious', 'warm', 'committed'][k] + '">' +
+      '<defs><clipPath id="pc"><circle cx="42" cy="42" r="40"/></clipPath></defs>' +
+      '<circle cx="42" cy="42" r="40" fill="' + hue + '" opacity=".16"/><g clip-path="url(#pc)"><path d="M12 86 Q13 62 42 60 Q71 62 72 86Z" fill="' + hue + '"/></g>' +
+      '<ellipse cx="42" cy="38" rx="15" ry="17" fill="var(--surface)" stroke="var(--ink)" stroke-width="2"/>' +
+      '<g fill="var(--ink)">' + hair + '<circle cx="36" cy="38.5" r="1.8"/><circle cx="48" cy="38.5" r="1.8"/></g>' + extra +
+      '<g fill="none" stroke="var(--ink)" stroke-width="1.8" stroke-linecap="round"><path d="M32.5 ' + (32.5 - t) + ' L39 ' + (32.5 + t) + '"/><path d="M45 ' + (32.5 + t) + ' L51.5 ' + (32.5 - t) + '"/>' +
+      '<path d="M36 47 Q42 ' + (47 + c) + ' 48 47"/></g>' +
+      '<circle cx="42" cy="42" r="40" fill="none" stroke="' + hue + '" stroke-width="2.5"/></svg>';
+  }
+  function dial(f) {
+    var th = A.JOIN_TRUST, ang = Math.PI * (1 - th / 100), cx = 68, cy = 66, col = f.member ? 'var(--accent)' : f.trust >= th ? 'var(--good)' : 'var(--muted)', dl = f.trust - f.trustAtStart;
+    function pt(r) { return (cx + r * Math.cos(ang)).toFixed(1) + ' ' + (cy - r * Math.sin(ang)).toFixed(1); }
+    return '<svg class="dial" viewBox="0 0 136 84" role="img" aria-label="Trust ' + f.trust + ' of ' + th + ' needed">' +
+      '<path d="M14 66 A54 54 0 0 1 122 66" fill="none" stroke="var(--line)" stroke-width="10" stroke-linecap="round"/>' +
+      (f.trust > 0 ? '<path d="M14 66 A54 54 0 0 1 122 66" fill="none" stroke="' + col + '" stroke-width="10" stroke-linecap="round" pathLength="100" stroke-dasharray="' + f.trust + ' 200"/>' : '') +
+      '<path d="M' + pt(45) + ' L' + pt(63) + '" stroke="var(--ink)" stroke-width="2.5"/>' +
+      '<text x="68" y="62" text-anchor="middle" font-size="27" font-weight="700" class="num">' + f.trust + '</text>' +
+      '<text x="68" y="80" text-anchor="middle" font-size="11" style="font-family:var(--font-body);fill:var(--muted)">trust' + (f.member ? '' : ', needs ' + th) + '</text>' +
+      (dl ? '<text x="124" y="20" text-anchor="end" font-size="13" font-weight="700" style="fill:var(--' + (dl > 0 ? 'good' : 'bad') + ')" class="num">' + (dl > 0 ? '+' : '') + dl + '</text>' : '') + '</svg>';
+  }
+  function gauge(n, v) {
+    var col = n.res === 'water' ? 'var(--river)' : n.res === 'energy' ? 'var(--warn)' : n.res === 'food' ? 'var(--good)' : 'var(--accent)', seg = '';
+    for (var i = 0; i < 3; i++) seg += '<rect x="5" y="' + (35 - i * 15) + '" width="20" height="12" rx="2" fill="' + (i < v ? col : 'none') + '" stroke="' + (i < v ? col : 'var(--muted)') + '" stroke-width="1.3"/>';
+    return '<div class="gauge" tabindex="0" data-tip="Raise ' + esc(n.label.toLowerCase()) + ' with: ' + esc(n.how) + '"><svg viewBox="0 0 30 52" aria-hidden="true"><rect x="1" y="1" width="28" height="50" rx="5" fill="var(--surface)" stroke="var(--line)" stroke-width="1.5"/>' + seg + '</svg>' +
+      '<div><b>' + (n.res ? ic(n.res) + ' ' : '') + esc(n.label) + '</b><small class="num">' + v + ' of 3</small>' + (prefs.details ? '<small>' + esc(n.how) + '</small>' : '') + '</div></div>';
+  }
+  function tiesStar(id) {
+    var others = A.ORDER.filter(function (o) { return o !== id; }), P = [[92, 22], [238, 22], [92, 100], [238, 100]], h = '';
+    others.forEach(function (o, i) {
+      var r = A.rel(S, id, o), p = P[i], col = r < 0 ? 'var(--bad)' : r > 0 ? 'var(--good)' : 'var(--line)';
+      h += '<line x1="165" y1="61" x2="' + p[0] + '" y2="' + p[1] + '" stroke="' + col + '" stroke-width="' + (Math.abs(r) > 1 ? 4.5 : r ? 2.4 : 1.5) + '"' + (r < 0 ? ' stroke-dasharray="6 5"' : '') + ' stroke-linecap="round"/>';
+    });
+    others.forEach(function (o, i) {
+      var r = A.rel(S, id, o), p = P[i], left = i % 2 === 0, m = S.factions[o].member;
+      h += '<circle cx="' + p[0] + '" cy="' + p[1] + '" r="8" fill="' + HUE[o] + '"' + (m ? ' stroke="var(--accent)" stroke-width="3.5"' : '') + '/>' +
+        '<text x="' + (p[0] + (left ? -13 : 13)) + '" y="' + (p[1] - 1) + '" text-anchor="' + (left ? 'end' : 'start') + '">' + SHORT[o] + '</text>' +
+        '<text class="r" x="' + (p[0] + (left ? -13 : 13)) + '" y="' + (p[1] + 11) + '" text-anchor="' + (left ? 'end' : 'start') + '" style="fill:' + (r < 0 ? 'var(--bad)' : r > 0 ? 'var(--good)' : 'var(--muted)') + '">' + A.REL_NAMES[r] + '</text>';
+    });
+    return '<svg class="star" viewBox="0 0 330 122" role="img" aria-label="Ties to the other powers">' + h + '<circle cx="165" cy="61" r="11" fill="' + HUE[id] + '" stroke="var(--surface)" stroke-width="2"/></svg>';
+  }
+
+  function powerPanel(av) {
+    var id = sel, f = S.factions[id], d = A.FACTIONS[id], st = stateOf(f), g = A.gates(S, id), u = A.unlocked(S), md = moodOf(id), nt = A.needTotal(S, id);
+    var gi = { trust: 'trust', needs: 'needs', company: 'co', rival: 'rival' };
+    var h = '<section class="panel"><div class="dossier-head">' + portrait(id, md.k) +
+      '<div class="who"><h2>' + esc(d.name) + '</h2><small>' + esc(TITLE[id]) + ', ' + esc(d.seat) + '</small><span><span class="tag ' + st[0] + '">' + st[1] + '</span></span></div>' +
+      '<button class="ghost" data-do="close" aria-label="Close and return to this season" style="align-self:flex-start">Close</button></div>';
+    h += '<div class="moodrow"><p class="speech"><b>' + md.word + '</b>&ldquo;' + esc(md.quote) + '&rdquo;</p>' + dial(f) + '</div>';
+    // gates
+    h += '<div class="sec"><h3>' + (f.member ? 'What keeps it in' : 'Gates to joining') + '</h3><div class="gtiles">' + g.map(function (x) {
+      return '<div class="gt' + (x.ok ? ' ok' : '') + '"><span class="gi"><svg aria-hidden="true"><use href="#i-' + gi[x.key] + '"/></svg></span><b>' + esc(x.label) + '</b><small class="num">' + esc(x.text) + '</small></div>';
+    }).join('') + '</div>';
+    if (f.member) h += '<p class="note">A member secedes if its trust falls below 40.</p>';
+    if (S.companyTargets.indexOf(id) >= 0) h += '<p class="note" style="color:var(--company)">' + (f.countered || blockLeft(f) === 0 ? 'The Company\'s deal here is blocked this season.' : 'The Company is courting it. Gain ' + blockLeft(f) + ' more trust this season, or counter the Company, to block the deal.') + '</p>';
+    h += '</div>';
+    // needs
+    h += '<div class="sec"><h3>Its needs: ' + nt + ' of the ' + A.JOIN_NEEDS + ' points it wants</h3><div class="gauges">' + d.needs.map(function (n) { return gauge(n, f.pips[n.key]); }).join('') + '</div></div>';
+    if (u.relations) h += '<div class="sec"><h3>Its ties</h3>' + tiesStar(id) + '</div>';
+    var p = A.planOf(S, id);
+    if (p) h += '<div class="planbox"><span class="cd num" title="Seasons until the plan lands">' + f.plan.eta + '</span><div><b>Its own plan: ' + esc(p.name) + '</b><span>Lands in ' + seasons(f.plan.eta) + '. ' + esc(p.then) + '</span>' + (p.endIf ? '<span>It drops the plan if ' + esc(p.endIf) + '.</span>' : '') + '</div></div>';
+    // actions
+    var mine = av.filter(function (a) { return a.f === id; });
+    var rank = { invite: 0, answer: 1 }, picks = {};
+    SUG.forEach(function (x, i) { picks[x.id] = i + 1; });
+    mine.sort(function (x, y) { return (rank[x.type] === undefined ? 5 : rank[x.type]) - (rank[y.type] === undefined ? 5 : rank[y.type]); });
+    h += '<div class="sec"><header style="display:flex;justify-content:space-between;align-items:center"><h3>What you can do here</h3><label class="sw"><input type="checkbox" id="details-switch" data-do="pref" data-p="details"' + (prefs.details ? ' checked' : '') + '>Show effects</label></header>';
+    if (S.phase !== 'actions') h += '<p class="note">Settle the decision in front of you first.</p>';
+    h += '<div class="acts">' + mine.map(function (a) { return actBtn(a, { key: a.type === 'invite' || a.type === 'answer', n: picks[a.id] }); }).join('') + '</div>';
+    if (!prefs.details) h += '<div class="detail" id="detail">' + detailHtml() + '</div>';
+    return h + '</div></section>';
+  }
+  function detailHtml() {
+    if (!hover) return 'Point at an action or a need, or focus it, to see more.';
+    if (hover.tip) return esc(hover.tip) + '.';
+    return '<b>' + esc(hover.name) + '</b> for ' + esc(hover.cost) + '. ' + esc(hover.hint) + (hover.hint && !/[.!]$/.test(hover.hint) ? '.' : '') + (hover.why ? ' <span class="no">Not available: ' + esc(hover.why) + '</span>' : '');
+  }
+
+  function relationsView(av) {
+    var br = av.filter(function (a) { return a.type === 'broker'; });
+    function group(title, list) {
+      if (!list.length) return '';
+      return '<div class="sec"><h3>' + title + '</h3><div class="rows">' + list.map(function (a) {
+        return '<div class="row"><span><b>' + esc(A.FACTIONS[a.a].name) + '</b> and <b>' + esc(A.FACTIONS[a.b].name) + '</b></span><span class="relchip ' + (a.rel < 0 ? 'neg' : a.rel > 0 ? 'pos' : '') + '">' + A.REL_NAMES[a.rel] + '</span>' +
+          actBtn(a, { label: 'Broker talks' }) + (a.ok ? '' : '<small>' + esc(a.why) + '</small>') + '</div>';
+      }).join('') + '</div></div>';
+    }
+    var bad = br.filter(function (a) { return a.rel < 0; }).sort(function (x, y) { return x.rel - y.rel; });
+    var good = br.filter(function (a) { return a.rel > 0; }), neu = br.filter(function (a) { return a.rel === 0; });
+    return '<section class="panel"><header><div><h2>Relations between the powers</h2><small>Brokered talks move two powers one step closer, and each trusts you 2 more.</small></div></header>' +
+      '<p class="note">A power will not join while its rival is a member. Members who dislike each other lose trust every season. Helping a power pleases its friends and irritates its rivals.</p>' +
+      group('Troubled', bad) + group('Warm', good) + (neu.length ? '<details><summary>Neutral pairs (' + neu.length + ')</summary>' + group('', neu).replace('<h3></h3>', '') + '</details>' : '') + '</section>';
+  }
+
+  function buildView(av) {
+    function card(a, name, effect, katch, done) {
+      return '<div class="card"><b>' + esc(name) + '</b><span>' + esc(effect) + '</span>' + (katch ? '<span class="catch">' + esc(katch) + '</span>' : '') +
+        (done ? '<span class="why">' + done + '</span>' : (a.ok ? '' : '<span class="why">' + esc(a.why) + '</span>') + actBtn(a, { label: a.type === 'project' ? 'Build' : 'Research' })) + '</div>';
+    }
+    var h = '<section class="panel"><header><div><h2>Shared projects</h2><small>Built with partner powers. Each needs its partners at trust 45.</small></div></header><div class="cards">';
+    av.filter(function (a) { return a.type === 'project'; }).forEach(function (a) { var p = A.PROJECTS[a.p]; h += card(a, p.name, p.effect, p.catch, S.projects[a.p] ? 'Built.' : ''); });
+    h += '</div></section><section class="panel"><header><div><h2>Research</h2><small>One project at a time. Each is ready the season after you start it.</small></div></header><div class="cards">';
+    av.filter(function (a) { return a.type === 'research'; }).forEach(function (a) { var t = A.TECH[a.t]; h += card(a, t.name, t.effect, '', S.tech[a.t] ? 'Researched.' : (S.research === a.t ? 'In progress. Ready next season.' : '')); });
+    return h + '</div></section>';
+  }
+
+  function charterView() {
+    return '<section class="panel"><header><div><h2>The charter</h2><small>Three questions, settled at the end of seasons 3, 6, and 9. You propose; members vote.</small></div></header><div class="charter">' +
+      [3, 6, 9].map(function (t) {
+        var q = A.CHARTER[t], c = S.charter[q.key];
+        return '<div><b>' + esc(q.title) + '</b><span>' + (c ? esc(q.options[c].name) : 'Vote at the end of season ' + t) + '</span></div>';
+      }).join('') + '</div></section>';
+  }
+
+  function recordView() {
+    var l = S.log.slice().reverse();
+    return '<section class="panel"><header><div><h2>Record</h2><small>Everything that has happened, newest first.</small></div></header>' + (l.length ? lines(l) : '<p class="note">Nothing yet.</p>') + '</section>';
+  }
+
+  function overlay() {
+    if (S.phase === 'crisis') {
+      var id = S.crisis, d = A.FACTIONS[id], odds = Math.round(A.fightOdds(S) * 100);
+      return '<div class="veil"><div class="dlg co" role="dialog" aria-modal="true" aria-labelledby="dt"><h2 id="dt">' + esc(d.name) + ' has gone rogue</h2>' +
+        '<p>Armed by the Company, its militias are raiding across your border. It still has a grievance, and a way back in.</p><div class="opts">' +
+        '<button class="opt" data-do="crisis" data-c="address"' + (S.res.capital < 4 ? ' disabled' : '') + '><b>Address the grievance</b><small>4 Capital' + (S.res.capital < 4 ? ' (you have ' + S.res.capital + ')' : '') + '</small><ul><li>Company grip falls to zero</li><li>Trust +12</li></ul></button>' +
+        '<button class="opt" data-do="crisis" data-c="fight"><b>Defend the border</b><small>Battle, auto-resolved. ' + odds + '% odds</small><ul><li>Win: grip falls to 1' + (S.tech.civil ? ', others trust +2' : ', but trust -6 there and -2 elsewhere') + '</li><li>Lose: Capital -3, Food -2</li></ul></button>' +
+        '<button class="opt" data-do="crisis" data-c="contain"><b>Contain</b><small>Seal the border and wait</small><ul><li>Capital -1, Food -1</li><li>It stays a Company client</li></ul></button>' +
+        '</div></div></div>';
+    }
+    if (S.phase === 'dispute') {
+      var dp = S.dispute, na = A.FACTIONS[dp.a].name, nb = A.FACTIONS[dp.b].name, can = S.res.capital >= 3 && S.influence >= 1;
+      return '<div class="veil"><div class="dlg" role="dialog" aria-modal="true" aria-labelledby="dt"><h3>Dispute, ' + A.season(S) + ' ' + A.year(S) + '</h3><h2 id="dt">' + esc(na) + ' and ' + esc(nb) + ' quarrel over ' + esc(dp.topic) + '</h2>' +
+        '<p>The two are ' + A.REL_NAMES[A.rel(S, dp.a, dp.b)].toLowerCase() + ', and each wants your backing. Your trust stands at ' + S.factions[dp.a].trust + ' with ' + esc(na) + ' and ' + S.factions[dp.b].trust + ' with ' + esc(nb) + '.</p><div class="opts two">' +
+        '<button class="opt" data-do="dispute" data-c="a"><b>Back ' + esc(na) + '</b><ul><li><span class="up num">+8</span> ' + esc(na) + '</li><li><span class="down num">-8</span> ' + esc(nb) + '</li></ul></button>' +
+        '<button class="opt" data-do="dispute" data-c="b"><b>Back ' + esc(nb) + '</b><ul><li><span class="up num">+8</span> ' + esc(nb) + '</li><li><span class="down num">-8</span> ' + esc(na) + '</li></ul></button>' +
+        '<button class="opt" data-do="dispute" data-c="mediate"' + (can ? '' : ' disabled') + '><b>Mediate</b><small>3 Capital + 1 Influence' + (can ? '' : ' (you are short)') + '</small><ul><li>They move one step closer</li><li><span class="up num">+3</span> trust with each</li></ul></button>' +
+        '<button class="opt" data-do="dispute" data-c="out"><b>Stay out</b><ul><li>They drift one step further apart</li><li><span class="down num">-3</span> trust with each</li></ul></button>' +
+        '</div></div></div>';
+    }
+    if (S.phase === 'council') {
+      var q = A.CHARTER[S.council], ms = A.members(S);
+      var h = '<div class="veil"><div class="dlg" role="dialog" aria-modal="true" aria-labelledby="dt"><h3>Council, end of ' + A.season(S) + ' ' + A.year(S) + '</h3><h2 id="dt">' + esc(q.title) + '</h2>' +
+        '<p>' + (ms.length ? 'You propose; the ' + ms.length + ' member' + (ms.length > 1 ? 's' : '') + ' vote. Your proposal passes unless more members oppose it than support it, counting your own vote. If it fails, the other option is adopted.' : 'No power has joined yet, so you declare this founding principle alone. Every power is watching.') + '</p><div class="opts two">';
+      Object.keys(q.options).forEach(function (k) {
+        var o = q.options[k];
+        h += '<button class="opt" data-do="charter" data-c="' + k + '"><b>' + esc(o.name) + '</b><small>' + esc(o.text) + '</small><ul>' +
+          Object.keys(o.trust).map(function (fid) {
+            var v = o.trust[fid], m = S.factions[fid].member;
+            return '<li><span class="' + (v > 0 ? 'up' : 'down') + ' num">' + (v > 0 ? '+' : '') + v + '</span> ' + esc(A.FACTIONS[fid].name) + (m ? (v >= 0 ? ' (votes yes)' : ' (votes no)') : '') + '</li>';
+          }).join('') + '</ul></button>';
+      });
+      return h + '</div></div></div>';
+    }
+    if (S.phase === 'over') {
+      var o = S.outcome, n = A.members(S).length;
+      return '<div class="veil"><div class="dlg' + (o.result === 'loss' ? ' co' : '') + '" role="dialog" aria-modal="true" aria-labelledby="dt"><h3>' + (o.result === 'win' ? 'Victory' : o.result === 'partial' ? 'Partial result' : 'Defeat') + '</h3><h2 id="dt">' + esc(o.title) + '</h2><p>' + esc(o.text) + '</p>' +
+        '<div class="stats"><div class="chip"><b class="num">' + n + ' of 5</b><em>members</em></div><div class="chip"><b class="num">' + A.clients(S).length + '</b><em>Company clients</em></div><div class="chip"><b class="num">' + S.turn + '</b><em>seasons played</em></div></div>' +
+        (S.lastResolution.length ? '<h3>Final season</h3>' + lines(S.lastResolution) : '') +
+        '<div><button class="primary" data-do="new">Play again</button></div></div></div>';
+    }
+    return '';
+  }
+
+  function modalHtml() {
+    if (modal === 'help') {
+      var first = !prefs.seenHelp;
+      return '<div class="veil" data-do="closemodal"><div class="dlg" role="dialog" aria-modal="true" aria-labelledby="dt"><h3>' + (first ? 'Welcome' : 'How to win') + '</h3><h2 id="dt">Reunite the subcontinent by consent</h2>' +
+        '<p>It is 2050. You lead the Deccan Compact. Bring <b>four of the five powers</b> into your federation within <b>twelve seasons</b>.</p>' +
+        '<div class="helprow"><span class="gi"><svg aria-hidden="true"><use href="#i-trust"/></svg></span><p><b>Trust at ' + A.JOIN_TRUST + '.</b> Envoys, aid, and pacts raise it.</p></div>' +
+        '<div class="helprow"><span class="gi"><svg aria-hidden="true"><use href="#i-needs"/></svg></span><p><b>Four of six need points met.</b> Each power has two needs. Open a power to see what raises them.</p></div>' +
+        '<div class="helprow"><span class="gi"><svg aria-hidden="true"><use href="#i-co"/></svg></span><p><b>Free of the Company.</b> It courts whoever trusts you least. Outbid it or counter it.</p></div>' +
+        '<div class="helprow"><span class="gi"><svg aria-hidden="true"><use href="#i-rival"/></svg></span><p><b>No rival inside.</b> A power will not join beside its rival. Broker talks first.</p></div>' +
+        '<p class="note">When all four gates are open, invite the power. Every action costs Influence: three a season, four once a power has joined. New systems arrive one season at a time, and your council suggests moves on the map. Battles are auto-resolved in this prototype.</p>' +
+        '<div><button class="primary" data-do="closemodal">' + (first ? 'Begin' : 'Back to the game') + '</button></div></div></div>';
+    }
+    if (modal === 'confirmNew') {
+      return '<div class="veil" data-do="closemodal"><div class="dlg" role="dialog" aria-modal="true" aria-labelledby="dt"><h2 id="dt">Abandon this game?</h2><p>You are in season ' + S.turn + ' of ' + A.MAX_TURNS + ' with ' + A.members(S).length + ' of 4 powers joined. A new game starts over from Spring 2050.</p>' +
+        '<div style="display:flex;gap:8px"><button class="primary" data-do="new">Start a new game</button><button class="ghost" data-do="closemodal">Keep playing</button></div></div></div>';
+    }
+    return '';
+  }
+
+  function render() {
+    var av = A.available(S), main;
+    SUG = [];
+    if (prefs.adviser && S.phase === 'actions' && S.influence >= 1) {
+      var byId = {}; av.forEach(function (a) { byId[a.id] = a; });
+      SUG = A.advise(S).filter(function (x) { return x.score >= 12 && x.why; }).slice(0, 3).map(function (x) { x.act = byId[x.id]; return x; });
+    }
+    if (view === 'relations' && !A.unlocked(S).relations) view = 'home';
+    if (view === 'home') main = '<div class="home">' + map() + (sel ? powerPanel(av) : seasonPanel()) + '</div>';
+    else if (view === 'relations') main = relationsView(av);
+    else if (view === 'build') main = buildView(av);
+    else if (view === 'charter') main = charterView();
+    else main = recordView();
+    document.getElementById('app').innerHTML = top() + goal() + nav() + main + (modal ? modalHtml() : (play && (S.phase === 'crisis' || S.phase === 'dispute') ? '' : overlay()));
+    var d = document.querySelector('.dlg button:not(:disabled)'); if (d) d.focus();
+  }
+
+  function handle(el) {
+    var doit = el.getAttribute('data-do'), r, before = S.turn, snap = snapshot(), info = null;
+    stopPlay();
+    if (doit === 'skip') { render(); return; }
+    if (doit === 'help') { modal = 'help'; render(); return; }
+    if (doit === 'asknew') { if (S.turn === 1 && !S.log.length) { newGame(); return; } modal = 'confirmNew'; render(); return; }
+    if (doit === 'closemodal') { if (modal === 'help' && !prefs.seenHelp) { prefs.seenHelp = true; savePrefs(); } modal = null; render(); return; }
+    if (doit === 'new') { modal = null; }
+    if (doit === 'replay') { view = 'home'; sel = null; if (!startPlay()) render(); return; }
+    if (doit === 'pref') { var k = el.getAttribute('data-p'); prefs[k] = el.checked; savePrefs(); }
+    else if (doit === 'sel') { sel = el.getAttribute('data-f'); view = 'home'; hover = null; }
+    else if (doit === 'close') { sel = null; hover = null; }
+    else if (doit === 'view') { view = el.getAttribute('data-v'); }
+    else if (doit === 'act') {
+      if (el.getAttribute('aria-disabled') === 'true') { said = el.getAttribute('data-why') || 'Not available right now.'; }
+      else {
+        var aid = el.getAttribute('data-id'), ao = A.available(S).filter(function (x) { return x.id === aid; })[0];
+        if (ao) {
+          info = { type: ao.type, f: ao.f, a: ao.a, b: ao.b };
+          if (ao.type === 'answer') info.res = S.factions[ao.f].request.res;
+          if (ao.type === 'aid') info.res = A.FACTIONS[ao.f].needs.filter(function (n) { return n.key === ao.need; })[0].res;
+        }
+        r = A.act(S, aid); said = r.msg; hover = null;
+      }
+    }
+    else if (doit === 'end') { r = A.endSeason(S); sel = null; view = 'home'; if (!r.council) said = A.season(S) + ' ' + A.year(S) + ' begins.'; }
+    else if (doit === 'charter') { r = A.chooseCharter(S, el.getAttribute('data-c')); S.lastVoteTurn = before; said = r.msg; }
+    else if (doit === 'dispute') { r = A.resolveDispute(S, el.getAttribute('data-c')); said = r.msg; }
+    else if (doit === 'crisis') { r = A.resolveCrisis(S, el.getAttribute('data-c')); said = r.msg; }
+    else if (doit === 'new') { newGame(); return; }
+    if (S.turn !== before && view === 'home' && startPlay()) return;
+    render();
+    if (doit !== 'pref' && doit !== 'sel' && doit !== 'close' && doit !== 'view') playFx(snap, info);
+  }
+  document.addEventListener('click', function (e) {
+    var el = e.target.closest('[data-do]');
+    if (!el || el.disabled || el.tagName === 'INPUT') return;
+    if (el.classList.contains('veil') && e.target !== el) return;
+    handle(el);
+  });
+  document.addEventListener('change', function (e) { if (e.target.matches && e.target.matches('input[data-do="pref"]')) handle(e.target); });
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && modal) { handle(document.querySelector('.dlg [data-do="closemodal"]')); return; } if ((e.key === 'Enter' || e.key === ' ') && e.target.matches && e.target.matches('g[data-do]')) { e.preventDefault(); handle(e.target); } });
+  function showDetail(e) {
+    var box = document.getElementById('detail'), tip = e.target.closest && e.target.closest('[data-tip]');
+    if (tip && box) { hover = { tip: tip.getAttribute('data-tip') }; box.innerHTML = detailHtml(); return; }
+    var el = e.target.closest && e.target.closest('.act');
+    if (!el || !box || !el.closest('.acts')) return;
+    hover = { name: el.getAttribute('data-name'), hint: el.getAttribute('data-hint'), why: el.getAttribute('data-why'), cost: el.getAttribute('data-cost') };
+    box.innerHTML = detailHtml();
+  }
+  document.addEventListener('mouseover', showDetail);
+  document.addEventListener('focusin', showDetail);
+  newGame();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,11 @@
+{
+  "name": "aman",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Browser prototype of Aman, a turn-based strategy game about reuniting the Indian subcontinent by consent in 2050.",
+  "scripts": {
+    "start": "python3 -m http.server 8000",
+    "sim": "node tools/sim.js",
+    "test": "python3 tools/smoke_test.py"
+  }
+}
