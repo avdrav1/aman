@@ -7,10 +7,10 @@ You lead the Deccan Compact. Bring four of five rival powers into a federation w
 ## Play
 
 ```bash
-python3 -m http.server 8000
+python3 -m http.server 8000 -d public
 ```
 
-Open http://localhost:8000. There is no build step. Opening `index.html` directly also works.
+Open http://localhost:8000. There is no build step. Opening `public/index.html` directly also works.
 
 ## Develop
 
@@ -19,14 +19,14 @@ node tools/sim.js             # balance check across 2,000 simulated games per b
 python3 tools/smoke_test.py   # browser smoke test; needs Playwright
 ```
 
-- `engine.js` holds every rule and has no DOM.
-- `index.html` holds the interface.
+- `public/engine.js` holds every rule and has no DOM.
+- `public/index.html` holds the interface.
 - `CLAUDE.md` is the project brief for Claude Code. Start there.
 - `docs/` has the design, the rules as implemented, and the backlog.
 
 ## Deploy
 
-Two static files. Any static host works: point it at the repository root with no build command.
+Two static files in `public/`. Any static host works: set the output directory to `public` with no build command. Nothing outside `public/` is served.
 
 ## Status
 

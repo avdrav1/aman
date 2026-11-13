@@ -2,7 +2,7 @@
    "greedy" always takes the adviser's first suggestion (Aman.advise). "random" picks any legal action.
    Baseline: greedy about 57% win, 42% partial; random almost never wins.
    Run: node tools/sim.js */
-const A = require('../engine.js');
+const A = require('../public/engine.js');
 
 function greedy(S) { const a = A.advise(S); return a.length ? a[0] : null; }
 function random(S) {

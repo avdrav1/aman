@@ -16,19 +16,19 @@ The owner is Avniel. He is a product manager and former engineer. He plays each 
 No build step, no dependencies for the game itself.
 
 ```bash
-python3 -m http.server 8000      # then open http://localhost:8000
-node tools/sim.js                # balance check: 2,000 games per bot, about 2 seconds
-python3 tools/smoke_test.py      # browser smoke test (needs: pip install playwright && playwright install chromium)
+python3 -m http.server 8000 -d public   # then open http://localhost:8000
+node tools/sim.js                       # balance check: 2,000 games per bot, about 2 seconds
+python3 tools/smoke_test.py             # browser smoke test (needs: pip install playwright && playwright install chromium)
 ```
 
-Opening `index.html` straight from disk also works.
+Opening `public/index.html` straight from disk also works.
 
 ## Files
 
 | File | What it holds |
 | --- | --- |
-| `engine.js` | All rules. No DOM. Runs in the browser as `window.Aman` and in Node via `require`. |
-| `index.html` | All UI: CSS, the SVG map, panels, dialogs, animation. Talks to the engine only through `window.Aman`. |
+| `public/engine.js` | All rules. No DOM. Runs in the browser as `window.Aman` and in Node via `require`. |
+| `public/index.html` | All UI: CSS, the SVG map, panels, dialogs, animation. Talks to the engine only through `window.Aman`. |
 | `tools/sim.js` | Plays thousands of games with two bots and prints outcome counts. |
 | `tools/smoke_test.py` | Playwright script: plays full games by clicking, fails on any console error. |
 | `docs/design.md` | The one-page design doc and the core-loop doc. |
@@ -78,7 +78,7 @@ Known weak points are in `docs/backlog.md`. The three that matter most:
 
 ## Deployment
 
-The owner asked about hosting. The game is two static files, so any static host works. The recommendation given was Cloudflare Pages connected to a GitHub repository, so each push deploys. Note that a Cloudflare Pages project created by drag-and-drop Direct Upload cannot be switched to Git integration later, so create it from the repository from the start. Nothing has been deployed yet beyond a private claude.ai artifact.
+The owner asked about hosting. The game is two static files in `public/`, so any static host works. Only `public/` is served; docs, tools, and this file stay out of the deployed site. Set the host's build output directory to `public` with no build command. The recommendation given was Cloudflare Pages connected to a GitHub repository, so each push deploys. Note that a Cloudflare Pages project created by drag-and-drop Direct Upload cannot be switched to Git integration later, so create it from the repository from the start. Nothing has been deployed yet beyond a private claude.ai artifact.
 
 ## Likely next steps
 

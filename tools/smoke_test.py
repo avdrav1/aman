@@ -12,7 +12,7 @@ import sys
 
 from playwright.sync_api import sync_playwright
 
-PAGE = (pathlib.Path(__file__).resolve().parent.parent / "index.html").as_uri()
+PAGE = (pathlib.Path(__file__).resolve().parent.parent / "public" / "index.html").as_uri()
 errors = []
 failures = []
 
