@@ -17,7 +17,7 @@ No build step, no dependencies for the game itself.
 
 ```bash
 python3 -m http.server 8000 -d public   # then open http://localhost:8000
-node tools/sim.js                       # balance check: 2,000 games per bot, about 2 seconds
+node tools/sim.js                       # balance check: 2,000 games per bot, about 20 seconds (worker threads)
 python3 tools/smoke_test.py             # browser smoke test (needs: pip install playwright && playwright install chromium)
 ```
 
@@ -34,6 +34,8 @@ Opening `public/index.html` straight from disk also works.
 | `tools/build_map.py` | Stdlib Python. Builds the map (land, rivers, every placed point) from Natural Earth land and river layers only, and writes it into `index.html` between the `GENERATED MAP` markers. Run `python3 tools/build_map.py --write`; move map items by editing its lon/lat tables, not the pixels. |
 | `docs/design.md` | The one-page design doc and the core-loop doc. |
 | `docs/rules.md` | Every rule and number as currently implemented. |
+| `docs/acts.md` | The three-act campaign: design, deviations, and the UI as built. |
+| `docs/powers.md` | The sixteen powers, the engine's `POWERS` table, and choices flagged for regional review. |
 | `docs/backlog.md` | What is known to be weak, and what was proposed but not built. |
 
 ## Architecture rules
@@ -47,7 +49,7 @@ Opening `public/index.html` straight from disk also works.
 
 ## Working conventions
 
-- **Balance changes need the sim.** State the before and after win rates in the commit message. Current baseline, with the bot taking the adviser's first suggestion every time: about 57% win, 42% partial, 1% loss over 2,000 games. A random bot should almost never win.
+- **Balance changes need the sim.** State the before and after win rates in the commit message. Current baseline, with the bot taking the adviser's first suggestion every time: about 54% win, 44% partial, 2% loss over 2,000 games, averaging 33 seasons. A bot that neglects its members should let the Company win sometimes (about 22%). A random bot should almost never win.
 - **UI changes need a look.** Run the smoke test, then open the page. The test catches errors, not ugliness.
 - **Every mechanic must be visible.** The prototype only became playable once each need showed what raises it. A rule the player cannot see on screen is a bug.
 - **Prefer pictures to sentences.** The last several rounds of feedback were all "too much to read" and "more visual." New information should go on the map or into a gauge before it goes into a paragraph.
@@ -69,18 +71,18 @@ The setting touches a live political question. These decisions were deliberate; 
 
 ## Current state, honestly
 
-Working: the season loop, five powers with needs and trust, the Company, relations between powers, powers' own plans, disputes, three charter votes, the adviser, the living map, season playback, the dossier panel, staged introduction of systems over the first four seasons.
+Working: three acts over about 33 seasons (Neighbors, Strain, Charter), sixteen powers (the player and fifteen rivals) defined as data in `POWERS`, needs and trust, the Company, relations between powers, powers' own plans, disputes, three charter votes, the adviser, the living map, season playback, the dossier panel, staged introduction of systems in each act, attention pins and weather on a Natural Earth map, decision scenes, and trust charts.
 
 Known weak points are in `docs/backlog.md`. The three that matter most:
 
-1. The Company does not win outright against sensible play, so the "Company wins" ending is close to dead code.
+1. Balance is a knife edge at sixteen powers: Act 3 Influence of 8, 9, or 10 swings the win rate from about 40% to 63%.
 2. The other powers follow fixed plan lists. They do not react to what the player does.
-3. Motion timing (token flights, playback at about two seconds per event) was tuned from still screenshots and has never been judged by eye.
+3. Motion timing (token flights, grouped playback, weather, signing seals) was tuned from still screenshots and has never been judged by eye. The north of the map is still crowded.
 
 ## Deployment
 
-The owner asked about hosting. The game is two static files in `public/`, so any static host works. Only `public/` is served; docs, tools, and this file stay out of the deployed site. Set the host's build output directory to `public` with no build command. The recommendation given was Cloudflare Pages connected to a GitHub repository, so each push deploys. Note that a Cloudflare Pages project created by drag-and-drop Direct Upload cannot be switched to Git integration later, so create it from the repository from the start. Nothing has been deployed yet beyond a private claude.ai artifact.
+The owner asked about hosting. The game is static files in `public/`, so any static host works. Only `public/` is served; docs, tools, and this file stay out of the deployed site. Set the host's build output directory to `public` with no build command. The recommendation given was Cloudflare Pages connected to a GitHub repository, so each push deploys. Note that a Cloudflare Pages project created by drag-and-drop Direct Upload cannot be switched to Git integration later, so create it from the repository from the start. It is deployed as a Cloudflare Worker at https://aman.av-667.workers.dev/ connected to GitHub `avdrav1/aman`: every push to `main` deploys. `wrangler.jsonc` serves only `public/`, and the build runs `npm run build`, which is a no-op.
 
 ## Likely next steps
 
-The owner has not chosen. Candidates, roughly in the order they were discussed: deploy, give the Company a budget and goals, make powers react to the player, a visual calendar in place of the season bars, decision scenes for disputes and votes, save and resume, analytics for playtests, and eventually the real-time battle layer. Ask before starting any of these.
+The owner has not chosen. Candidates: give the Company a budget and goals, make powers react to the player, save and resume, analytics for playtests, and eventually the real-time battle layer. Ask before starting any of these.

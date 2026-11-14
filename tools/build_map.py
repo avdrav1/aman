@@ -3,7 +3,7 @@
 
 Downloads Natural Earth land, river centerlines, and physical regions (public domain) into
 tools/.cache/,
-projects them into the map's 400 x 420 SVG frame, simplifies them, and writes the
+projects them into the map's 460 x 520 SVG frame, simplifies them, and writes the
 result into public/index.html between the GENERATED MAP marker comments.
 
 Run from the repository root:
@@ -25,6 +25,7 @@ import json
 import math
 import pathlib
 import re
+import subprocess
 import sys
 import urllib.request
 
@@ -38,10 +39,11 @@ REGION_FILE = "ne_10m_geography_regions_polys.geojson"
 BEGIN = "// BEGIN GENERATED MAP"
 END = "// END GENERATED MAP"
 
-W, H = 400, 420                     # SVG frame
+W, H = 460, 520                     # SVG frame
 LON0, LAT0, PAR1, PAR2 = 81.0, 21.0, 12.0, 30.0   # Lambert conformal conic
-# The frame is fitted so these points sit inside it with this much padding (px).
-FIT = [(66.4, 21.0), (94.0, 24.0), (74.3, 34.4), (80.6, 5.7)]
+# The frame is fitted so these points sit inside it with this much padding (px). The north point
+# leaves room above Peshawar for its label, the south point room below Colombo.
+FIT = [(66.0, 21.0), (93.6, 24.0), (73.0, 36.3), (80.6, 5.0)]
 FIT_PAD = 4
 LAND_TOL, RIVER_TOL = 0.7, 0.55     # Douglas-Peucker tolerance in px
 MIN_ISLAND = 6.0                    # drop islands smaller than this many square px
@@ -52,40 +54,58 @@ RIVERS = {
     "ganga": ("Ganges", (79.8, 30.9), (90.4, 22.8)),
     "karnali": ("Ghäghara", (80.9, 30.5), (84.7, 25.7)),
     "brahma": (("Dihang", "Brahmaputra"), (94.4, 29.3), (90.25, 23.46)),
+    "yamuna": ("Yamuna", (78.45, 31.0), (81.88, 25.42)),
+    "narmada": ("Narmada", (81.75, 22.67), (72.6, 21.65)),
+    "mahanadi": ("Mahäna Nadï", (81.9, 20.1), (86.7, 20.3)),
     "godavari": ("Godävari", (73.7, 20.0), (82.3, 16.7)),
     "krishna": ("Krishna", (73.8, 18.0), (80.9, 16.0)),
+    "cauvery": ("Cauvery", (75.5, 12.4), (79.85, 11.1)),
 }
-SPLIT = {"ganga": ((85.14, 25.61), "gangaUp", "gangaLow")}   # cut the Ganges at Patna
+# cut the Ganges at Patna and the Indus at the Panjnad confluence, so each reach can carry its own state
+SPLIT = {"ganga": ((85.14, 25.61), "gangaUp", "gangaLow"), "indus": ((71.0, 29.3), "indusUp", "indusLow")}
+# Rivers whose width shows a power's need: river -> (power id, need key). Width 2 + 1.5 per pip.
+# Every other river keeps a fixed width (px) and minor ones draw faint.
+RIVER_STATE = {"indusUp": ("indus", "water"), "indusLow": ("lindus", "flow"), "gangaLow": ("delta", "flow"),
+               "narmada": ("narmada", "water"), "cauvery": ("coromandel", "water")}
+RIVER_W = {"gangaUp": 3.5, "karnali": 3.0, "brahma": 2.6, "yamuna": 2.0, "godavari": 1.5, "krishna": 1.5, "mahanadi": 1.5}
+MINOR = ["godavari", "krishna", "mahanadi"]
 
-# Named places. A third value snaps the point onto that river.
+# Named places that are not seats. A third value snaps the point onto that river.
 PLACES = {
-    # seat cities
-    "lahore": (74.34, 31.55), "kathmandu": (85.32, 27.71), "patna": (85.14, 25.61),
-    "dhaka": (90.41, 23.81), "kochi": (76.27, 9.93), "colombo": (79.86, 6.93),
-    "hyderabad": (78.47, 17.39),
-    # where each power's node sits. Patna is about 30 px from Kathmandu at this scale, too
-    # close for two nodes, so the Gangetic Union sits mid-plain near Lucknow. The coast sits
-    # at the tip of the peninsula, between Kochi and Colombo.
-    "indus": (74.34, 31.55), "himal": (85.32, 27.71), "ganga": (80.9, 26.7),
-    "delta": (90.41, 23.81), "coast": (77.9, 8.9), "home": (78.47, 17.39),
-    "co": (68.6, 16.0),                                   # the Company, offshore
+    "co": (68.4, 15.6),                                   # the Company, offshore
+    "patna": (85.14, 25.61),
     "dam": (81.5, 29.3, "karnali"),                       # Karnali gorge, far west Nepal
-    "fort": (76.9, 31.0),                                 # Indus League's eastern edge
-    "sealIndus": (71.0, 29.9, "indus"),
+    "gorge": (93.2, 27.9, "brahma"),                      # the Brahmaputra gorges
+    "sarovar": (73.75, 21.83, "narmada"),                 # the lower Narmada dams
+    "kalabagh": (71.5, 32.9, "indusUp"),                  # an upper Indus barrage
+    "sealIndus": (70.5, 28.6, "indusLow"),
     "sealFlow": (87.0, 25.25, "gangaLow"),                # Bhagalpur, above Farakka
-    # rail: Ganga Union, Nagpur, you, Bengaluru, the coast
-    "rail1": (79.09, 21.15), "rail2": (77.59, 12.97),
-    # hydro lines: dam, Jabalpur, you, Chennai, the coast
-    "hydro1": (80.0, 23.2), "hydro2": (80.27, 13.08),
-    # river labels
-    "lblIndus": (68.0, 26.4), "lblGanges": (84.0, 24.6), "lblBrahma": (91.0, 26.6),
+    "sealShield": (87.5, 18.2),                           # in the bay, off the Mahanadi coast
+    "jabalpur": (80.0, 23.2), "nagpur": (79.09, 21.15),
+    # river labels. The Brahmaputra has none: the Brahmaputra League's name sits on it.
+    "lblIndus": (70.2, 29.8), "lblGanges": (85.6, 24.9),
 }
-# Territory glows: a soft sphere of influence around each power's seat, never a country's
-# outline. Each one is centered on the power's node with a radius in degrees of latitude.
-# Do not size a glow to fit a real country's extent. The realistic-map framing (land shape,
-# seat cities) is flagged for the regional review the design doc calls for.
-GLOW_R = {"indus": 2.2, "himal": 1.6, "ganga": 2.0, "delta": 1.7, "coast": 2.0, "home": 2.4}
-ZONES = {k: (PLACES[k][0], PLACES[k][1], r, r) for k, r in GLOW_R.items()}
+# Lines drawn when a project is built: project -> (class, [runs of place or power ids]).
+PATHS = {
+    "rail": ("rail", [["passes", "indus", "yamuna", "ganga", "patna", "brahma"], ["yamuna", "narmada", "nagpur", "deccan", "coromandel"], ["patna", "mahanadi"]]),
+    "hydro": ("power", [["dam", "yamuna"], ["dam", "jabalpur", "deccan"]]),
+    "solar": ("power", [["aravalli", "yamuna"], ["aravalli", "seaboard"], ["aravalli", "narmada", "deccan"]]),
+}
+SEALS = {"induswater": "sealIndus", "flow": "sealFlow", "shield": "sealShield"}
+# Works a power's plan builds: plan key -> (place, glyph, a project that builds the same thing).
+WORKS = {"dams": ("dam", "dam", "hydro"), "gorgedams": ("gorge", "dam", None), "narmadadams": ("sarovar", "dam", None),
+         "barrage": ("kalabagh", "dam", None)}
+
+# Territory glows: a soft sphere of influence around each seat, never a country's outline. The
+# radius is a share of the distance to the nearest other seat, between these bounds in degrees of
+# latitude, so crowded seats get small glows and none is sized to a real country's extent. The
+# realistic-map framing (land shape, seat cities) is flagged for the regional review.
+GLOW_SHARE, GLOW_MIN, GLOW_MAX = 0.55, 1.2, 2.3
+# Nodes: each power's node starts on its seat and is pushed apart until no two are closer than
+# NODE_GAP px, held near the seat by a spring. A node moved more than LEADER px gets a thin line
+# back to its seat.
+NODE_GAP, LEADER = 58, 5
+LABEL_CH = 7.2                       # px per character of a label at its phone size (13px semibold), an estimate
 
 # Terrain: physical regions only, by Natural Earth feature class. Each becomes a scatter of small
 # marks (ridges, stipple, dashes) with no outline, so no shape on the map reads as a region's edge.
@@ -98,10 +118,20 @@ PLAIN_NAMES = {"GANGES PLAIN", "THAR DESERT"}
 # Weather anchors. The monsoon arrives from the southwest, over the Arabian Sea, and sweeps
 # northeast across the peninsula; clouds travel along lanes parallel to this line.
 WX = {
-    "monsoonFrom": (66.0, 9.0), "monsoonTo": (92.0, 30.0),
+    "monsoonFrom": (65.0, 8.0), "monsoonTo": (93.0, 30.5),
     # spring heat shimmer: the Thar, the Deccan, the central plain
     "heat1": (71.4, 27.2), "heat2": (73.2, 25.0), "heat3": (77.2, 19.6), "heat4": (79.6, 23.6), "heat5": (75.6, 15.6),
 }
+# Winter fog banks lie along these river reaches, one every FOG_STEP px.
+FOG_RIVERS, FOG_STEP = ["gangaUp", "gangaLow", "indusUp"], 34
+
+
+def seats():
+    """Every power's id, short name, and seat, read from the engine so the two never disagree."""
+    js = ("const A=require(%s);console.log(JSON.stringify([A.PLAYER].concat(A.POWERS).map(function(p){"
+          "return [p.id,p.short,p.lon,p.lat]})))" % json.dumps(str(ROOT / "public" / "engine.js")))
+    out = subprocess.run(["node", "-e", js], capture_output=True, text=True, check=True).stdout
+    return [(i, s, lon, lat) for i, s, lon, lat in json.loads(out)]
 
 
 def fetch(name):
@@ -433,22 +463,159 @@ def terrain():
     return {k: "".join(v) for k, v in marks.items()}, mask
 
 
+def relax(pts, fixed=()):
+    """Push nodes apart to NODE_GAP px, each held near its seat by a spring. pts: {id: (x, y)}."""
+    pos = {k: list(v) for k, v in pts.items()}
+    for _ in range(400):
+        moved = 0.0
+        for a in pos:
+            fx = (pts[a][0] - pos[a][0]) * 0.03
+            fy = (pts[a][1] - pos[a][1]) * 0.03
+            for b in list(pos) + list(fixed):
+                if a == b:
+                    continue
+                q = pos[b] if b in pos else fixed[b]
+                dx, dy = pos[a][0] - q[0], pos[a][1] - q[1]
+                d = math.hypot(dx, dy) or 0.01
+                if d < NODE_GAP:
+                    push = (NODE_GAP - d) * (0.5 if b in pos else 1.0)
+                    fx += dx / d * push * 0.5
+                    fy += dy / d * push * 0.5
+            pos[a][0] = min(W - 26, max(26, pos[a][0] + fx))
+            pos[a][1] = min(H - 40, max(36, pos[a][1] + fy))
+            moved += abs(fx) + abs(fy)
+        if moved < 0.01:
+            break
+    return {k: (v[0], v[1]) for k, v in pos.items()}
+
+
+def footprint(x, y, flip=False):
+    """What a node draws around itself, as rects: the ring and its side badges, the badges above, the gate
+    dots and strain below. Flipped, the badges trade sides (FLIP in the page)."""
+    r = [(x - 25, y - 25, x + 26, y + 22), (x - 9, y - 35, x + 27, y - 25), (x - 15, y + 22, x + 15, y + 33)]
+    return [(2 * x - b[2], b[1], 2 * x - b[0], b[3]) for b in r] if flip else r
+
+
+def choose_flips(node):
+    """Mirror a node's badges when that keeps them off its neighbors."""
+    flip = {k: False for k in node}
+    for _ in range(3):
+        for k in node:
+            def clash(f):
+                return sum(overlap(a, b) for o in node if o != k for a in footprint(*node[k], f) for b in footprint(*node[o], flip[o]))
+            flip[k] = clash(True) < clash(False) - 1
+    return flip
+
+
+def label_spots(x, y, w):
+    """Candidate label boxes around a node: (dx, dy, anchor, box, penalty). The box leaves a line
+    for a tag such as Holdout: under the name, or above it when the name sits above the node."""
+    h = 24
+    def box(x0, top):
+        return (x0, top, x0 + w, top + h)
+    return [
+        (29, 4, "start", box(x + 29, y - 7), 0),
+        (-29, 4, "end", box(x - 29 - w, y - 7), 0.5),
+        (0, 43, "middle", box(x - w / 2, y + 34), 1),
+        (0, -38, "middle", box(x - w / 2, y - 60), 1.5),
+        (24, -26, "start", box(x + 24, y - 37), 2),
+        (-24, -26, "end", box(x - 24 - w, y - 37), 2.5),
+        (22, 30, "start", box(x + 22, y + 19), 2),
+        (-22, 30, "end", box(x - 22 - w, y + 19), 2.5),
+    ]
+
+
+def overlap(a, b):
+    w = min(a[2], b[2]) - max(a[0], b[0])
+    h = min(a[3], b[3]) - max(a[1], b[1])
+    return w * h if w > 0 and h > 0 else 0.0
+
+
+def place_labels(node, text, fixed, flip):
+    """Greedy, then a few passes of local repair: each label takes its cheapest spot."""
+    ids = list(node)
+    foot = {k: footprint(*node[k], flip[k]) for k in ids}
+    choice = {}
+
+    def cost(k, spot):
+        b = spot[3]
+        c = spot[4] * 40
+        for o in ids:
+            for r in foot[o]:
+                c += overlap(b, r) * (3 if o != k else 6)
+            if o != k and o in choice:
+                c += overlap(b, choice[o][3]) * 6
+        for r in fixed:
+            c += overlap(b, r) * 4
+        out = max(0, -b[0]) + max(0, b[2] - W) + max(0, -b[1]) + max(0, b[3] - H)
+        return c + out * 400
+
+    def crowd(k):
+        return -sum(1 / (math.dist(node[k], node[o]) + 1) for o in ids if o != k)
+
+    for k in sorted(ids, key=crowd):
+        w = len(text[k]) * LABEL_CH
+        choice[k] = min(label_spots(*node[k], w), key=lambda sp: cost(k, sp))
+    for _ in range(6):
+        for k in ids:
+            w = len(text[k]) * LABEL_CH
+            choice[k] = min(label_spots(*node[k], w), key=lambda sp: cost(k, sp))
+    bad = [(k, round(cost(k, choice[k]))) for k in ids if cost(k, choice[k]) > choice[k][4] * 40 + 1]
+    if bad:
+        print("note: labels that still touch something: %s" % bad, file=sys.stderr)
+    return {k: (v[0], v[1], v[2], round(len(text[k]) * LABEL_CH)) for k, v in choice.items()}
+
+
 def build():
     riv = rivers()
     pt = {}
     for k, v in PLACES.items():
         pt[k] = snap(v[0], v[1], riv[v[2]]) if len(v) == 3 else proj(v[0], v[1])
+    seat_ll = {i: (lon, lat) for i, _, lon, lat in seats()}
+    shorts = {i: s for i, s, _, _ in seats()}
+    seat = {k: proj(*v) for k, v in seat_ll.items()}
+    node = relax(seat, {"co": pt["co"]})
+    text = {k: ("You: " + v if k == "deccan" else v) for k, v in shorts.items()}
+    co = pt["co"]
+    fixed = [(co[0] - 34, co[1] - 16, co[0] + 34, co[1] + 50), (0, H - 26, 190, H)]
+    for k, anchor, name in (("lblIndus", "end", "Indus"), ("lblGanges", "middle", "Ganges")):
+        x, y = pt[k]
+        w = len(name) * 5.4
+        x0 = x - w if anchor == "end" else x - w / 2 if anchor == "middle" else x
+        fixed.append((x0, y - 9, x0 + w, y + 2))
+    flip = choose_flips(node)
+    for k in list(SEALS.values()) + [v[0] for v in WORKS.values()]:
+        x, y = pt[k]
+        fixed.append((x - 7, y - 7, x + 7, y + 7))
+    lbl = place_labels(node, text, fixed, flip)
     zone = {}
-    for k, (lon, lat, rx, ry) in ZONES.items():
-        x, y = proj(lon, lat)
-        s = px_per_deg(lat)
-        zone[k] = (x, y, rx * s, ry * s)   # circles: equal radii in px
+    for k, (lon, lat) in seat_ll.items():
+        near = min(math.dist(seat[k], seat[o]) for o in seat if o != k) / px_per_deg(lat)
+        r = max(GLOW_MIN, min(GLOW_MAX, near * GLOW_SHARE)) * px_per_deg(lat)
+        zone[k] = (seat[k][0], seat[k][1], r)
+    where = dict(pt)
+    where.update(node)
+    paths = {k: (cls, [[where[p] for p in run] for run in runs]) for k, (cls, runs) in PATHS.items()}
+    fog = []
+    for k in FOG_RIVERS:
+        line = [proj(*q) for q in riv[k]]
+        acc, last = FOG_STEP / 2, line[0]
+        for q in line[1:]:
+            acc += math.dist(q, last)
+            last = q
+            if acc >= FOG_STEP and 0 < q[0] < W and 0 < q[1] < H:
+                fog.append((q[0], q[1], 30 + 14 * jitter(len(fog), 1, 7)))
+                acc = 0
 
     def arr(v):
         return "[" + ", ".join(str(round(c)) for c in v) + "]"
 
+    def obj(d, f=arr):
+        return "{ " + ", ".join(k + ": " + f(v) for k, v in d.items()) + " }"
+
     L = [BEGIN + " (tools/build_map.py; rerun it instead of editing by hand)",
          "  // Natural Earth land, rivers, and physical regions only, Lambert conic, %dx%d frame. No borders." % (W, H),
+         "  var MAPW = %d, MAPH = %d;" % (W, H),
          "  var LAND = '" + land() + "';",
          "  var RIV = {"]
     keys = list(riv)
@@ -456,13 +623,25 @@ def build():
         d = " ".join(path(dp(run, RIVER_TOL)) for run in in_frame([proj(*p) for p in riv[k]]))
         L.append("    " + k + ": '" + d + "'" + ("," if i < len(keys) - 1 else ""))
     L.append("  };")
-    L.append("  var PT = { " + ", ".join(k + ": " + arr(v) for k, v in pt.items()) + " };")
-    L.append("  var ZONE = { " + ", ".join(k + ": " + arr(v) for k, v in zone.items()) + " };")
+    L.append("  // river -> [power, need] whose pips set its width; fixed widths for the rest; minor rivers draw faint")
+    L.append("  var RIVSTATE = " + obj(RIVER_STATE, lambda v: json.dumps(list(v))) + ";")
+    L.append("  var RIVW = " + obj(RIVER_W, lambda v: str(v)) + ", MINOR = " + json.dumps(MINOR) + ";")
+    L.append("  // seats from the engine's lat/lon; nodes pushed apart from them; label [dx, dy, anchor, width]")
+    L.append("  var SEAT = " + obj(seat) + ";")
+    L.append("  var NODE = " + obj(node) + ";")
+    L.append("  var LBL = " + obj(lbl, lambda v: "[%d, %d, '%s', %d]" % v) + ";")
+    L.append("  var ZONE = " + obj(zone) + ";")
+    L.append("  var PT = " + obj(pt) + ";")
+    L.append("  var PATHS = " + obj(paths, lambda v: "['%s', [" % v[0] + ", ".join("[" + ", ".join(arr(q) for q in run) + "]" for run in v[1]) + "]]") + ";")
+    L.append("  var SEALS = " + obj(SEALS, lambda v: arr(pt[v])) + ";")
+    L.append("  var WORKS = " + obj(WORKS, lambda v: "{ at: %s, glyph: '%s', project: %s }" % (arr(pt[v[0]]), v[1], json.dumps(v[2]))) + ";")
+    L.append("  var LEADER = %d, FLIP = %s;   // FLIP: nodes whose badges sit mirrored, clear of a neighbor" % (LEADER, json.dumps(sorted(k for k, v in flip.items() if v))))
     marks, mask = terrain()
     L.append("  // Physical relief as marks only: ridges for ranges, stipple for deserts, dashes for plateaus.")
     L.append("  var TERRAIN = { " + ", ".join(k + ": '" + v + "'" for k, v in marks.items()) + " };")
     L.append("  var PLAIN = '" + mask + "';   // Ganges plain and Thar: a mask for fog and parched ground")
     L.append("  var WX = { " + ", ".join(k + ": " + arr(proj(*v)) for k, v in WX.items()) + " };")
+    L.append("  var FOG = [" + ", ".join(arr(f) for f in fog) + "];")
     L.append("  " + END)
     return "\n".join(L)
 

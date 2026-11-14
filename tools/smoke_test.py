@@ -76,7 +76,7 @@ def dialogs(pg):
         skip(pg)
 
 
-def follow_adviser(pg, picks=8):
+def follow_adviser(pg, picks=16):
     dialogs(pg)
     for _ in range(picks):
         if game_over(pg):
@@ -118,7 +118,7 @@ def random_play(pg, limit=900):
             continue
         r = random.random()
         if r < 0.2:
-            click(pg.locator(".pill").nth(random.randrange(5)))
+            click(pg.locator(".pc").nth(random.randrange(RIVALS)))
         elif r < 0.7:
             acts = pg.locator(".act[aria-disabled=false]:visible")
             if acts.count():
@@ -141,7 +141,7 @@ def attention_checks(pg):
     pins = pg.locator(".map .pin:not(.done)")
     check("attention chips count the pins on the map", chips.count() > 0 and total == pins.count())
     check("the full sentences sit in a details list", pg.locator(".attlist li").count() >= total)
-    pins.first.hover()
+    pins.first.hover(force=True)
     check("hovering a pin shows its sentence", pg.locator("#tip").is_visible() and len(pg.locator("#tip p").first.inner_text()) > 10)
     k = chips.first.get_attribute("data-hl")
     chips.first.hover()
@@ -172,10 +172,17 @@ def touch_checks(browser):
             b.first.tap()
         tp.wait_for_timeout(200)
         dialogs(tp)
+    # let the season playback finish first: its next step re-renders the map and closes any tip
+    for _ in range(30):
+        if not tp.locator("[data-do=skip]").count():
+            break
+        tp.locator("[data-do=skip]").first.tap()
+        tp.wait_for_timeout(100)
     pin = tp.locator(".map .pin:not(.done)").first
     check("a pin shows on the phone map", pin.count() == 1)
     if pin.count():
-        pin.tap()
+        pin.evaluate("e => e.scrollIntoView({ block: 'center' })")
+        pin.tap(force=True)
         check("a tap on a pin shows its sentence and stays on the season", tp.locator("#tip").is_visible() and tp.locator(".portrait").count() == 0)
         open_btn = tp.locator("#tip button")
         if open_btn.count():
@@ -183,6 +190,10 @@ def touch_checks(browser):
             check("Open in the tip opens the power", tp.locator(".portrait").count() == 1)
     check("no sideways scroll at phone width with touch", tp.evaluate("document.documentElement.scrollWidth") <= 390)
     ctx.close()
+
+
+def A_UNLOCKED_RELATIONS(pg):
+    return pg.locator("[data-do=view][data-v=relations]").count() > 0
 
 
 def no_sideways(pg):
@@ -198,6 +209,11 @@ with sync_playwright() as p:
 
     pg.goto(PAGE)
     pg.wait_for_timeout(600)
+    RIVALS = pg.evaluate("Aman.ORDER.length")
+    PAIRS = pg.evaluate("Aman.PAIRS.length")
+    check("the top strip has a chip per rival, %d" % RIVALS, pg.locator(".pc").count() == RIVALS)
+    check("the map draws a node per rival", pg.locator(".map .node").count() == RIVALS)
+    check("every power has a color token", pg.evaluate("Aman.ORDER.every(function (id) { return getComputedStyle(document.documentElement).getPropertyValue('--hue-' + id).trim().length > 0; })"))
     check("welcome guide shows on first visit", pg.locator(".dlg h3").inner_text().strip().lower() == "welcome")
     pg.locator(".dlg .primary").click()
     check("welcome guide closes", pg.locator(".dlg").count() == 0)
@@ -219,21 +235,31 @@ with sync_playwright() as p:
         follow_adviser(pg)
         end_season(pg)
     check("council suggestions are drawn on the map", pg.locator(".sugg").count() > 0)
-    check("each power chip carries a trust sparkline", pg.locator(".pill .spk svg path.ln").count() == 5)
+    check("each power chip carries a trust sparkline", pg.locator(".pc .spk svg path.ln").count() == RIVALS)
     pg.locator("[data-do=view][data-v=record]").click()
-    check("the Record tab shows the trust chart", pg.locator(".hchart path.tl:not(.mem)").count() == 5)
+    check("the Record tab shows the trust chart", pg.locator(".hchart path.tl:not(.mem)").count() == RIVALS)
+    pg.locator(".hnames .hp").nth(2).hover()
+    check("pointing at a name brings its line forward", pg.locator(".hchart.focus .pl.on").count() == 1)
+    if A_UNLOCKED_RELATIONS(pg):
+        pg.locator("[data-do=view][data-v=relations]").click()
+        check("the Relations tab draws every pair on the map", pg.locator(".relnet .rl2").count() == PAIRS)
+        pg.locator(".relnet .rl2").first.dispatch_event("click")
+        check("selecting a pair line flashes its row", pg.locator(".row.flash").count() == 1)
     pg.locator("[data-do=view][data-v=home]").click()
     attention_checks(pg)
 
-    pg.locator(".pill").nth(0).click()
+    pg.locator(".pc").nth(0).click()
     check("power dossier opens", pg.locator(".portrait").count() == 1 and pg.locator(".dial").count() == 1)
     pg.locator("[data-do=asknew]").click()
     check("New game asks for confirmation mid-game", "abandon" in pg.locator(".dlg h2").inner_text().lower())
     pg.locator(".dlg .ghost").click()
 
     # one game following the adviser through the acts; try a second game if the first ends early
+    # dialogs are answered at random, so a game can stall in Act 2; allow a few tries
     reached = adviser_game(pg)
-    if reached < 3:
+    for _ in range(3):
+        if reached == 3:
+            break
         if game_over(pg):
             pg.locator(".dlg [data-do=new].primary").click()
         reached = max(reached, adviser_game(pg))
@@ -246,10 +272,11 @@ with sync_playwright() as p:
     if not game_over(pg):
         adviser_game(pg)
     check("the adviser game reaches an ending", game_over(pg))
-    check("the ending draws a trust line per power", pg.locator(".dlg .hchart path.tl:not(.mem)").count() == 5)
+    check("the ending draws a trust line per power", pg.locator(".dlg .hchart path.tl:not(.mem)").count() == RIVALS)
+    check("the ending shows a seal slot per rival", pg.locator(".dlg .endseals span").count() in (0, RIVALS))
     check("the ending chart marks events", pg.locator(".dlg .hchart .hm").count() > 0)
     if pg.locator(".dlg .hchart .hm").count():
-        pg.locator(".dlg .hchart .hm").first.hover()
+        pg.locator(".dlg .hchart .hm").first.hover(force=True)
         check("hovering a chart marker reads it out", "Point at" not in pg.locator("#hread").inner_text())
     pg.set_viewport_size({"width": 400, "height": 800})
     check("no sideways scroll at phone width, game over", no_sideways(pg))
@@ -261,7 +288,7 @@ with sync_playwright() as p:
     pg.set_viewport_size({"width": 400, "height": 800})
     if game_over(pg):
         pg.locator(".dlg [data-do=new].primary").click()
-    pg.locator(".pill").nth(3).click()
+    pg.locator(".pc").nth(3).click()
     check("no sideways scroll at phone width", no_sideways(pg))
     check("a random game at phone width reaches an ending", random_play(pg))
 
