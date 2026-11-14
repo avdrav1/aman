@@ -2,7 +2,7 @@
 
 A browser prototype of a turn-based strategy game about reuniting the Indian subcontinent by consent in 2050.
 
-You lead the Deccan Compact. Bring four of five rival powers into a federation within twelve seasons, while a private arms conglomerate called the Company works to keep them apart.
+You lead the Deccan Compact. Fifteen rival powers share the subcontinent. Bring eight into a federation within sixteen seasons, hold eleven through Act 2, and win eleven pledges to ratify a charter, while a private arms conglomerate called the Company works to keep them apart.
 
 ## Play
 

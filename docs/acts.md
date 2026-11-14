@@ -1,8 +1,8 @@
 # Acts 2 and 3: spec
 
-Status: proposed, not built. This spec turns the twelve-season prototype into a three-act game of 30 to 36 seasons. It is written for whoever implements it in `public/engine.js`. Every number is a starting value to tune with `tools/sim.js`. When this is built, move the rules into `docs/rules.md` and delete what this file no longer needs to say.
+Status: built. Sections 1 to 18 are the original spec for five powers and what was built from it. Section 19 records how the acts were rescaled for sixteen powers (November 2026). Where they differ, section 19 and `docs/rules.md` are current.
 
-Scope: five powers, as today. Growing to more powers is a separate step.
+Scope of sections 1 to 18: five powers. Section 19: the fifteen rivals of `docs/powers.md`.
 
 ## 1. Shape of the game
 
@@ -549,3 +549,120 @@ Built in `public/index.html` from section 12. Departures:
 - **Territory glows (review fix):** each glow is a circle centered on the power's node, 1.6 to 2.4 degrees across in radius, so it reads as a sphere of influence and never traces a present-day country (`GLOW_R` in `tools/build_map.py`).
 - **Member dossier (review fix):** "What keeps it in" shows the exit rules (trust 40, not rogue, strain below 3), not the joining gates, and says how members' trust decays.
 - **Fixed in passing:** the hover detail box in the dossier changed height on hover, which shifted the page under the pointer and made buttons jitter. It now has a fixed height. This was also the cause of the old smoke test click timeouts.
+
+## 19. Sixteen powers: the acts rescaled
+
+Built in `public/engine.js` with the fifteen rivals in `docs/powers.md`. First the five-power engine was made data-driven (one `POWERS` table, effects and conditions as data) with no change in behavior: `node tools/sim.js` printed exactly the same output before and after. Then the table was replaced with the fifteen rivals and the systems below were rescaled and tuned with the sim.
+
+### Shape
+
+| Act | Name | Seasons | Goal to advance | Five powers had |
+| --- | --- | --- | --- | --- |
+| 1 | Neighbors | Up to 16 (seasons 1 to 16) | 8 members | Up to 12, 3 members |
+| 2 | Strain | Exactly 12 | 11 members when it ends | 12, 4 members |
+| 3 | Charter | Up to 12 | 11 pledges: 12 of 16 with you | 12, 4 pledges |
+
+- Longest game: 16 + 12 + 12 = 40 seasons, ten years. The adviser bot plays about 33 (median 34, p10 31, p90 36). Act 2 starts at a median of season 12 and Act 3 at season 24.
+- The Act 2 goal equals the Act 3 goal, as with five powers. Act 1 asks for 8, a little more than half, so Act 2 has 7 powers left to grow into, most of them rivals or neighbors of rivals.
+- Act 1 grew by four seasons because recruiting eight powers takes longer than three, even with more Influence.
+
+### Endings
+
+| Ending | Five powers | Sixteen powers |
+| --- | --- | --- |
+| The Company wins | 3 clients | 6 clients |
+| The federation breaks apart (Act 2 or 3) | 1 member or none | 3 members or fewer |
+| A fragile federation (end of Act 2) | 3 members | 8 to 10 members |
+| Aman | 5 pledges | 15 pledges, every rival |
+| The charter is ratified | 4 pledges | 11 to 14 pledges |
+| The Company wins at the vote | 2 clients | 3 clients |
+| A federation without a charter | 3 members | 8 or more members |
+
+### Budgets and caps
+
+| Knob | Five powers | Sixteen powers |
+| --- | --- | --- |
+| Influence | 3 or 4; 4 or 5; 6 | 7, 7, 9 by act, plus 1 for every 3 members |
+| Water, Energy, Food income | +1 net each | +1 net each, plus 1 for every 4 members |
+| Requests a season | 1 to 3 | 2 to 4 |
+| Demands a season | half the members | half the members, at most 6, members take turns |
+| Requests and demands together | no cap | at most 8 |
+| Motions per council | 2 | 3 |
+| Company targets | 1 or 2; 2; 2 then 3 | 2 or 3 (3 from 4 members); 3; 3 then 4 |
+| Budget share +1 Capital at | 4 members | 8 members |
+| Battle odds per member | +10% | +3.5% |
+
+### Rules added for scale
+
+- **Relations are sparse.** Only 26 neighbor and river pairs have a relation. Spillover, disputes, quarrels, brokering, and hardening use only those pairs.
+- **The Company spreads from its footholds.** When ranking targets, a power counts 1 trust lower for each neighbor that is already its client. A larger value pushed the neglect bot's Company wins past 25%, so it is a tie-breaker.
+- **Drift has a floor.** A non-member you leave alone loses 1 trust a season only while above its starting trust. With fifteen powers you cannot touch every one each season, and the old rule drove the ones you ignored to the low 20s by season 16.
+- **The adviser focuses** on the 4 powers closest to joining (`Aman.prospects`). Without focus it spread Influence over fifteen powers and failed Act 1 in about 28% of games.
+
+### Results
+
+2,000 games per bot, `node tools/sim.js`, about 17 seconds on 24 cores (the sim now runs in worker threads).
+
+| Measure | Target | Five powers | Sixteen powers |
+| --- | --- | --- | --- |
+| greedy win | 50 to 60% | 58.1% | 54.0% |
+| greedy Aman | | 6.8% | 12.0% |
+| greedy partial | most of the rest | 40.5% | 44.3% |
+| greedy loss | a few percent | 1.4% | 1.8% |
+| greedy average season ended | 30 to 45 | 29.6 | 33.2 |
+| greedy demands met | | 84.8% | 74.5% |
+| greedy walkouts per game | | 0.12 | 0.23 |
+| neglect Company wins | 10 to 25% | 19.0% | 22.4% |
+| random win | almost never | 0% | 0% |
+
+The result is very sensitive to Influence in Acts 2 and 3. Act 3 Influence 8 gives about 40% wins; 10 gives about 63%. Lowering the demand cap from 6 to 5 raises the win rate by about 30 points. The game snowballs once members bring Influence and income, and the demand load is what holds it back.
+
+## 20. Sixteen powers: the UI
+
+Built in `public/index.html` and `tools/build_map.py` for the fifteen rivals. The page keeps no table per power: names, short names, titles, seats, needs, neighbors, and colors all come from the engine (`Aman.POWERS`, `Aman.PLAYER`, `Aman.NEIGHBORS`, `Aman.PAIRS`). The only per-power entries left in the page are portrait looks (`LOOK`, hair and glasses), and a power without one gets a look picked from its id. Adding a power needs an engine entry and a rerun of `tools/build_map.py --write`.
+
+### The map
+
+- **Frame:** 460 by 520, Lambert conic as before, fitted to leave room above Peshawar and below Colombo.
+- **Seats come from the engine.** `build_map.py` runs `node` to read every `lat` and `lon` from `engine.js`, so the two cannot disagree. It writes `SEAT` (the city) and `NODE` (where the power's node draws).
+- **Nodes are pushed apart.** Each node starts on its seat and is pushed until no two are closer than 58 px, held near the seat by a weak spring. A node moved more than 5 px draws a thin dashed line back to a dot on its seat. Today that is Aravalli, Yamuna, Western Passes, Indus, Brahmaputra, and Delta, each by a few px.
+- **Nodes are smaller:** radius 14 (was 20), with a wider invisible hit circle for touch.
+- **Badges mirror when crowded.** Every glyph around a node has a fixed slot (`AT`: demand and request top right, Company agent top left, motion above, plan bottom right, pledge seal bottom left, gate dots and strain marks below). `FLIP` lists nodes whose badges sit mirrored because a neighbor is in the way. The script picks it.
+- **Labels are placed by the script.** Short names (`POWERS[].short`), 11 px. Each label tries eight spots around its node and takes the cheapest: overlap with any node's badge area, other labels, the river names, the Company fleet, treaty seals and dams, and the frame edge all cost. `LBL` holds `[dx, dy, anchor, width]`. A walkout or Holdout tag goes under the name, or above it when the name sits above the node. The script prints any label that still touches something; today only the Yamuna label grazes the Indus node's badge area.
+- **Glows** are circles on each seat. The radius is 0.55 of the distance to the nearest other seat, between 1.2 and 2.3 degrees, so crowded seats get small glows and none is sized to a real country.
+- **Rivers:** the Yamuna, Narmada, Mahanadi, and Kaveri (Natural Earth "Cauvery") are added. The Indus splits at the Panjnad and the Ganges at Patna. `RIVSTATE` maps a reach to the need its width shows: upper Indus is the Indus League's water share, lower Indus the Lower Indus Ports' river flow, the lower Ganges the Delta's river flow, the Narmada the Narmada Highlands' water, and the Kaveri the Coromandel Coast's water. Each river carries a tooltip naming it. The Brahmaputra has no river label, because the Brahmaputra League's name sits on it.
+- **What gets built** is data in the script: `PATHS` (rail and power lines by project, as runs of node and place ids), `SEALS` (treaty seals by project), and `WORKS` (dams by plan key: the Karnali, Brahmaputra gorge, lower Narmada, and upper Indus barrage). The page draws whatever the state says is built or under way.
+- **Weather** reads the frame from the script: monsoon lanes from `WX`, fog banks (`FOG`) every 34 px along the upper Ganges, lower Ganges, and upper Indus, masked to the plains. The cloud drift direction is set as `--wdx` and `--wdy` on the map, and the CSS keyframes read them.
+- **Phones:** the page drops its side padding and the map draws its names at 12.5 px in the frame, about 9.7 px on a 390 px screen.
+
+### Colors
+
+Each power's color is a token, `--hue-<id>`, generated at load from the engine's `hue` suggestions. The hues keep their order around the wheel but are spread evenly (24 degrees apart for fifteen), and three lightness steps alternate so that neighbors on the wheel also differ in lightness. Colors are `oklch(L C H)`, and the three lightness steps and the chroma are tokens per theme at the top of the page (`--p-l0` to `--p-l2`, `--p-c`). Every one measures at least 3:1 against the page background in both themes. The colors mark a power in the top chips, portraits, the campaign chart, the ties star, and the Relations network. The map itself keeps gold for trust and maroon for the Company.
+
+### The top strip
+
+The goal count sits on one line with How to win. Below it, a grid of fifteen mini chips (8 a row at 1300 px, 3 a row at 390 px): a color dot and short name, then a 40 px sparkline, the trust number, and the gate dots, pledge seal, or strain marks. Members are gold, Company clients have a dashed maroon border, and a power that walked out or holds out in Act 3 has a thick red or amber left edge (the tooltip says which). Pointing at a chip lights its node on the map.
+
+### Volume: grouping a season
+
+`Aman.digest(list)` groups a season's events (`S.lastResolution` or `S.briefing`) that share a group key, tone, and trust change. Every event the engine writes now carries a group key `g` (for example `unanswered`, `grip1`, `planstart`, `ask`); the key changes nothing in the rules, and the sim prints the same numbers. A group returns `text`, which names the powers ("Indus, Delta, and Gangetic take Company money."), and `head`, which counts them ("Three powers take Company money.").
+
+- **This season** shows each grouped line with its `head`, a chip per power it names, and a "One by one" disclosure. Pointing at a line lights its powers on the map.
+- **Season playback** plays one step per group, with every power in it spotlit at once. Steps last 1.8 s, 1.45 s when there are more than five, and 1.15 s when there are more than eight. An adviser game's busiest seasons drop from about 16 steps to about 8.
+- **What happened last season** and the ending's final-season list are grouped the same way.
+- **Needs you** keeps its chips by kind; the "In words" list is sorted in the same order as the chips.
+
+### Dialogs and tabs
+
+- **Council chamber:** a seat for every power, members or not, in two rows of a half circle (60% outer), the proposer at the lectern and you in the middle of the inner row. Outsiders are empty dashed chairs. Short names show under seats on wide screens; on phones only the lectern is named. A line under the chamber names every no vote, with the reason on hover.
+- **Dispute scene:** unchanged in shape; names are short names, and the issue icon is chosen from the topic's words (water, defense, energy, food, or Capital).
+- **Dossier:** the leader's title comes from `POWERS[].title`. "Its ties" is a star of its neighbors (`Aman.NEIGHBORS`), each spoke pointing the way that neighbor lies on the map, spread so no two touch. Select a neighbor to open it.
+- **Relations tab:** a network on the map, every one of the 26 pairs as a line: thick red dashes for rivals, thin red dashes for tense, green for friendly and allied, faint grey dots for neutral neighbors. Members' dots carry a gold ring. Selecting a line scrolls to its row and flashes it. The rows sit beside the map on wide screens and below it on phones.
+- **Campaign chart:** a thin grey line per power for the whole game, drawn thick in its color while it is a member. A row of name chips sits under the chart. Pointing at a name or a line brings that power forward and dims the rest, and reads its start and end trust; a click on a name holds it.
+- **Ending:** a seal slot per rival with its short name, and "N of 15" counts.
+- **Goal strip in Act 3:** fifteen seal slots, with a divider after the eleventh, the number that ratifies.
+- **Act cards, welcome, and How to win** read their numbers from `Aman.ACTS`, `Aman.CO_TARGETS`, and the table size: eight founding members in sixteen seasons; hold eleven for twelve seasons; eleven pledges, twelve of sixteen with you.
+
+### Portraits
+
+Fifteen looks from eleven hair shapes (crop, part, side part, thinning, long, shoulder length, bob, curls, swept, receding, wave) and two kinds of glasses. The bun, spiky, flat-top, and tuft shapes were dropped in review: they read as a topknot, a crown or headdress on the forest power, a cap, and a religious tuft on the Coromandel Coast. Faces stay front-on line art with no names and no dress, faith, or ethnic markers. The body color is the power's color token.
