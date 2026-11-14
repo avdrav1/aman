@@ -31,6 +31,7 @@ Opening `public/index.html` straight from disk also works.
 | `public/index.html` | All UI: CSS, the SVG map, panels, dialogs, animation. Talks to the engine only through `window.Aman`. |
 | `tools/sim.js` | Plays thousands of games with two bots and prints outcome counts. |
 | `tools/smoke_test.py` | Playwright script: plays full games by clicking, fails on any console error. |
+| `tools/build_map.py` | Stdlib Python. Builds the map (land, rivers, every placed point) from Natural Earth land and river layers only, and writes it into `index.html` between the `GENERATED MAP` markers. Run `python3 tools/build_map.py --write`; move map items by editing its lon/lat tables, not the pixels. |
 | `docs/design.md` | The one-page design doc and the core-loop doc. |
 | `docs/rules.md` | Every rule and number as currently implemented. |
 | `docs/backlog.md` | What is known to be weak, and what was proposed but not built. |

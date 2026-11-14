@@ -58,15 +58,23 @@ button:focus-visible, summary:focus-visible, [tabindex]:focus-visible, input:foc
 .brand { display: flex; align-items: center; gap: 12px; }
 .brand h1 { font-size: 24px; font-weight: 700; line-height: 1; }
 .brand .ghost { font-size: 12.5px; padding: 4px 9px; }
-.when { display: flex; flex-direction: column; gap: 4px; }
+.when { display: flex; flex-direction: column; gap: 4px; flex: 1 1 260px; max-width: 430px; min-width: 0; }
 .when b { font-family: var(--font-display); font-size: 15px; }
 .when b span { font-family: var(--font-body); font-weight: 400; font-size: 12px; color: var(--muted); margin-left: 4px; }
-.track { display: flex; gap: 3px; align-items: flex-end; }
-.track i { display: block; width: 13px; height: 5px; border-radius: 2px; background: var(--line); }
+/* the three-act track: one bar per season, grouped by act */
+.track { display: flex; gap: 7px; align-items: flex-end; width: 100%; }
+.track .ag { flex: var(--n) 1 0; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.track .ag > span { font-size: 10px; line-height: 1.1; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.track .ag.cur > span { color: var(--ink); font-weight: 600; }
+.track .ag.next { opacity: .55; }
+.track .bars { display: flex; gap: 2px; align-items: flex-end; height: 18px; padding-top: 6px; }
+.track i { display: block; flex: 1 1 0; min-width: 2px; max-width: 13px; height: 5px; border-radius: 2px; background: var(--line); position: relative; }
 .track i.mon { height: 10px; background: color-mix(in srgb, var(--river) 45%, var(--line)); }
 .track i.done { background: var(--muted); }
 .track i.now { background: var(--accent); }
-.track i.gap { margin-right: 5px; }
+.track i.cn::after { content: ""; position: absolute; left: 50%; top: -6px; width: 4px; height: 4px; margin-left: -2px; border-radius: 50%; background: var(--river); }
+.track i.call::before { content: ""; position: absolute; left: -2px; bottom: 0; width: 2px; height: 16px; border-radius: 1px; background: var(--accent); }
+.track i.vote { box-shadow: 0 0 0 1.5px var(--accent); }
 .res { display: flex; flex-wrap: wrap; gap: 6px; margin-left: auto; }
 .chip { background: var(--sunk); border: 1px solid var(--line); border-radius: 8px; padding: 4px 9px; display: flex; align-items: center; gap: 6px; }
 .chip b { font-size: 16px; font-family: var(--font-display); }
@@ -80,7 +88,9 @@ button:focus-visible, summary:focus-visible, [tabindex]:focus-visible, input:foc
 
 /* goal strip */
 .goal { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 10px 16px; display: flex; flex-wrap: wrap; align-items: center; gap: 10px 18px; }
-.goal .big { display: flex; align-items: baseline; gap: 8px; }
+.goal .big { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; }
+.goal .big b { white-space: nowrap; }
+@media (max-width: 480px) { .goal .pills { flex-basis: 100%; } .goal .pill { flex: 1 1 130px; } .goal .big { flex-basis: 100%; } .goal .big span { max-width: none; flex: 1 1 140px; } }
 .goal .big b { font-family: var(--font-display); font-size: 30px; line-height: 1; }
 .goal .big span { color: var(--muted); max-width: 20ch; line-height: 1.2; font-size: 12.5px; }
 .pills { display: flex; flex-wrap: wrap; gap: 6px; flex: 1; }
@@ -107,19 +117,20 @@ button:focus-visible, summary:focus-visible, [tabindex]:focus-visible, input:foc
 .sec { display: flex; flex-direction: column; gap: 7px; }
 
 /* map */
-.map svg { width: 100%; height: auto; display: block; max-height: 560px; border-radius: 8px; --season: #6fae5a; }
+.map svg { width: 100%; height: auto; display: block; overflow: hidden; max-height: 560px; border-radius: 8px; --season: #6fae5a; }
 .map svg.s-Monsoon { --season: #3f7fb0; } .map svg.s-Autumn { --season: #d59a2b; } .map svg.s-Winter { --season: #9aa7c7; } .map svg.dry { --season: #c98a2b; }
 .map .sea { fill: color-mix(in srgb, var(--river) 13%, var(--surface)); }
 .map .land { fill: color-mix(in srgb, var(--season) 16%, var(--sunk)); stroke: color-mix(in srgb, var(--season) 30%, var(--line)); stroke-width: 2; stroke-linejoin: round; }
 .map .zone { fill: var(--accent); }
 .map .grip { fill: url(#stripes); }
-.map .river { fill: none; stroke: var(--river); stroke-linecap: round; opacity: .75; }
+.map .river { fill: none; stroke: var(--river); stroke-linecap: round; stroke-linejoin: round; opacity: .75; }
+.map .river.minor { stroke-width: 1.5; opacity: .5; }
 .map .shimmer { fill: none; stroke: var(--surface); stroke-width: 1.2; stroke-linecap: round; stroke-dasharray: 3 14; opacity: .8; }
 .map text { font-family: var(--font-body); font-size: 11px; fill: var(--ink); paint-order: stroke; stroke: color-mix(in srgb, var(--surface) 75%, transparent); stroke-width: 3px; stroke-linejoin: round; }
 .map text.seat { fill: var(--muted); font-size: 9.5px; }
 .map text.rl { fill: var(--river); font-size: 9.5px; font-style: italic; }
 .map text.cap { font-size: 10.5px; fill: var(--muted); font-weight: 600; }
-.map .node { cursor: pointer; }
+.map .node, .map text.nm { cursor: pointer; }
 .map .node .base { fill: var(--surface); stroke: var(--line); stroke-width: 4; }
 .map .node .ring { fill: none; stroke: var(--muted); stroke-width: 4; stroke-linecap: round; }
 .map .node.member .base { fill: var(--accent); }
@@ -259,7 +270,7 @@ button:focus-visible, summary:focus-visible, [tabindex]:focus-visible, input:foc
 .act[aria-disabled="true"] { cursor: not-allowed; background: transparent; }
 .act[aria-disabled="true"] > span:first-child, .act[aria-disabled="true"] .cost { opacity: .5; }
 .act.key:not([aria-disabled="true"]) { border-color: var(--good); }
-.detail { min-height: 52px; font-size: 13px; padding: 8px 10px; border-radius: 8px; background: var(--sunk); color: var(--muted); }
+.detail { height: 78px; overflow-y: auto; font-size: 13px; padding: 8px 10px; border-radius: 8px; background: var(--sunk); color: var(--muted); }
 .detail b { color: var(--ink); }
 .detail .no { color: var(--bad); }
 
@@ -327,6 +338,80 @@ details > *:not(summary) { margin-top: 8px; }
 .opt ul { margin: 0; padding: 0; list-style: none; font-size: 12.5px; display: flex; flex-direction: column; gap: 2px; }
 .stats { display: flex; flex-wrap: wrap; gap: 8px; }
 @media (max-width: 480px) { .opts.two { grid-template-columns: 1fr; } }
+
+/* acts 2 and 3: demands, strain, motions, pledges, holdouts */
+.map .dem rect { fill: var(--surface); stroke: var(--ink); stroke-width: 1.8; }
+.map .strain rect { fill: var(--surface); stroke: var(--bad); stroke-width: 1.2; }
+.map .strain rect.on { fill: var(--bad); }
+.map .mbadge rect { fill: var(--surface); stroke: var(--accent); stroke-width: 1.8; }
+.map .mbadge path { fill: none; stroke: var(--accent); stroke-width: 1.4; }
+.map .mbadge text { fill: var(--ink); font-size: 9.5px; font-weight: 700; text-anchor: middle; stroke: none; }
+.map .pseal circle { fill: var(--good); stroke: var(--surface); stroke-width: 1.5; }
+.map .pseal path { fill: none; stroke: var(--surface); stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.map .left { fill: none; stroke: var(--bad); stroke-width: 1.8; stroke-dasharray: 4 3; }
+.map text.ntag { font-size: 9.5px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; fill: var(--bad); }
+.map text.ntag.hold { fill: var(--warn); }
+.map .rln.hard { stroke-width: 3.2; opacity: .95; }
+.map .rln.hard.strong { stroke-width: 5; }
+.map .co-base .ship2 { opacity: .8; }
+@media (prefers-reduced-motion: no-preference) {
+  .map .dem { animation: nudge 1.6s ease-in-out infinite; }
+  .map .rln.pulse { animation: thump .9s ease-in-out 2; }
+}
+@keyframes thump { 50% { stroke-width: 8; opacity: 1; } }
+.marks { display: inline-flex; gap: 2px; vertical-align: middle; }
+.marks i { width: 9px; height: 4px; border-radius: 1px; border: 1.2px solid var(--bad); display: block; }
+.marks i.on { background: var(--bad); }
+.pill.member .marks i { border-color: var(--accent-ink); }
+.pill.member .marks i.on { background: var(--bad); border-color: var(--bad); }
+.pill .sealmini { width: 12px; height: 12px; }
+.pill .why { font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: var(--bad); }
+.pill .why.hold { color: var(--warn); }
+.seals { flex: none; }
+.seals .s { fill: var(--good); stroke: var(--good); stroke-width: 1.5; }
+.seals .e { fill: none; stroke: var(--muted); stroke-width: 1.5; stroke-dasharray: 3 2.4; }
+.seals path { fill: none; stroke: var(--surface); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.seals .sep { stroke: var(--muted); stroke-width: 1.5; }
+.seals text { font-family: var(--font-body); font-size: 9.5px; fill: var(--muted); }
+.grv { border-left: 3px solid var(--bad); background: var(--sunk); border-radius: 0 8px 8px 0; padding: 8px 10px; font-size: 13px; }
+.grv b { display: block; font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: var(--bad); }
+.grv.hold { border-left-color: var(--warn); } .grv.hold b { color: var(--warn); }
+.tag.bad { border-color: var(--bad); color: var(--bad); }
+.tag.hold { border-color: var(--warn); color: var(--warn); }
+.tag.pledged { background: var(--good); border-color: var(--good); color: var(--surface); }
+.todo li.bad { border-color: var(--bad); }
+/* council seats */
+.seats { display: flex; flex-wrap: wrap; gap: 4px; padding-top: 4px; border-top: 1px dashed var(--line); }
+.seat { position: relative; display: flex; flex-direction: column; align-items: center; width: 42px; gap: 1px; }
+.seat .portrait { width: 32px; height: 32px; }
+.seat.no .portrait { opacity: .55; }
+.seat .you { width: 32px; height: 32px; border-radius: 50%; background: var(--accent); color: var(--accent-ink); font-size: 10px; font-weight: 700; display: flex; align-items: center; justify-content: center; }
+.seat .vm { position: absolute; top: 20px; left: 26px; width: 15px; height: 15px; border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 1.5px solid var(--surface); }
+.seat.yes .vm { background: var(--good); } .seat.no .vm { background: var(--bad); }
+.seat .vm svg { width: 9px; height: 9px; }
+.seat .rw { position: absolute; top: -3px; left: -1px; min-width: 15px; height: 15px; padding: 0 2px; border-radius: 8px; background: var(--surface); border: 1px solid var(--line); display: flex; align-items: center; justify-content: center; font-size: 9.5px; font-weight: 700; }
+.seat .rw svg { width: 10px; height: 10px; }
+.seat small { font-size: 10px; color: var(--muted); }
+.tally { font-size: 12.5px; font-weight: 600; }
+.opt .fx li { display: flex; gap: 5px; align-items: center; }
+.dlg .who-row { display: flex; gap: 12px; align-items: center; }
+.dlg .who-row .portrait { width: 56px; height: 56px; }
+/* act title card */
+.actcard { text-align: center; align-items: center; }
+.actcard .actno { font-family: var(--font-display); font-size: 15px; font-weight: 700; color: var(--accent); letter-spacing: .12em; text-transform: uppercase; }
+.actcard h2 { font-size: 34px; }
+.pictos { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; width: 100%; }
+.picto { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 10px 6px; border-radius: 9px; background: var(--sunk); font-size: 12.5px; line-height: 1.3; }
+.picto svg { width: 64px; height: 44px; }
+.picto b { font-size: 13px; }
+@media (max-width: 480px) { .pictos { grid-template-columns: 1fr; } .picto { flex-direction: row; text-align: left; } }
+@media (prefers-reduced-motion: no-preference) {
+  .actcard { animation: cardin .5s ease-out; }
+}
+@keyframes cardin { from { transform: translateY(12px) scale(.97); opacity: 0; } }
+.endseals { display: flex; gap: 12px; flex-wrap: wrap; }
+.endseals span { display: flex; flex-direction: column; align-items: center; gap: 3px; font-size: 11px; color: var(--muted); }
+.endseals svg { width: 34px; height: 34px; }
 </style>
 </head>
 <body>
@@ -340,36 +425,71 @@ details > *:not(summary) { margin-top: 8px; }
   <symbol id="i-needs" viewBox="0 0 16 16"><path fill="currentColor" d="M2 2.6h12v2.6H2zM2 6.7h12v2.6H2zM2 10.8h12v2.6H2z"/></symbol>
   <symbol id="i-rival" viewBox="0 0 16 16"><circle cx="3.6" cy="8" r="2.6" fill="currentColor"/><circle cx="12.4" cy="8" r="2.6" fill="currentColor"/><path d="M6 8h4" stroke="currentColor" stroke-width="1.6" stroke-dasharray="1.4 1.2"/></symbol>
   <symbol id="i-inf" viewBox="0 0 16 16"><path fill="currentColor" d="M8 1.5 14.5 8 8 14.5 1.5 8z"/></symbol>
+  <symbol id="i-strain" viewBox="0 0 16 16"><path fill="currentColor" d="M2 4h3.4v8H2zM6.3 4h3.4v8H6.3zM10.6 4H14v8h-3.4z"/></symbol>
+  <symbol id="i-hear" viewBox="0 0 16 16"><path fill="currentColor" d="M2 3.5A1.5 1.5 0 0 1 3.5 2h9A1.5 1.5 0 0 1 14 3.5v6a1.5 1.5 0 0 1-1.5 1.5H7l-3.5 3v-3h0A1.5 1.5 0 0 1 2 9.5z"/></symbol>
+  <symbol id="i-scroll" viewBox="0 0 16 16"><path fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" d="M4 2.5h8.5v9.5a1.8 1.8 0 0 1-1.8 1.8H3.3A1.8 1.8 0 0 1 1.5 12v-1.3H4zM6.3 5.6h4M6.3 8.2h4"/></symbol>
+  <symbol id="i-seal" viewBox="0 0 16 16"><circle cx="8" cy="8" r="7" fill="currentColor"/><path d="M4.8 8.2 7 10.4l4.2-4.8" fill="none" stroke="var(--surface)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-yes" viewBox="0 0 10 10"><path d="M1.8 5.2 4 7.4l4.2-4.8" fill="none" stroke="var(--surface)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-no" viewBox="0 0 10 10"><path d="M2.5 2.5l5 5M7.5 2.5l-5 5" fill="none" stroke="var(--surface)" stroke-width="1.8" stroke-linecap="round"/></symbol>
+  <symbol id="i-lowtrust" viewBox="0 0 16 16"><circle cx="8" cy="8" r="5.6" fill="none" stroke="var(--line)" stroke-width="2.4"/><path d="M8 2.4A5.6 5.6 0 0 1 13.3 6.4" fill="none" stroke="var(--bad)" stroke-width="2.4" stroke-linecap="round"/></symbol>
 </svg>
 <div class="wrap" id="app"></div>
 <script src="engine.js"></script>
 <script>
 (function () {
   'use strict';
-  var A = window.Aman, S, sel = null, view = 'home', said = '', hover = null, play = null, SUG = [], modal = null;
+  var A = window.Aman, S, sel = null, view = 'home', said = '', hover = null, play = null, SUG = [], modal = null, seenAct = 1;
   var prefs = { seenHelp: false, adviser: true, details: !!(window.matchMedia && window.matchMedia('(hover: none)').matches) };
   try { var p = JSON.parse(localStorage.getItem('aman-prefs') || '{}'); if (typeof p.adviser === 'boolean') prefs.adviser = p.adviser; if (typeof p.details === 'boolean') prefs.details = p.details; if (p.seenHelp === true) prefs.seenHelp = true; } catch (e) {}
   function savePrefs() { try { localStorage.setItem('aman-prefs', JSON.stringify(prefs)); } catch (e) {} }
 
-  var POS = { indus: [104, 112], himal: [212, 62], ganga: [222, 140], delta: [322, 150], coast: [196, 350] };
-  var LBL = { indus: [0, -34, 'middle'], himal: [30, -6, 'start'], ganga: [0, 46, 'middle'], delta: [8, -38, 'middle'], coast: [32, 4, 'start'] };
+  // BEGIN GENERATED MAP (tools/build_map.py; rerun it instead of editing by hand)
+  // Natural Earth land and rivers only, Lambert conic, 400x420 frame. No borders.
+  var LAND = 'M-6 -6 L406 -6 L406 261.3 L402.6 262.1 L401.4 257 L400.4 260.1 L398.6 261.2 L398.5 252.5 L398.2 255.1 L395.4 258.7 L392.5 260.1 L392.6 252.9 L395.6 241.4 L395.6 237.7 L392.7 229 L388.6 221.8 L389.6 221.6 L387.1 219.6 L386.3 214.1 L385.1 216.2 L385.2 219.7 L382.1 218.1 L378.9 213.5 L380 213 L383.4 215 L385.5 212 L380 207.7 L381.1 205.6 L374.9 203.9 L373.7 204.4 L374.4 206.4 L373.5 207 L371.6 204.1 L372.7 202.5 L371.6 202.5 L372.1 199.7 L369.9 203.1 L369.2 202.8 L369.8 200.4 L367.5 197.5 L367.7 201.2 L361.7 194.6 L358 189.5 L356.8 182.3 L353.9 174.8 L354.3 173 L353.5 173.8 L348.8 165.8 L345.6 169.5 L342.1 170.3 L338 164.5 L336.8 156.6 L336.3 159 L332.6 158.7 L336.9 161.2 L337.1 163 L335.5 164.3 L336.7 166.3 L335.5 166.7 L335.3 168.6 L338 173.9 L333.4 181.7 L331.3 181 L332.9 177.1 L329.6 179.2 L329.1 177.9 L328.6 175.2 L329.7 172.9 L328.4 174.1 L327.8 179.9 L324.8 183.1 L323.3 176 L323.8 181.1 L322 183.9 L320.4 184 L318.5 181.9 L317.8 178.9 L317.6 181.1 L316.5 181.1 L318.1 185.1 L316.2 185.2 L315.5 183.9 L314.1 186.2 L313.7 180.3 L312.4 178.7 L311.9 185.3 L310.1 186 L308 184.1 L307.6 186 L305.9 185.9 L305 185.1 L306.5 178.7 L303 175.6 L303.4 177.2 L306.1 179 L303.5 183.3 L300 185.9 L292.5 188.4 L289.5 192.2 L291.3 199.7 L288.5 205.3 L283.7 209.8 L281.9 209.2 L282.9 210.1 L281.6 211.5 L273.2 214.6 L272.2 214.6 L273 213.8 L272.2 211.9 L268.8 213.8 L268 216.1 L270.5 214.9 L271.4 215.6 L262.7 222.9 L254 234.9 L248 238.2 L241.9 244.8 L230.7 252.2 L229.6 254.5 L230.7 256.6 L229.4 259.8 L222.6 263.1 L216.2 263 L212 271.2 L209.9 271.1 L209.3 269.7 L207.4 269.3 L202.6 271.9 L199.3 280.9 L200.9 289.4 L200 293.2 L202.6 303.6 L200.6 300.3 L199.3 301.8 L203.1 305.3 L201.5 314.9 L196.3 324.9 L194.8 330.8 L195.3 332.7 L193.9 334.6 L195.4 334.2 L196 336.3 L195.8 348.9 L188.4 349.7 L182.6 361.3 L184 363 L189.6 365.1 L183.5 363.9 L175.5 366.2 L172.1 369.2 L170.1 376.5 L162.2 380.8 L159.2 379.7 L154.5 375.8 L148.7 368.5 L145.7 360.5 L144.7 353.6 L146.1 355.1 L146.5 359.2 L147.6 359.3 L146.2 353.7 L144.1 351.3 L138.1 332.7 L131 322.5 L127.8 315.1 L121.1 287.3 L115.5 278.8 L113.6 274.1 L115.4 274.2 L113.3 271.6 L114.2 270.4 L112.2 269.6 L108 258.8 L106.4 242.2 L103.3 227.6 L105.3 222.3 L105 220.4 L103 222.8 L102.7 221.3 L102.9 218.2 L105.3 218.7 L102.7 217.3 L101.4 210.6 L105 198.9 L104.3 192.6 L102.7 191.6 L102 188.8 L103.5 187.5 L101.9 187.6 L108.7 183.8 L101.2 184.2 L103.4 180.4 L101.1 180.2 L101.6 177.6 L105 176.8 L96.9 175.8 L98.4 177.1 L97.9 178.4 L94.6 182 L96.8 183.5 L97.2 186.3 L93.8 191.4 L80.4 196.6 L76.4 196.3 L68.9 190.8 L54.9 172.8 L56.1 170.8 L58.9 173.2 L71 169.9 L75.7 164.2 L75.5 162.9 L73.4 164.9 L70.6 164.6 L64.5 166.8 L59 165.2 L53.8 161.9 L51.6 159.8 L49.1 154.2 L54.1 150.6 L46.8 153.6 L46.2 149.9 L45.4 151.3 L42.3 148.9 L39.7 150 L39.6 148.4 L38.5 148.9 L35.5 144.5 L34.5 136.1 L28.6 134.1 L29 128.9 L26 123.7 L23.4 123.2 L22.1 124.5 L26.4 125.6 L4.6 125.4 L2.9 127 L-4.4 123.1 L-6 123.8 Z M197.8 356.2 L201.6 356.5 L208.1 362.7 L215.1 372.9 L215.5 375.1 L217.6 376.2 L218.3 380.3 L224.9 392.8 L224.7 398.4 L221.5 405.4 L216.7 408.6 L208.2 411.9 L201.6 411.4 L199.1 409.3 L195.7 399.4 L193.8 379.8 L194.3 378.1 L194.3 381.7 L195.1 381.7 L197 369.4 L199.4 364.9 L199.3 359.6 L204.1 361 L201.7 359.1 L198.7 358.6 L197.4 357.2 Z M376.8 325.4 L373.8 320.8 L375.5 316.1 L377 315.5 L375.7 311.1 L376.8 299.3 L379.4 296.4 L379.8 301 L377.6 305.2 L378.8 306.4 L379.5 310.8 L377.8 312.4 Z M340.3 177.6 L336.9 178.2 L338.9 174.4 L336.1 167.3 L337.3 166.9 L341.2 172 Z M398.7 391.9 L397.9 393.2 L395.1 389.5 L395.3 387 L397.2 386.1 L399.1 389.8 Z M374.7 339.7 L372.9 339.9 L372.4 337 L374.5 334.8 L375.6 337.5 Z M381.6 210.6 L384.8 212.2 L384.4 213.6 L382.4 213.9 L380.7 211.6 Z M382.3 223 L379.4 220.6 L382.8 220.4 Z';
+  var RIV = {
+    indus: 'M196.8 34 L191.7 26.9 L187.5 22.9 L184.5 23.4 L178.3 19.4 L177.8 17.5 L170.8 9.4 L162.3 6.1 L159.5 2.7 L156.2 1 L154.7 -1.4 L155.1 -3.3 L151.7 -6.4 L151.2 -8.1 M118.3 -8.1 L115.4 -5.9 L115 -4.2 L116.4 -2.9 L114.1 -1.7 L111.7 8.5 L106.8 9.5 L106.6 12 L104 12.1 L102 16.7 L100.1 17.6 L99.7 22.3 L96.3 24.2 L94.6 27.7 L94.6 30.9 L88.6 40.7 L87 44.7 L87.1 51.6 L85.9 54 L86.9 57.4 L85.8 60.6 L86.3 66.6 L83.4 70.7 L84.3 73.6 L83.2 78.4 L80.7 80.3 L79.5 80.3 L74.9 84.5 L71.5 85.5 L68.9 89 L66.9 89.1 L66.3 90.2 L65.2 89.9 L63.1 91.4 L61.9 91.2 L61.4 92.4 L60.4 92.2 L60.6 93.9 L59.5 94.7 L60.3 96.1 L58.4 96.6 L57.1 94.7 L56.7 95.8 L52.9 96.8 L52 97.6 L52.3 100.3 L50.8 100.3 L49.9 101.4 L50.5 102.4 L49.1 102.7 L49.2 104 L46.5 105.8 L45.6 113.6 L46.1 115.5 L48.1 117.2 L48.4 118.7 L51.4 122.5 L50.4 123.3 L51.6 124.6 L50 126.8 L50.2 130 L49.5 130.9 L50.3 131.9 L49.3 132 L48.7 134.3 L47.9 133.7 L47.1 135.5 L45.8 135.5 L44.3 141.5 L42.7 141.7 L43 142.6 L41.9 142.7 L42.3 143.8 L40 145 L39.9 146.1 L38.3 146.3',
+    karnali: 'M211.3 61.3 L213.4 62.3 L214.7 66 L221.5 68.6 L222.9 70.2 L223 71.9 L224.9 72.8 L221.9 74.7 L221.1 76.8 L221.3 79.4 L217.4 83.1 L219.4 86.7 L218.7 87 L217.6 84.8 L212.9 83.8 L212.2 84.4 L214.8 85.6 L215.7 87.8 L214.7 92.9 L213.5 92.9 L213.1 94.1 L214.2 97.3 L216 98.9 L215.4 101.8 L218 107.9 L218.4 111 L219.9 111.3 L223 114.7 L226.5 114.1 L230 116.8 L235.3 117.8 L238.7 120.3 L241.8 121 L243.2 122.1 L247.2 122.2 L249.2 124.1 L251.9 124.6 L253.9 126.7 L255.3 126.6 L258.8 129.4 L259.7 129.3',
+    brahma: 'M378.5 72.1 L381.1 69.4 L384 69 L385.2 67.2 L384.8 65.7 L387.5 64.8 L387.4 63.1 L389.5 63.2 L389.5 63.9 L390.7 64.4 L391.7 68.9 L386.7 73.4 L384.3 78.1 L386.1 78.4 L388.7 82.2 L388.8 84.1 L387.7 85.9 L388.4 87.5 L391.4 87.5 L393 88.8 L394.1 91.7 L389.8 94.3 L389.6 95 L390.3 94.3 L390.4 95.1 L385.9 97.9 L384.3 100.4 L385 100.5 L383.7 101.6 L383.7 103.2 L381.9 105.1 L378.5 107.2 L378.3 106.4 L375.1 108.9 L372.8 109.6 L370 109.1 L366.1 111.1 L360.9 112 L359.5 113.5 L357.1 113.4 L353.1 115.9 L352.9 117 L348.1 119.3 L346 119.8 L341.3 119 L337.7 120.4 L333.1 119.3 L326.4 122.8 L323.9 127.5 L323.8 133.9 L323 136.3 L322.9 138.3 L325.2 143.6 L324.8 152.1 L327.7 155.9 L332.3 158.7',
+    godavari: 'M114.6 208.7 L118.8 209.3 L120 208.5 L125.9 210.9 L130.3 214.3 L134.7 215.5 L138 218 L141.8 219.1 L144.4 218.7 L144.4 219.9 L145.6 219.4 L149.5 220.6 L150.3 221.1 L149.8 222.8 L151.3 223.6 L153 222.9 L153.8 224.3 L155.2 224.8 L155.8 223.8 L159.8 222.9 L160.5 223.7 L163.9 222.5 L165.1 224.6 L170.5 227.3 L175 224.9 L176 226 L177.3 225.1 L179.3 225.8 L181.2 224.6 L182.5 225 L185.7 224 L187.9 226.9 L189.4 227.8 L191.2 227.3 L194.6 229.7 L196.4 229.2 L196.8 226.9 L200.1 229.5 L202.8 229.3 L205.4 235.3 L210.8 240.3 L210.9 244.5 L219.1 247 L221.3 249.3 L222.2 255.2 L224 259.6 L223.6 261 L221.8 261.7 L221.9 263.4',
+    krishna: 'M115.2 237.4 L117 238.6 L119.6 242.9 L118.9 244.9 L120.4 247.7 L120.2 249.5 L123.4 251.2 L124.7 254.3 L126.6 255.6 L125.4 256.1 L126.3 258 L130.5 256.7 L132.1 259.1 L133.3 257.5 L135.6 257.9 L136.8 259.2 L136.6 260.5 L139.3 260.2 L144.1 262.4 L145.2 264 L147.9 264.7 L157.7 259.1 L160.1 260.9 L167.8 262.7 L173.9 268.2 L174.7 266.9 L176.8 266.3 L182.1 267.1 L182.9 265.5 L185 264.4 L189.7 259.4 L195.6 257.4 L198.1 258.8 L199.7 256.1 L201.3 259.1 L205.1 259.4 L207.9 261.6 L209.8 264.1 L210.7 267.6',
+    gangaUp: 'M198 56.4 L198.4 59.2 L196.4 61.8 L194.3 60.9 L190.8 64.7 L183.7 65.5 L182.3 67.9 L179.1 66.9 L177.1 69.6 L177.3 73.1 L174.8 74.9 L176.3 79.6 L175.9 85.5 L178.2 93.1 L180.5 96.2 L186.8 100 L189 100.2 L189.6 102 L192.2 102.7 L194 104.2 L195.8 108.5 L198.7 109.9 L201.4 115.6 L206.2 121 L208.1 124.5 L209.9 125.8 L212.7 125.3 L217.3 129.4 L217.4 130.9 L220.3 132 L221.3 133.3 L223.9 133.1 L224.3 135.4 L226.5 136.4 L227.7 135.9 L227.9 137.7 L228.8 136.4 L229.3 137.2 L230.2 136.6 L232.2 138 L233.3 137.1 L235.8 138.6 L238 137.2 L238.4 135.6 L240.1 135.2 L239.5 133.8 L240.2 132.7 L244.7 134.4 L244.1 132.8 L245.7 131.6 L249.4 132.6 L252.9 129.4 L253.9 130.3 L255.4 129.1 L258.2 130 L260.2 129.1 L264.1 129.4 L265.2 130.6',
+    gangaLow: 'M265.2 130.6 L268.4 132.4 L270 131.3 L271.8 132.9 L274.1 132.3 L276.7 134.6 L280.3 135.1 L283.1 132.3 L285.3 135.4 L287.7 134 L291.7 135.6 L293 133.4 L295.4 133 L296.9 134.8 L299.1 135.2 L299.3 137.2 L301.6 138.6 L301.1 140.6 L304 145.5 L306.5 145.5 L308.3 147.3 L311.4 147.4 L313.1 150.3 L315.2 149.7 L319.3 155.3 L321.4 156.3 L322.6 158.9 L323.9 159 L323.9 160.7 L324.9 161.5 L324.4 162.3 L326.1 163.2 L325.3 164.1 L329.7 168.9 L330 172.6 L334.5 168 L334.5 166 L333.2 164.6 L333.7 163.9 L332.1 162.5'
+  };
+  var PT = { lahore: [131, 45], kathmandu: [267, 101], patna: [265, 131], dhaka: [334, 154], kochi: [145, 354], colombo: [196, 398], hyderabad: [178, 248], indus: [131, 45], himal: [267, 101], ganga: [211, 116], delta: [334, 154], coast: [168, 369], home: [178, 248], co: [43, 261], dam: [220, 80], fort: [162, 54], sealIndus: [86, 66], sealFlow: [289, 135], rail1: [187, 195], rail2: [165, 310], hydro1: [199, 166], hydro2: [202, 309], lblIndus: [47, 114], lblGanges: [251, 146], lblBrahma: [339, 114] };
+  var ZONE = { indus: [131, 45, 32, 32], himal: [267, 101, 23, 23], ganga: [211, 116, 28, 28], delta: [334, 154, 24, 24], coast: [168, 369, 29, 29], home: [178, 248, 34, 34] };
+  // END GENERATED MAP
+  var POS = { indus: PT.indus, himal: PT.himal, ganga: PT.ganga, delta: PT.delta, coast: PT.coast };
+  var LBL = { indus: [-31, 4, 'end'], himal: [30, -6, 'start'], ganga: [0, 46, 'middle'], delta: [0, 46, 'middle'], coast: [32, 4, 'start'] };
+  // where the gate dots and strain marks sit: under the node, or beside it. The Gangetic Union and the
+  // Himalayan Accord sit close together, so their rows go to the far sides, away from each other.
+  var ROW = { himal: [31, 4, 'start'], ganga: [-31, 0, 'end'] };
+  var PSEAL = { himal: [-12, 23] };   // the pledge check, nudged off the Gangetic Union's ring
   var RESN = { water: 'Water', energy: 'Energy', food: 'Food', capital: 'Capital', inf: 'Influence' };
 
   function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
   function cap(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
   function ic(k) { return '<svg class="ic ic-' + k + '"><use href="#i-' + k + '"/></svg>'; }
+  function mic(k) { return '<svg class="ic" style="color:var(--muted)"><use href="#i-' + k + '"/></svg>'; }
   function costText(c) { return Object.keys(c).map(function (k) { return c[k] + ' ' + RESN[k]; }).join(' + '); }
   function costHtml(c) { return '<span class="cost" aria-label="Costs ' + esc(costText(c)) + '">' + Object.keys(c).map(function (k) { return '<span>' + c[k] + ic(k) + '</span>'; }).join('') + '</span>'; }
   function pipsHtml(n, max) { var h = '<span class="pips" aria-label="' + n + ' of ' + max + '">'; for (var i = 0; i < max; i++) h += '<i' + (i < n ? ' class="on"' : '') + '></i>'; return h + '</span>'; }
-  function stateOf(f) { if (f.member) return ['member', 'Member']; if (f.grip >= 3) return ['co', 'Rogue']; if (f.grip === 2) return ['co', 'Company client']; if (f.grip === 1) return ['co', 'Taking Company money']; return ['', 'Independent']; }
+  function stateOf(f) {
+    if (f.member) return f.pledged ? ['pledged', 'Member, pledged'] : ['member', 'Member'];
+    if (f.grip >= 3) return ['co', 'Rogue']; if (f.grip === 2) return ['co', 'Company client'];
+    if (f.leftHow === 'walkout') return ['bad', 'Walked out'];
+    if (f.leftHow === 'secede') return ['bad', 'Seceded'];
+    if (f.grip === 1) return ['co', 'Taking Company money'];
+    if (S.act === 3 && f.grievance) return ['hold', 'Holdout'];
+    return ['', 'Independent'];
+  }
   function lines(arr) { return '<ul class="lines">' + arr.map(function (l) { return '<li class="' + l.kind + '">' + (l.turn ? '<small class="num">S' + l.turn + '</small>' : '') + esc(l.text) + '</li>'; }).join('') + '</ul>'; }
   function seasons(n) { return n + (n === 1 ? ' season' : ' seasons'); }
   function blockLeft(f) { return Math.max(0, A.BLOCK_GAIN - (f.trust - f.trustAtStart)); }
 
   function newGame() {
     S = A.create((Math.random() * 2147483647) | 0);
-    sel = null; view = 'home'; hover = null; modal = prefs.seenHelp ? null : 'help';
-    said = 'You lead the Deccan Compact. Win four of the five powers over in twelve seasons.';
+    sel = null; view = 'home'; hover = null; modal = prefs.seenHelp ? null : 'help'; seenAct = 1;
+    said = 'You lead the Deccan Compact. Bring three powers into your federation within twelve seasons.';
     render();
   }
 
@@ -382,34 +502,74 @@ details > *:not(summary) { margin-top: 8px; }
       (prefs.details || opt.inline ? '<small>' + esc(off ? (a.why || '') : hint) + '</small>' : '') + '</button>';
   }
 
+  /* The campaign track: one bar per season, in three labeled acts. Dots are councils; the gold tick is the first season the vote can be called. */
+  function trackHtml() {
+    var ai = A.actInfo(S), st = S.actStart, h = '';
+    [1, 2, 3].forEach(function (n) {
+      var start = st[n], len = n === 1 ? (st[2] ? st[2] - 1 : A.ACTS[1].max) : A.ACTS[n].len, cur = n === S.act;
+      var councils = ai.councilSeasons[n];
+      var bars = '';
+      for (var k = 1; k <= len; k++) {
+        var abs = start ? start + k - 1 : null, c = [];
+        if (abs && abs % 4 === 2) c.push('mon');
+        if (abs && (n < S.act || (cur && abs < S.turn))) c.push('done');
+        if (cur && abs === S.turn) c.push('now');
+        if (councils.indexOf(k) >= 0) c.push('cn');
+        if (n === 3 && k === A.ACTS[3].callFrom) c.push('call');
+        if (n === 3 && abs && S.voteCalled === abs) c.push('vote');
+        bars += '<i' + (c.length ? ' class="' + c.join(' ') + '"' : '') + '></i>';
+      }
+      h += '<div class="ag' + (cur ? ' cur' : n > S.act ? ' next' : '') + '" style="--n:' + len + '"><span>' + n + ' ' + A.ACTS[n].name + '</span><div class="bars">' + bars + '</div></div>';
+    });
+    return '<div class="track" data-act="' + ai.act + '" title="Three acts. Tall bars are monsoon seasons, dots are councils, and the gold tick in Act 3 is the first season you can call the vote." aria-label="Act ' + ai.act + ' of 3, season ' + ai.as + ' of ' + ai.len + '">' + h + '</div>';
+  }
+
   function top() {
-    var y = A.yields(S), t = '';
-    for (var i = 1; i <= A.MAX_TURNS; i++) {
-      var c = [];
-      if (i % 4 === 2) c.push('mon');
-      if (i < S.turn) c.push('done');
-      if (i === S.turn) c.push('now');
-      if (i % 4 === 0 && i < A.MAX_TURNS) c.push('gap');
-      t += '<i class="' + c.join(' ') + '"></i>';
-    }
+    var y = A.yields(S), ai = A.actInfo(S);
     function chip(k) {
       var d = y[k];
       return '<div class="chip' + (S.res[k] + d < 0 ? ' low' : '') + '" title="' + RESN[k] + ': ' + S.res[k] + ' now, ' + (d >= 0 ? '+' : '') + d + ' next season">' + ic(k) + '<b class="num">' + S.res[k] + '</b><em class="num">' + (d >= 0 ? '+' : '') + d + '</em></div>';
     }
     return '<div class="top"><div class="brand"><h1>Aman</h1><button class="ghost" data-do="asknew">New game</button></div>' +
-      '<div class="when"><b>' + A.season(S) + ' ' + A.year(S) + '<span>season ' + S.turn + ' of ' + A.MAX_TURNS + '</span></b><div class="track" title="Tall bars are monsoon seasons">' + t + '</div></div>' +
+      '<div class="when"><b>' + A.season(S) + ' ' + A.year(S) + '<span>Act ' + ai.act + ', season ' + ai.as + ' of ' + ai.len + '</span></b>' + trackHtml() + '</div>' +
       '<div class="res">' + chip('water') + chip('energy') + chip('food') + chip('capital') +
       '<div class="chip inf" title="Influence left this season. Every action costs some.">' + ic('inf') + '<b class="num">' + S.influence + '</b><em>Influence left</em></div></div>' +
       '<button class="primary" data-do="end"' + (S.phase !== 'actions' ? ' disabled' : '') + '>End season</button></div>';
   }
 
+  function marksHtml(n) { var h = '<span class="marks" aria-label="Strain ' + n + ' of ' + A.STRAIN_MAX + '">'; for (var i = 0; i < A.STRAIN_MAX; i++) h += '<i' + (i < n ? ' class="on"' : '') + '></i>'; return h + '</span>'; }
+  /* Five seal slots: filled for each pledge, with a divider after the fourth, which ratifies. */
+  function sealSlots(n, big) {
+    var w = big ? 26 : 22, r = big ? 10 : 8.5, h = '';
+    for (var i = 0; i < 5; i++) {
+      var x = r + 2 + i * w + (i >= 4 ? 8 : 0), y = r + 2;
+      h += i < n ? '<circle class="s" cx="' + x + '" cy="' + y + '" r="' + r + '"/><path d="M' + (x - r * 0.42) + ' ' + (y + r * 0.05) + ' l' + (r * 0.3) + ' ' + (r * 0.32) + ' l' + (r * 0.55) + ' ' + (-r * 0.66) + '"/>' : '<circle class="e" cx="' + x + '" cy="' + y + '" r="' + r + '"/>';
+    }
+    var sx = r + 2 + 3 * w + r + (w - 2 * r) / 2 + 4;
+    h += '<line class="sep" x1="' + sx + '" y1="1" x2="' + sx + '" y2="' + (2 * r + 3) + '"/>';
+    var W = r * 2 + 4 + 4 * w + 8;
+    return '<svg class="seals" width="' + W + '" height="' + (2 * r + 4) + '" viewBox="0 0 ' + W + ' ' + (2 * r + 4) + '" role="img" aria-label="' + n + ' of 5 seals. Four ratify the charter."><title>' + n + ' of 5 pledges. Four ratify the charter; all five is Aman.</title>' + h + '</svg>';
+  }
+
   function goal() {
-    var n = A.members(S).length;
-    var h = '<div class="goal"><div class="big"><b class="num">' + n + ' of 4</b><span>powers in the federation. Four wins the game.</span></div><div class="pills">';
+    var ai = A.actInfo(S), g0 = ai.goal, n = g0.have, left = ai.seasonsLeft, u = A.unlocked(S), big;
+    if (ai.act === 1) big = '<b class="num">' + n + ' of ' + g0.need + '</b><span>founding members. Three open Act 2.</span>';
+    else if (ai.act === 2) big = '<b class="num">' + n + ' of ' + g0.need + '</b><span>members. ' + (n >= g0.need ? 'Hold four for ' + seasons(left) + ' more.' : 'You need four when the act ends, in ' + seasons(left) + '.') + '</span>';
+    else {
+      var when = S.voteCalled === S.turn ? 'The vote is held this season.' : left ? 'The vote is held in ' + seasons(left) + (ai.as < A.ACTS[3].callFrom ? ', or call it from season ' + A.ACTS[3].callFrom + '.' : ', or call it now.') : 'The vote is held this season.';
+      big = sealSlots(n, true) + '<b class="num">' + n + ' of ' + g0.need + '</b><span>pledges. ' + when + '</span>';
+    }
+    var h = '<div class="goal"><div class="big">' + big + '</div><div class="pills">';
     A.ORDER.forEach(function (id) {
-      var f = S.factions[id], g = A.gates(S, id), ok = g.filter(function (x) { return x.ok; }).length;
-      h += '<button class="pill' + (f.member ? ' member' : '') + (f.grip >= 2 ? ' client' : '') + (sel === id && view === 'home' ? ' sel' : '') + '" data-do="sel" data-f="' + id + '"><b>' + esc(A.FACTIONS[id].name) + '</b>' +
-        (f.member ? '<span class="dots">Member</span>' : '<span class="dots" aria-label="' + ok + ' of ' + g.length + ' gates open">' + g.map(function (x) { return '<i' + (x.ok ? ' class="on"' : '') + '></i>'; }).join('') + ' ' + ok + '/' + g.length + ' gates</span>') + '</button>';
+      var f = S.factions[id], g = A.gates(S, id), ok = g.filter(function (x) { return x.ok; }).length, body;
+      if (f.member && S.act === 3 && f.pledged) body = '<span class="dots"><svg class="sealmini" style="color:var(--good)"><use href="#i-seal"/></svg> Pledged' + (f.strain ? ' ' + marksHtml(f.strain) : '') + '</span>';
+      else if (f.member && S.act === 3) body = '<span class="dots" aria-label="' + ok + ' of ' + g.length + ' pledge gates open">' + g.map(function (x) { return '<i' + (x.ok ? ' class="on"' : '') + '></i>'; }).join('') + ' ' + ok + '/' + g.length + ' to pledge</span>';
+      else if (f.member) body = '<span class="dots">Member' + (u.demands ? ' ' + marksHtml(f.strain) : '') + '</span>';
+      else {
+        var tg = f.leftHow === 'walkout' ? '<span class="why">Walked out</span>' : (S.act === 3 && f.grievance ? '<span class="why hold">Holdout</span>' : '');
+        body = '<span class="dots" aria-label="' + ok + ' of ' + g.length + ' gates open">' + g.map(function (x) { return '<i' + (x.ok ? ' class="on"' : '') + '></i>'; }).join('') + ' ' + ok + '/' + g.length + ' gates</span>' + tg;
+      }
+      h += '<button class="pill' + (f.member ? ' member' : '') + (f.grip >= 2 ? ' client' : '') + (sel === id && view === 'home' ? ' sel' : '') + '" data-do="sel" data-f="' + id + '"><b>' + esc(A.FACTIONS[id].name) + '</b>' + body + '</button>';
     });
     return h + '</div><button class="ghost" data-do="help">How to win</button></div>';
   }
@@ -422,9 +582,7 @@ details > *:not(summary) { margin-top: 8px; }
       '<span class="say" role="status" aria-live="polite">' + esc(said) + '</span></div>';
   }
 
-  var LAND = 'M48 120 Q40 80 90 56 Q130 30 175 30 Q230 20 262 44 Q300 52 345 92 Q372 120 360 160 Q340 178 318 184 Q296 200 286 232 Q262 290 240 326 Q222 372 206 394 Q188 372 176 330 Q158 290 132 252 Q110 236 96 214 Q70 200 62 176 Q46 150 48 120 Z';
-  var HOME = [192, 252], CO = [58, 322];
-  var ZONE = { indus: [104, 116, 64, 62], himal: [222, 60, 74, 34], ganga: [222, 142, 54, 40], delta: [326, 150, 46, 40], coast: [206, 338, 44, 62] };
+  var HOME = PT.home, CO = PT.co;
   var MONSOON_TEXT = { failed: 'the rains fail', normal: 'steady rain', good: 'heavy rain' };
 
   function revealed(kind, id) {
@@ -439,7 +597,10 @@ details > *:not(summary) { margin-top: 8px; }
   /* ---------- season playback: events play on the map one at a time ---------- */
   function buildQueue() {
     var q = [], prev = A.season({ turn: S.turn - 1 }) + ' ' + A.year({ turn: S.turn - 1 }), now = A.season(S) + ' ' + A.year(S);
-    S.lastResolution.forEach(function (e) { q.push({ when: 'End of ' + prev, kind: e.kind, text: e.text, at: e.f ? [e.f].concat(e.f2 ? [e.f2] : []) : [], d: e.d, co: e.co }); });
+    S.lastResolution.forEach(function (e) {
+      var at = (e.f ? [e.f] : []).concat(e.f2 ? [e.f2] : []).concat((e.fs || []).filter(function (x) { return x !== e.f; }));
+      q.push({ when: 'End of ' + prev, kind: e.kind, text: e.text, at: at, d: e.d, co: e.co, hard: !!(e.f && e.fs && e.d), main: e.f });
+    });
     S.briefing.forEach(function (b) {
       if (b.kind === 'new') return;
       var text = b.co === 'court' ? 'The Company sends an agent to ' + b.fs.map(function (id) { return A.FACTIONS[id].name; }).join(' and ') + '.' : b.text;
@@ -451,7 +612,7 @@ details > *:not(summary) { margin-top: 8px; }
   function stepFx() {
     var layer = document.getElementById('fx'), ev = play && play.q[play.i];
     if (!layer || !ev) return;
-    if (ev.d) ev.at.forEach(function (id, i) { floatNum(layer, POS[id], ev.d, i); });
+    if (ev.d) (ev.hard ? [ev.main] : ev.at).forEach(function (id, i) { floatNum(layer, POS[id], ev.d, i); });
     if (ev.co === 'court' || ev.co === 'grip') ev.at.forEach(function (id, i) { fly(layer, CO, [POS[id][0] - 25, POS[id][1] - 17], 'co', 'co', i * 150); });
   }
   function startPlay() {
@@ -471,18 +632,24 @@ details > *:not(summary) { margin-top: 8px; }
     return true;
   }
 
+  function strainMarks(x, y, n) {
+    var h = '<g class="strain"><title>Strain ' + n + ' of ' + A.STRAIN_MAX + '. Unmet demands, rejected motions, and lost disputes raise it. Hear its grievances to lower it.</title>';
+    for (var i = 0; i < A.STRAIN_MAX; i++) h += '<rect' + (i < n ? ' class="on"' : '') + ' x="' + (x - 13 + i * 9) + '" y="' + (y - 2) + '" width="7" height="4" rx="1"/>';
+    return h + '</g>';
+  }
+
   function map() {
     var u = A.unlocked(S), sea = A.season(S), i;
     var h = '<svg viewBox="0 0 400 420" class="s-' + sea + (S.monsoon === 'failed' ? ' dry' : '') + '" role="img" aria-label="Map of the five powers and your home state. Gold glow shows trust in you.">' +
-      '<defs><clipPath id="landclip"><path d="' + LAND + '"/></clipPath>' +
+      '<defs><clipPath id="frame"><rect width="400" height="420"/></clipPath><clipPath id="landclip"><path d="' + LAND + '"/></clipPath>' +
       '<filter id="soft" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="13"/></filter>' +
       '<marker id="ah" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="4.6" markerHeight="4.6" orient="auto"><path d="M0 0 L10 5 L0 10 z" fill="var(--ink)"/></marker>' +
       '<pattern id="stripes" width="7" height="7" patternUnits="userSpaceOnUse" patternTransform="rotate(40)"><rect width="3" height="7" fill="var(--company)"/></pattern></defs>' +
       '<rect class="sea" width="400" height="420"/>' +
-      '<path class="land" d="' + LAND + '"/><ellipse class="land" cx="240" cy="402" rx="10" ry="13"/>';
+      '<path class="land" d="' + LAND + '" clip-path="url(#frame)"/>';
 
     // territory: gold glow grows with trust; maroon stripes grow with the Company's grip
-    h += '<g clip-path="url(#landclip)"><g filter="url(#soft)"><ellipse class="zone" cx="' + HOME[0] + '" cy="' + HOME[1] + '" rx="46" ry="42" opacity=".85"/>';
+    h += '<g clip-path="url(#landclip)"><g filter="url(#soft)"><ellipse class="zone" cx="' + ZONE.home[0] + '" cy="' + ZONE.home[1] + '" rx="' + ZONE.home[2] + '" ry="' + ZONE.home[3] + '" opacity=".85"/>';
     A.ORDER.forEach(function (id) {
       var f = S.factions[id], z = ZONE[id], op = f.member ? 0.85 : Math.max(0, Math.min(0.5, (f.trust - 25) / 60));
       h += '<ellipse class="zone" cx="' + z[0] + '" cy="' + z[1] + '" rx="' + z[2] + '" ry="' + z[3] + '" opacity="' + op.toFixed(2) + '"/>';
@@ -496,50 +663,76 @@ details > *:not(summary) { margin-top: 8px; }
 
     // rivers: width is the water reaching each power
     var wi = 2 + S.factions.indus.pips.water * 1.5, wg = 2 + S.factions.delta.pips.flow * 1.5;
-    var R1 = 'M160 36 Q124 76 104 112 Q88 150 78 196', R2 = 'M212 62 Q202 104 222 140', R3 = 'M222 140 Q272 164 322 150 Q333 168 327 184';
-    h += '<path class="river" d="' + R1 + '" stroke-width="' + wi + '"/><path class="river" d="' + R2 + '" stroke-width="4.5"/><path class="river" d="' + R3 + '" stroke-width="' + wg + '"/>' +
-      '<path class="shimmer" d="' + R1 + '"/><path class="shimmer" d="' + R2 + '"/><path class="shimmer" d="' + R3 + '"/>' +
-      '<text class="rl" x="150" y="64">Indus</text><text class="rl" x="262" y="176">Ganges</text>';
+    // minor rivers are drawn thin for orientation; the three that carry game state change width
+    h += '<path class="river minor" d="' + RIV.godavari + '"/><path class="river minor" d="' + RIV.krishna + '"/><path class="river" d="' + RIV.brahma + '" stroke-width="2.6"/>' +
+      '<path class="river" d="' + RIV.indus + '" stroke-width="' + wi + '"/><path class="river" d="' + RIV.gangaUp + '" stroke-width="3.5"/><path class="river" d="' + RIV.karnali + '" stroke-width="3.5"/><path class="river" d="' + RIV.gangaLow + '" stroke-width="' + wg + '"/>' +
+      '<path class="shimmer" d="' + RIV.indus + '"/><path class="shimmer" d="' + RIV.gangaUp + '"/><path class="shimmer" d="' + RIV.karnali + '"/><path class="shimmer" d="' + RIV.gangaLow + '"/>' +
+      '';
+    var rlab = '<text class="rl" x="' + PT.lblIndus[0] + '" y="' + PT.lblIndus[1] + '" text-anchor="end">Indus</text><text class="rl" x="' + PT.lblGanges[0] + '" y="' + PT.lblGanges[1] + '" text-anchor="middle">Ganges</text><text class="rl" x="' + PT.lblBrahma[0] + '" y="' + PT.lblBrahma[1] + '">Brahmaputra</text>';
 
     // what has been built
-    if (S.projects.rail) { var rp = 'M226 152 L' + (HOME[0] + 8) + ' ' + HOME[1] + ' L202 336'; h += '<path class="rail" d="' + rp + '"/><path class="ties" d="' + rp + '"><title>Subcontinental Rail</title></path>'; }
-    if (S.projects.hydro) h += '<path class="power" d="M214 100 L252 178 L' + (HOME[0] - 6) + ' ' + HOME[1] + ' L190 336"><title>Hydro Grid power lines</title></path>';
+    if (S.projects.rail) { var rp = 'M' + [POS.ganga, PT.rail1, HOME, PT.rail2, POS.coast].map(function (q) { return q[0] + ' ' + q[1]; }).join(' L'); h += '<path class="rail" d="' + rp + '"/><path class="ties" d="' + rp + '"><title>Subcontinental Rail</title></path>'; }
+    if (S.projects.hydro) h += '<path class="power" d="M' + [PT.dam, PT.hydro1, HOME, PT.hydro2, POS.coast].map(function (q) { return q[0] + ' ' + q[1]; }).join(' L') + '"><title>Hydro Grid power lines</title></path>';
     var damBuilt = S.projects.hydro || S.plansDone.dams, damPlan = S.factions.himal.plan && A.planOf(S, 'himal').key === 'dams';
-    if (damBuilt || damPlan) h += '<path class="dam' + (damBuilt ? '' : ' plan') + '" d="M197 109 H217 L214 118 H200 Z"><title>' + (damBuilt ? 'Dam on the upper Ganges' : 'Karnali dams under construction') + '</title></path>';
+    if (damBuilt || damPlan) h += '<path class="dam' + (damBuilt ? '' : ' plan') + '" d="M' + (PT.dam[0] - 9) + ' ' + (PT.dam[1] - 4) + ' h18 l-3 8 h-12 Z"><title>' + (damBuilt ? 'Dam on the Karnali' : 'Karnali dams under construction') + '</title></path>';
     function seal(x, y, t) { return '<g class="seal"><title>' + t + '</title><circle cx="' + x + '" cy="' + y + '" r="6.5"/><path d="M' + (x - 3) + ' ' + y + ' l2 2.4 l4 -4.6"/></g>'; }
-    if (S.projects.induswater) h += seal(132, 72, 'Indus Water Treaty');
-    if (S.projects.flow) h += seal(272, 160, 'River Flow Compact');
+    if (S.projects.induswater) h += seal(PT.sealIndus[0], PT.sealIndus[1], 'Indus Water Treaty');
+    if (S.projects.flow) h += seal(PT.sealFlow[0], PT.sealFlow[1], 'River Flow Compact');
     var fortBuilt = S.plansDone.forts, fortPlan = S.factions.indus.plan && A.planOf(S, 'indus').key === 'forts';
-    if (fortBuilt || fortPlan) h += '<path class="fort' + (fortBuilt ? '' : ' plan') + '" d="M152 132 V121 H155 V124 H158 V121 H161 V124 H164 V121 H167 V132 Z"><title>' + (fortBuilt ? 'Border forts' : 'Border forts under construction') + '</title></path>';
+    if (fortBuilt || fortPlan) h += '<path class="fort' + (fortBuilt ? '' : ' plan') + '" d="M' + (PT.fort[0] - 7.5) + ' ' + (PT.fort[1] + 5.5) + ' v-11 h3 v3 h3 v-3 h3 v3 h3 v-3 h3 v11 Z"><title>' + (fortBuilt ? 'Border forts' : 'Border forts under construction') + '</title></path>';
 
     // ties: trouble always shows; friendships show for the selected power
     if (u.relations) A.PAIRS.forEach(function (p) {
       var r = A.rel(S, p[0], p[1]); if (!r) return;
       if (r > 0 && sel !== p[0] && sel !== p[1]) return;
-      var a = POS[p[0]], b = POS[p[1]];
-      h += '<line class="rln ' + (r < 0 ? 'neg' : 'pos') + (Math.abs(r) > 1 ? ' strong' : '') + '" x1="' + a[0] + '" y1="' + a[1] + '" x2="' + b[0] + '" y2="' + b[1] + '"><title>' + esc(A.FACTIONS[p[0]].name + ' and ' + A.FACTIONS[p[1]].name + ': ' + A.REL_NAMES[r]) + '</title></line>';
+      var a = POS[p[0]], b = POS[p[1]], fa = S.factions[p[0]], fb = S.factions[p[1]];
+      var hard = r < 0 && (A.hardenedBy(S, p[0]).indexOf(p[1]) >= 0 || A.hardenedBy(S, p[1]).indexOf(p[0]) >= 0);
+      var ev = play && play.q[play.i], pulse = hard && ev && ev.hard && ev.at.indexOf(p[0]) >= 0 && ev.at.indexOf(p[1]) >= 0;
+      h += '<line class="rln ' + (r < 0 ? 'neg' : 'pos') + (Math.abs(r) > 1 ? ' strong' : '') + (hard ? ' hard' : '') + (pulse ? ' pulse' : '') + '" x1="' + a[0] + '" y1="' + a[1] + '" x2="' + b[0] + '" y2="' + b[1] + '"><title>' + esc(A.FACTIONS[p[0]].name + ' and ' + A.FACTIONS[p[1]].name + ': ' + A.REL_NAMES[r] + (hard ? '. The one outside hardens: trust -1 a season' : '')) + '</title></line>';
     });
 
     // the Company waits offshore
-    if (u.company) h += '<g class="co-base"><title>The Company, offshore</title><path d="M' + (CO[0] - 14) + ' ' + CO[1] + ' h28 l-5 8 h-18 z M' + (CO[0] - 2) + ' ' + (CO[1] - 12) + ' h4 v11 h-4 z M' + (CO[0] + 2) + ' ' + (CO[1] - 11) + ' l9 4 l-9 4 z"/><text x="' + CO[0] + '" y="' + (CO[1] + 21) + '" text-anchor="middle">The Company</text></g>';
+    function ship(x, y, k) { return '<path' + (k ? ' class="ship2"' : '') + ' d="M' + (x - 14) + ' ' + y + ' h28 l-5 8 h-18 z M' + (x - 2) + ' ' + (y - 12) + ' h4 v11 h-4 z M' + (x + 2) + ' ' + (y - 11) + ' l9 4 l-9 4 z"/>'; }
+    if (u.company) {
+      var fleet = [[0, 0], [-16, 22], [18, 22]].slice(0, S.act);
+      h += '<g class="co-base"><title>The Company, offshore. ' + ['', 'One ship: it courts one or two powers a season', 'Two ships: it courts two powers a season', 'Three ships: it goes all in, courting three powers a season'][S.act] + '</title>' + fleet.map(function (o, k) { return ship(CO[0] + o[0], CO[1] + o[1], k); }).join('') + '<text x="' + CO[0] + '" y="' + (CO[1] + (S.act > 1 ? 43 : 21)) + '" text-anchor="middle">The Company</text></g>';
+    }
 
-    h += '<g class="home"><circle class="base" cx="' + HOME[0] + '" cy="' + HOME[1] + '" r="9"/><text x="' + HOME[0] + '" y="' + (HOME[1] + 23) + '" text-anchor="middle" font-weight="600">You: Deccan Compact</text></g>';
+    h += '<g class="home"><circle class="base" cx="' + HOME[0] + '" cy="' + HOME[1] + '" r="9"/></g>';
+    var lab = rlab + '<text x="' + HOME[0] + '" y="' + (HOME[1] + 23) + '" text-anchor="middle" font-weight="600">You: Deccan Compact</text>';
     A.ORDER.forEach(function (id) {
       var f = S.factions[id], d = A.FACTIONS[id], p = POS[id], l = LBL[id], C = 2 * Math.PI * 20, g = A.gates(S, id);
       var cls = 'node' + (f.member ? ' member' : '') + (f.grip >= 2 ? ' client' : '') + (sel === id ? ' sel' : '');
-      h += '<g class="' + cls + '" data-do="sel" data-f="' + id + '" tabindex="0" role="button" aria-label="' + esc(d.name) + ', trust ' + f.trust + (f.request ? ', asks for ' + f.request.res : '') + '">' +
+      h += '<g class="' + cls + '" data-do="sel" data-f="' + id + '" tabindex="0" role="button" aria-label="' + esc(d.name) + ', trust ' + f.trust + (f.request ? ', asks for ' + f.request.res : '') + (f.demand ? ', demands ' + f.demand.amount + ' ' + f.demand.res : '') + (u.demands && (f.member || f.strain) ? ', strain ' + f.strain + ' of ' + A.STRAIN_MAX : '') + (f.pledged ? ', pledged' : '') + (f.leftHow === 'walkout' && !f.member ? ', walked out' : '') + '">' +
         '<circle class="halo" cx="' + p[0] + '" cy="' + p[1] + '" r="27"/>' +
         '<circle class="base" cx="' + p[0] + '" cy="' + p[1] + '" r="20"/>' +
         '<circle class="ring" cx="' + p[0] + '" cy="' + p[1] + '" r="20" stroke-dasharray="' + (C * f.trust / 100).toFixed(1) + ' ' + C.toFixed(1) + '" transform="rotate(-90 ' + p[0] + ' ' + p[1] + ')"/>' +
         '<text class="t" x="' + p[0] + '" y="' + p[1] + '">' + f.trust + '</text>';
-      if (!f.member) g.forEach(function (x, i) { h += '<circle class="gd' + (x.ok ? ' on' : '') + '" cx="' + (p[0] - (g.length - 1) * 4.5 + i * 9) + '" cy="' + (p[1] + 29) + '" r="3"/>'; });
-      h += '<text x="' + (p[0] + l[0]) + '" y="' + (p[1] + l[1]) + '" text-anchor="' + l[2] + '" font-weight="600">' + esc(d.name) + '</text>';
+      if (!f.member && f.leftHow === 'walkout') h += '<circle class="left" cx="' + p[0] + '" cy="' + p[1] + '" r="24"><title>Walked out in season ' + f.left + '</title></circle>';
+      // gate dots (to join, or in Act 3 to pledge), then strain marks: under the node, or beside it (ROW)
+      var dots = !f.member || (S.act === 3 && !f.pledged), rw = ROW[id], sy = rw ? p[1] + rw[1] : p[1] + 29;
+      var rowX = function (w) { return !rw ? p[0] : rw[2] === 'start' ? p[0] + rw[0] + w / 2 : p[0] + rw[0] - w / 2; };
+      if (dots) { var gx = rowX((g.length - 1) * 9 + 6); g.forEach(function (x, i) { h += '<circle class="gd' + (x.ok ? ' on' : '') + '" cx="' + (gx - (g.length - 1) * 4.5 + i * 9) + '" cy="' + sy + '" r="3"/>'; }); sy += 7; }
+      if (u.demands && ((f.member && !dots) || f.strain > 0)) h += strainMarks(rowX(25), sy, f.strain);
+      // names go in a layer above the suggestion arrows and rails, so a line never cuts through one
+      lab += '<text class="nm" data-do="sel" data-f="' + id + '" x="' + (p[0] + l[0]) + '" y="' + (p[1] + l[1]) + '" text-anchor="' + l[2] + '" font-weight="600">' + esc(d.name) + '</text>';
+      var tg = !f.member && f.leftHow === 'walkout' ? ['', 'Walked out'] : !f.member && S.act === 3 && f.grievance ? [' hold', 'Holdout'] : null;
+      if (tg) lab += '<text class="ntag' + tg[0] + '" x="' + (p[0] + l[0]) + '" y="' + (p[1] + l[1] + 11) + '" text-anchor="' + l[2] + '"><title>' + esc('Its grievance: ' + (f.grievance || 'unheard')) + '</title>' + tg[1] + '</text>';
+      if (f.demand) {
+        var dm = f.demand, dres = dm.kind === 'claim' ? dm.res : 'capital';
+        h += '<g class="dem"><title>' + esc(dm.kind === 'claim' ? 'Claims ' + dm.amount + ' ' + cap(dm.res) : 'Wants its budget share: ' + dm.amount + ' Capital') + '. Unmet by season\'s end: trust -' + A.DEMAND_TRUST + (S.act === 3 && f.pledged ? '' : ' and a strain mark') + '</title><rect x="' + (p[0] + 13) + '" y="' + (p[1] - 27) + '" width="18" height="18" rx="3"/><use href="#i-' + dres + '" class="ic-' + dres + '" x="' + (p[0] + 16) + '" y="' + (p[1] - 24) + '" width="12" height="12"/></g>';
+      }
+      if (f.motion && f.member) {
+        var mw = f.motion.at - S.turn, mi = A.motionInfo(f.motion.key);
+        h += '<g class="mbadge"><title>' + esc('Its motion, ' + mi.name + ', goes to council ' + (mw ? 'in ' + seasons(mw) : 'at the end of this season')) + '</title><rect x="' + (p[0] - 7.5) + '" y="' + (p[1] - 40) + '" width="15" height="15" rx="2"/><path d="M' + (p[0] - 7.5) + ' ' + (p[1] - 37) + ' h15"/><text x="' + p[0] + '" y="' + (p[1] - 28.5) + '">' + mw + '</text></g>';
+      }
+      if (f.pledged && f.member) { var ps = PSEAL[id] || [-19, 17]; h += '<g class="pseal"><title>Pledged to ratify the charter</title><circle cx="' + (p[0] + ps[0]) + '" cy="' + (p[1] + ps[1]) + '" r="7.5"/><path d="M' + (p[0] + ps[0] - 3.5) + ' ' + (p[1] + ps[1]) + ' l2.4 2.6 l4.6 -5"/></g>'; }
       if (f.request && revealed('ask', id)) h += '<g class="ask"><title>Asks for 2 ' + cap(f.request.res) + '</title><circle cx="' + (p[0] + 22) + '" cy="' + (p[1] - 18) + '" r="9"/><use href="#i-' + f.request.res + '" class="ic-' + f.request.res + '" x="' + (p[0] + 16) + '" y="' + (p[1] - 24) + '" width="12" height="12"/></g>';
       if (S.companyTargets.indexOf(id) >= 0 && revealed('court', id)) {
         var bl = f.countered || blockLeft(f) === 0, ax = p[0] - 25, ay = p[1] - 17;
         h += '<g class="agent' + (bl ? ' blocked' : '') + '"><title>' + (bl ? 'Company agent: blocked this season' : 'Company agent: courting this power') + '</title><circle cx="' + ax + '" cy="' + ay + '" r="9"/><use href="#i-co" x="' + (ax - 5.5) + '" y="' + (ay - 5.5) + '" width="11" height="11"/>' + (bl ? '<path d="M' + (ax - 7) + ' ' + (ay + 7) + ' L' + (ax + 7) + ' ' + (ay - 7) + '"/>' : '') + '</g>';
       }
-      if (!play && A.canJoin(S, id)) h += '<circle class="ready" cx="' + p[0] + '" cy="' + p[1] + '" r="31"><title>Ready to join</title></circle>';
+      if (!play && (A.canJoin(S, id) || A.canPledge(S, id))) h += '<circle class="ready" cx="' + p[0] + '" cy="' + p[1] + '" r="31"><title>' + (f.member ? 'Ready to pledge' : 'Ready to join') + '</title></circle>';
       if (f.plan) h += '<g class="pbadge"><title>Its own plan lands in ' + seasons(f.plan.eta) + '</title><rect x="' + (p[0] + 14) + '" y="' + (p[1] + 10) + '" width="14" height="14" rx="3"/><text x="' + (p[0] + 21) + '" y="' + (p[1] + 21) + '">' + f.plan.eta + '</text></g>';
       h += '</g>';
     });
@@ -556,6 +749,7 @@ details > *:not(summary) { margin-top: 8px; }
       h += '</g>';
     }
     // the council's suggestions, drawn as numbered routes from your capital
+    var nbs = '';
     if (!play) SUG.forEach(function (x, i) {
       var to = x.act.f ? POS[x.act.f] : (x.act.a ? [(POS[x.act.a][0] + POS[x.act.b][0]) / 2, (POS[x.act.a][1] + POS[x.act.b][1]) / 2] : null);
       if (!to) return;
@@ -564,10 +758,13 @@ details > *:not(summary) { margin-top: 8px; }
       var c = [(a[0] + b[0]) / 2 - uy * bend, (a[1] + b[1]) / 2 + ux * bend], m = [0.25 * a[0] + 0.5 * c[0] + 0.25 * b[0], 0.25 * a[1] + 0.5 * c[1] + 0.25 * b[1]];
       var d = 'M' + a[0].toFixed(1) + ' ' + a[1].toFixed(1) + ' Q' + c[0].toFixed(1) + ' ' + c[1].toFixed(1) + ' ' + b[0].toFixed(1) + ' ' + b[1].toFixed(1);
       h += '<g class="sugg" data-do="act" data-id="' + x.id + '" tabindex="0" role="button" aria-label="Suggestion ' + (i + 1) + ': ' + esc(x.label) + '"><title>' + esc(x.label + '. ' + x.why) + '</title>' +
-        '<path class="casing" d="' + d + '"/><path class="line" d="' + d + '" marker-end="url(#ah)"/><circle class="nb" cx="' + m[0].toFixed(1) + '" cy="' + m[1].toFixed(1) + '" r="8"/><text x="' + m[0].toFixed(1) + '" y="' + (m[1] + 3.5).toFixed(1) + '">' + (i + 1) + '</text></g>';
+        '<path class="casing" d="' + d + '"/><path class="line" d="' + d + '" marker-end="url(#ah)"/></g>';
+      // the numbered badge sits above the name labels so it is never hidden
+      nbs += '<g class="sugg" data-do="act" data-id="' + x.id + '" aria-hidden="true"><title>' + esc(x.label + '. ' + x.why) + '</title><circle class="nb" cx="' + m[0].toFixed(1) + '" cy="' + m[1].toFixed(1) + '" r="8"/><text x="' + m[0].toFixed(1) + '" y="' + (m[1] + 3.5).toFixed(1) + '">' + (i + 1) + '</text></g>';
     });
+    h += '<g class="labels">' + lab + '</g>' + nbs;
     if (play) (play.q[play.i].at || []).forEach(function (id) { h += '<circle class="spot" cx="' + POS[id][0] + '" cy="' + POS[id][1] + '" r="35"/>'; });
-    h += '<text class="cap" x="12" y="20">' + sea + ' ' + A.year(S) + (S.monsoon ? ': ' + MONSOON_TEXT[S.monsoon] : '') + '</text>';
+    h += '<text class="cap" x="12" y="410">' + sea + ' ' + A.year(S) + (S.monsoon ? ': ' + MONSOON_TEXT[S.monsoon] : '') + '</text>';
     h += '<g id="fx" aria-hidden="true"></g></svg>';
 
     var lg = '<span><svg viewBox="0 0 16 12"><circle cx="8" cy="6" r="5.5" fill="var(--accent)" opacity=".7"/></svg>Gold glow: trust in you</span>' +
@@ -576,6 +773,10 @@ details > *:not(summary) { margin-top: 8px; }
     if (u.company) lg += '<span><svg viewBox="0 0 16 16" style="height:14px;color:var(--company)"><use href="#i-co"/></svg>Company agent. Stripes: its grip</span>';
     if (u.relations) lg += '<span><svg viewBox="0 0 16 12"><path d="M1 6 H15" stroke="var(--bad)" stroke-width="2" stroke-dasharray="4 3"/></svg>Tense or rival</span>';
     if (u.plans) lg += '<span><svg viewBox="0 0 16 12"><rect x="2" y="0" width="12" height="12" rx="3" fill="var(--accent)"/></svg>Seasons until its plan lands</span>';
+    if (u.demands) lg += '<span><svg viewBox="0 0 16 12"><rect x="2.5" y="1" width="10" height="10" rx="2" fill="var(--surface)" stroke="var(--ink)" stroke-width="1.5"/></svg>Member demand</span>' +
+      '<span><svg viewBox="0 0 16 12"><rect x="0.5" y="4" width="4" height="3" fill="var(--bad)"/><rect x="5.8" y="4" width="4" height="3" fill="var(--bad)"/><rect x="11.1" y="4" width="4" height="3" fill="none" stroke="var(--bad)"/></svg>Strain: at three it walks out</span>';
+    if (u.motions) lg += '<span><svg viewBox="0 0 16 12"><rect x="2.5" y="0.8" width="10.5" height="10.5" rx="2" fill="var(--surface)" stroke="var(--accent)" stroke-width="1.5"/><path d="M2.5 3.4 H13" stroke="var(--accent)"/></svg>Seasons until its motion goes to council</span>';
+    if (u.pledges) lg += '<span><svg viewBox="0 0 16 16" style="height:13px;color:var(--good)"><use href="#i-seal"/></svg>Pledged to ratify</span>';
     if (prefs.adviser && SUG.length && !play) lg += '<span><span class="nbadge" style="width:14px;height:14px;font-size:9px">1</span>Council suggestion: select to act</span>';
     var capt = '';
     if (play) { var ev = play.q[play.i]; capt = '<div class="caption ' + ev.kind + '" role="status"><span class="step num">' + ev.when + ' &middot; ' + (play.i + 1) + ' of ' + play.q.length + '</span><span class="txt">' + esc(ev.text) + '</span><button class="ghost" data-do="skip">Skip</button></div>'; }
@@ -639,7 +840,17 @@ details > *:not(summary) { margin-top: 8px; }
 
   function todoItems() {
     var t = [];
+    var callv = A.available(S).filter(function (a) { return a.type === 'callvote'; })[0];
+    if (S.voteCalled === S.turn) t.push({ k: 'good', text: 'The ratification vote is held at the end of this season.' });
+    else if (callv && callv.ok) t.push({ k: 'good', text: 'You hold ' + A.pledges(S).length + ' pledges. You can call the ratification vote.' });
     A.ORDER.forEach(function (id) { if (A.canJoin(S, id)) t.push({ k: 'good', f: id, text: A.FACTIONS[id].name + ' is ready to join. Invite it.' }); });
+    A.ORDER.forEach(function (id) { if (A.canPledge(S, id)) t.push({ k: 'good', f: id, text: A.FACTIONS[id].name + ' is ready to pledge. Ask it to ratify.' }); });
+    A.ORDER.forEach(function (id) {
+      var f = S.factions[id], nm = A.FACTIONS[id].name;
+      if (f.member && f.strain >= A.STRAIN_MAX - 1) t.push({ k: 'bad', f: id, text: nm + ' is one grievance from walking out. Hear it.' });
+      if (f.demand) { var miss = S.act === 3 && f.pledged ? ' it costs ' + A.DEMAND_TRUST + ' trust. Below ' + A.PLEDGE_KEEP + ' its pledge breaks.' : ' it adds a strain mark.'; t.push({ k: 'ask', f: id, text: f.demand.kind === 'claim' ? nm + ' claims ' + f.demand.amount + ' ' + cap(f.demand.res) + '. Unmet,' + miss : nm + ' wants its budget share: ' + f.demand.amount + ' Capital. Unpaid,' + miss }); }
+      if (f.member && f.motion && f.motion.at === S.turn) t.push({ k: 'plan', f: id, text: nm + '\'s motion goes to council at the end of this season.' });
+    });
     S.companyTargets.forEach(function (id) {
       var f = S.factions[id], left = blockLeft(f);
       if (f.countered || left === 0) t.push({ k: 'co done', f: id, text: 'Company deal with ' + A.FACTIONS[id].name + ': blocked.' });
@@ -648,7 +859,7 @@ details > *:not(summary) { margin-top: 8px; }
     A.ORDER.forEach(function (id) {
       var f = S.factions[id];
       if (f.request) t.push({ k: 'ask', f: id, text: A.FACTIONS[id].name + ' asks for 2 ' + cap(f.request.res) + '.' });
-      if (f.plan && f.plan.eta === 1) t.push({ k: 'plan', f: id, text: A.FACTIONS[id].name + ' finishes its plan this season: ' + A.planOf(S, id).name.toLowerCase() + '.' });
+      if (f.plan && f.plan.eta === 1) t.push({ k: 'plan', f: id, text: A.FACTIONS[id].name + ' finishes its plan this season: ' + (function (n) { return n.charAt(0).toLowerCase() + n.slice(1); })(A.planOf(S, id).name) + '.' });
     });
     return t;
   }
@@ -662,12 +873,12 @@ details > *:not(summary) { margin-top: 8px; }
     intro.forEach(function (b) { h += '<p class="newsys">' + esc(b.text) + '</p>'; });
     h += '<div class="news">' + news.concat(plans).map(function (b) { return '<p class="' + b.kind + '">' + esc(b.text) + '</p>'; }).join('') + '</div>';
     h += '<div class="sec"><h3>Needs your attention</h3>' + (t.length ? '<ul class="todo">' + t.map(function (x) {
-      return '<li class="' + x.k + '"><span>' + esc(x.text) + '</span><button class="ghost" data-do="sel" data-f="' + x.f + '">Open</button></li>';
+      return '<li class="' + x.k + '"><span>' + esc(x.text) + '</span>' + (x.f ? '<button class="ghost" data-do="sel" data-f="' + x.f + '">Open</button>' : '') + '</li>';
     }).join('') + '</ul>' : '<p class="note">Nothing urgent. Work toward your next member.</p>') + '</div>';
     h += adviser();
-    if (S.lastResolution.length || (S.lastVote && S.lastVoteTurn === S.turn - 1)) {
-      var r = S.lastResolution.slice();
-      if (S.lastVote && S.lastVoteTurn === S.turn - 1) r.unshift({ kind: S.lastVote.passed ? 'info' : 'warn', text: S.lastVote.msg });
+    var votes = (S.lastVotes || []).filter(function (v) { return v.turn === S.turn - 1; });
+    if (S.lastResolution.length || votes.length) {
+      var r = votes.map(function (v) { return { kind: v.passed ? 'info' : 'warn', text: v.msg }; }).concat(S.lastResolution);
       h += '<details><summary>What happened last season (' + r.length + ')</summary>' + lines(r) + '<div><button class="ghost" data-do="replay">Replay on the map</button></div></details>';
     }
     return h + '</section>';
@@ -691,7 +902,12 @@ details > *:not(summary) { margin-top: 8px; }
     var quote = ['Your envoys are not welcome here.', 'We judge you by what you do.', 'You have our attention. Keep going.', 'We could build something together.', 'We stand with the federation.'][k];
     if (f.grip >= 3) { k = 0; word = 'Hostile'; quote = 'The Company pays better than promises.'; }
     else if (f.request) quote = 'We need 2 ' + cap(f.request.res) + '. Will you help?';
-    else if (A.canJoin(S, id)) quote = 'We are ready to sign the charter.';
+    else if (f.member && f.strain >= A.STRAIN_MAX - 1) quote = 'One more slight and we walk out.';
+    else if (f.demand) quote = f.demand.kind === 'claim' ? 'We claim ' + f.demand.amount + ' ' + cap(f.demand.res) + ' from the federation.' : 'We expect our budget share: ' + f.demand.amount + ' Capital.';
+    else if (A.canJoin(S, id)) quote = f.leftHow === 'walkout' ? 'You heard us. We will come back.' : 'We are ready to sign the charter.';
+    else if (A.canPledge(S, id)) quote = 'We are ready to ratify.';
+    else if (f.member && f.pledged) quote = 'We have pledged. Do not make us regret it.';
+    else if (!f.member && f.left !== null) quote = 'You know why we left.';
     else if (f.member && A.needTotal(S, id) < A.JOIN_NEEDS) quote = 'The federation is not meeting our needs.';
     else if (f.grip === 2) quote = 'The Company has been generous to us.';
     return { k: k, word: word, quote: quote };
@@ -733,6 +949,13 @@ details > *:not(summary) { margin-top: 8px; }
     return '<div class="gauge" tabindex="0" data-tip="Raise ' + esc(n.label.toLowerCase()) + ' with: ' + esc(n.how) + '"><svg viewBox="0 0 30 52" aria-hidden="true"><rect x="1" y="1" width="28" height="50" rx="5" fill="var(--surface)" stroke="var(--line)" stroke-width="1.5"/>' + seg + '</svg>' +
       '<div><b>' + (n.res ? ic(n.res) + ' ' : '') + esc(n.label) + '</b><small class="num">' + v + ' of 3</small>' + (prefs.details ? '<small>' + esc(n.how) + '</small>' : '') + '</div></div>';
   }
+  function strainGauge(f) {
+    var seg = '';
+    for (var i = 0; i < 3; i++) seg += '<rect x="5" y="' + (35 - i * 15) + '" width="20" height="12" rx="2" fill="' + (i < f.strain ? 'var(--bad)' : 'none') + '" stroke="' + (i < f.strain ? 'var(--bad)' : 'var(--muted)') + '" stroke-width="1.3"/>';
+    var how = 'Raised by unmet demands, rejected motions, and lost disputes. Lowered by hearing its grievances';
+    return '<div class="gauge" tabindex="0" data-tip="' + how + '"><svg viewBox="0 0 30 52" aria-hidden="true"><rect x="1" y="1" width="28" height="50" rx="5" fill="var(--surface)" stroke="var(--line)" stroke-width="1.5"/>' + seg + '</svg>' +
+      '<div><b><svg class="ic" style="color:var(--bad)"><use href="#i-strain"/></svg> Strain</b><small class="num">' + f.strain + ' of ' + A.STRAIN_MAX + (f.member ? '. At ' + A.STRAIN_MAX + ' it walks out' : '. Clear it to rejoin') + '</small>' + (prefs.details ? '<small>' + how + '.</small>' : '') + '</div></div>';
+  }
   function tiesStar(id) {
     var others = A.ORDER.filter(function (o) { return o !== id; }), P = [[92, 22], [238, 22], [92, 100], [238, 100]], h = '';
     others.forEach(function (o, i) {
@@ -750,31 +973,36 @@ details > *:not(summary) { margin-top: 8px; }
 
   function powerPanel(av) {
     var id = sel, f = S.factions[id], d = A.FACTIONS[id], st = stateOf(f), g = A.gates(S, id), u = A.unlocked(S), md = moodOf(id), nt = A.needTotal(S, id);
-    var gi = { trust: 'trust', needs: 'needs', company: 'co', rival: 'rival' };
+    var gi = { trust: 'trust', needs: 'needs', company: 'co', rival: 'rival', strain: 'strain', grievance: 'hear' }, pg = S.act === 3 && f.member;
     var h = '<section class="panel"><div class="dossier-head">' + portrait(id, md.k) +
       '<div class="who"><h2>' + esc(d.name) + '</h2><small>' + esc(TITLE[id]) + ', ' + esc(d.seat) + '</small><span><span class="tag ' + st[0] + '">' + st[1] + '</span></span></div>' +
       '<button class="ghost" data-do="close" aria-label="Close and return to this season" style="align-self:flex-start">Close</button></div>';
     h += '<div class="moodrow"><p class="speech"><b>' + md.word + '</b>&ldquo;' + esc(md.quote) + '&rdquo;</p>' + dial(f) + '</div>';
+    if (f.grievance && !f.member) h += '<p class="grv' + (f.leftHow === 'walkout' ? '' : ' hold') + '"><b>Its grievance</b>' + esc(cap(f.grievance)) + '.</p>';
     // gates
-    h += '<div class="sec"><h3>' + (f.member ? 'What keeps it in' : 'Gates to joining') + '</h3><div class="gtiles">' + g.map(function (x) {
+    h += '<div class="sec"><h3>' + (pg ? (f.pledged ? 'What keeps its pledge' : 'Gates to its pledge') : f.member ? 'What keeps it in' : 'Gates to joining') + '</h3><div class="gtiles">' + g.map(function (x) {
       return '<div class="gt' + (x.ok ? ' ok' : '') + '"><span class="gi"><svg aria-hidden="true"><use href="#i-' + gi[x.key] + '"/></svg></span><b>' + esc(x.label) + '</b><small class="num">' + esc(x.text) + '</small></div>';
     }).join('') + '</div>';
-    if (f.member) h += '<p class="note">A member secedes if its trust falls below 40.</p>';
+    if (pg) h += '<p class="note">' + (f.pledged ? 'It withdraws its pledge if trust falls below ' + A.PLEDGE_KEEP + ', it takes Company money, or it gains a strain mark. An unmet demand costs it trust, not strain.' : 'Pledges at trust ' + A.RATIFY_TRUST + ' with ' + A.RATIFY_NEEDS + ' need points, no Company grip, and no strain. Four pledges ratify the charter.') + '</p>';
+    else if (f.member) h += '<p class="note">A member secedes if its trust falls below ' + A.SECEDE_TRUST + ' and goes rogue at three Company steps' + (u.demands ? '. It walks out at ' + A.STRAIN_MAX + ' strain' : '') + '.</p>';
+    if (f.member && S.act >= 2) h += '<p class="note">Members expect more each season: trust ' + A.MEMBER_DRIFT[S.act] + ', or ' + A.EXPECT_HIGH + ' above ' + A.EXPECT_AT + '.</p>';
     if (S.companyTargets.indexOf(id) >= 0) h += '<p class="note" style="color:var(--company)">' + (f.countered || blockLeft(f) === 0 ? 'The Company\'s deal here is blocked this season.' : 'The Company is courting it. Gain ' + blockLeft(f) + ' more trust this season, or counter the Company, to block the deal.') + '</p>';
     h += '</div>';
     // needs
-    h += '<div class="sec"><h3>Its needs: ' + nt + ' of the ' + A.JOIN_NEEDS + ' points it wants</h3><div class="gauges">' + d.needs.map(function (n) { return gauge(n, f.pips[n.key]); }).join('') + '</div></div>';
+    h += '<div class="sec"><h3>Its needs: ' + nt + ' points (' + (pg ? 'a pledge wants ' + A.RATIFY_NEEDS : 'it wants ' + A.JOIN_NEEDS) + ')</h3><div class="gauges">' + d.needs.map(function (n) { return gauge(n, f.pips[n.key]); }).join('') +
+      (u.demands && (f.member || f.strain > 0 || f.leftHow === 'walkout') ? strainGauge(f) : '') + '</div></div>';
     if (u.relations) h += '<div class="sec"><h3>Its ties</h3>' + tiesStar(id) + '</div>';
     var p = A.planOf(S, id);
+    if (f.motion && f.member) { var mi = A.motionInfo(f.motion.key), mw = f.motion.at - S.turn; h += '<div class="planbox"><span class="cd num" style="background:var(--surface);color:var(--ink);border:2px solid var(--accent)" title="Seasons until the council votes">' + mw + '</span><div><b>Its motion: ' + esc(mi.name) + '</b><span>' + esc(mi.text) + ' The council votes ' + (mw ? 'in ' + seasons(mw) : 'at the end of this season') + '.</span></div></div>'; }
     if (p) h += '<div class="planbox"><span class="cd num" title="Seasons until the plan lands">' + f.plan.eta + '</span><div><b>Its own plan: ' + esc(p.name) + '</b><span>Lands in ' + seasons(f.plan.eta) + '. ' + esc(p.then) + '</span>' + (p.endIf ? '<span>It drops the plan if ' + esc(p.endIf) + '.</span>' : '') + '</div></div>';
     // actions
     var mine = av.filter(function (a) { return a.f === id; });
-    var rank = { invite: 0, answer: 1 }, picks = {};
+    var rank = { invite: 0, pledge: 0, demand: 0, answer: 1, hear: 1, terms: 1 }, picks = {};
     SUG.forEach(function (x, i) { picks[x.id] = i + 1; });
     mine.sort(function (x, y) { return (rank[x.type] === undefined ? 5 : rank[x.type]) - (rank[y.type] === undefined ? 5 : rank[y.type]); });
     h += '<div class="sec"><header style="display:flex;justify-content:space-between;align-items:center"><h3>What you can do here</h3><label class="sw"><input type="checkbox" id="details-switch" data-do="pref" data-p="details"' + (prefs.details ? ' checked' : '') + '>Show effects</label></header>';
     if (S.phase !== 'actions') h += '<p class="note">Settle the decision in front of you first.</p>';
-    h += '<div class="acts">' + mine.map(function (a) { return actBtn(a, { key: a.type === 'invite' || a.type === 'answer', n: picks[a.id] }); }).join('') + '</div>';
+    h += '<div class="acts">' + mine.map(function (a) { return actBtn(a, { key: a.type === 'invite' || a.type === 'answer' || a.type === 'demand' || a.type === 'pledge', n: picks[a.id] }); }).join('') + '</div>';
     if (!prefs.details) h += '<div class="detail" id="detail">' + detailHtml() + '</div>';
     return h + '</div></section>';
   }
@@ -812,17 +1040,92 @@ details > *:not(summary) { margin-top: 8px; }
     return h + '</div></section>';
   }
 
+  function upkeepHtml(up) { return Object.keys(up || {}).map(function (k) { return '<span class="down num">-' + up[k] + '</span>' + ic(k); }).join(' '); }
   function charterView() {
-    return '<section class="panel"><header><div><h2>The charter</h2><small>Three questions, settled at the end of seasons 3, 6, and 9. You propose; members vote.</small></div></header><div class="charter">' +
-      [3, 6, 9].map(function (t) {
-        var q = A.CHARTER[t], c = S.charter[q.key];
-        return '<div><b>' + esc(q.title) + '</b><span>' + (c ? esc(q.options[c].name) : 'Vote at the end of season ' + t) + '</span></div>';
-      }).join('') + '</div></section>';
+    var u = A.unlocked(S), st = S.actStart;
+    var h = '<section class="panel"><header><div><h2>The charter</h2><small>You propose; members vote. Founding questions in Act 1, members\' motions in Act 2, and two last articles in Act 3.</small></div></header>';
+    h += '<div class="sec"><h3>Act 1: founding questions</h3><div class="charter">' + [3, 6, 9].map(function (t) {
+      var q = A.CHARTER[t], c = S.charter[q.key];
+      return '<div><b>' + esc(q.title) + '</b><span>' + (c ? esc(q.options[c].name) : 'Vote at the end of season ' + t) + '</span></div>';
+    }).join('') + '</div></div>';
+    var passed = Object.keys(S.passed || {});
+    h += '<div class="sec"><h3>Act 2: motions passed</h3>' + (passed.length ? '<div class="charter">' + passed.map(function (k) {
+      var m = A.motionInfo(k), on = S.factions[S.passed[k]].member;
+      return '<div><b>' + esc(m.name) + ' <small style="font-weight:400;color:var(--muted)">' + esc(A.FACTIONS[m.f].name) + '</small></b><span>' + (m.upkeep ? (on ? upkeepHtml(m.upkeep) + ' each season' : 'Upkeep paused: its proposer has left') : 'No upkeep') + '</span></div>';
+    }).join('') + '</div>' : '<p class="note">' + (S.act >= 2 ? 'None yet. Members table motions for the next council.' : 'Members table motions in Act 2. A passed motion may cost upkeep each season.') + '</p>') + '</div>';
+    h += '<div class="sec"><h3>Act 3: articles</h3><div class="charter">' + Object.keys(A.ARTICLES).map(function (as) {
+      var q = A.ARTICLES[as], c = S.charter[q.key];
+      return '<div><b>' + esc(q.title) + '</b><span>' + (c ? esc(q.options[c].name) : st[3] ? 'Vote at the end of season ' + (st[3] + (+as) - 1) : 'Act 3, season ' + as) + '</span></div>';
+    }).join('') + '</div></div>';
+    return h + '</section>';
   }
 
   function recordView() {
     var l = S.log.slice().reverse();
     return '<section class="panel"><header><div><h2>Record</h2><small>Everything that has happened, newest first.</small></div></header>' + (l.length ? lines(l) : '<p class="note">Nothing yet.</p>') + '</section>';
+  }
+
+  var WHY = { proposer: 'it tabled this motion', company: 'Company money buys its vote', distrust: 'its trust in you is below ' + A.DISTRUST_VOTE, strain: 'it carries strain and this gains it nothing', cost: 'this costs it trust', gain: 'this gains it trust', neutral: 'this costs it nothing' };
+  function seatHtml(v) {
+    var nm = A.FACTIONS[v.id].name, r;
+    if (v.why === 'company') r = '<svg style="color:var(--company)"><use href="#i-co"/></svg>';
+    else if (v.why === 'distrust') r = '<svg viewBox="0 0 16 16"><use href="#i-lowtrust"/></svg>';
+    else if (v.why === 'strain') r = '<svg style="color:var(--bad)"><use href="#i-strain"/></svg>';
+    else if (v.why === 'proposer') r = '<svg style="color:var(--accent)"><use href="#i-scroll"/></svg>';
+    else r = '<span class="num ' + (v.d > 0 ? 'up' : v.d < 0 ? 'down' : '') + '">' + (v.d > 0 ? '+' + v.d : v.d) + '</span>';
+    return '<span class="seat ' + (v.yes ? 'yes' : 'no') + '" title="' + esc(nm + ' votes ' + (v.yes ? 'yes' : 'no') + ': ' + WHY[v.why]) + '">' + portrait(v.id, moodOf(v.id).k) +
+      '<i class="vm"><svg><use href="#i-' + (v.yes ? 'yes' : 'no') + '"/></svg></i><span class="rw">' + r + '</span><small>' + SHORT[v.id] + '</small></span>';
+  }
+  function effectsHtml(o) {
+    var li = [];
+    Object.keys(o.trust).forEach(function (fid) { var v = o.trust[fid]; if (v) li.push('<li><span class="' + (v > 0 ? 'up' : 'down') + ' num">' + (v > 0 ? '+' : '') + v + '</span>' + mic('trust') + esc(A.FACTIONS[fid].name) + '</li>'); });
+    Object.keys(o.pips || {}).forEach(function (fid) {
+      var k = o.pips[fid][0], dv = o.pips[fid][1], nd = A.FACTIONS[fid].needs.filter(function (n) { return n.key === k; })[0];
+      if (nd) li.push('<li><span class="' + (dv > 0 ? 'up' : 'down') + ' num">' + (dv > 0 ? '+' : '') + dv + '</span>' + mic('needs') + esc(SHORT[fid] + ' ' + nd.label.toLowerCase()) + '</li>');
+    });
+    if (o.upkeep && Object.keys(o.upkeep).length) li.push('<li>' + upkeepHtml(o.upkeep) + ' each season</li>');
+    Object.keys(o.strain || {}).forEach(function (fid) { var v = o.strain[fid]; li.push('<li><span class="' + (v < 0 ? 'up' : 'down') + ' num">' + (v > 0 ? '+' : '') + v + '</span><svg class="ic" style="color:var(--bad)"><use href="#i-strain"/></svg>' + esc(SHORT[fid]) + ' strain</li>'); });
+    return '<ul class="fx">' + li.join('') + '</ul>';
+  }
+  function councilHtml() {
+    var it = A.councilItem(S), ms = A.members(S), keys = Object.keys(it.options);
+    var done = (S.lastVotes || []).filter(function (v) { return v.turn === S.turn; }).length, total = done + S.agenda.length;
+    var kind = { charter: 'Founding question', motion: 'Motion', article: 'Charter article' }[it.kind];
+    var h = '<div class="veil"><div class="dlg" role="dialog" aria-modal="true" aria-labelledby="dt"><h3>Council, end of ' + A.season(S) + ' ' + A.year(S) + ' &middot; ' + kind + (total > 1 ? ', ' + (done + 1) + ' of ' + total : '') + '</h3>';
+    if (it.kind === 'motion') {
+      var mi = A.motionInfo(it.key);
+      h += '<div class="who-row">' + portrait(it.f, moodOf(it.f).k) + '<div><h2 id="dt">' + esc(mi.name) + '</h2><p class="note">Tabled by ' + esc(A.FACTIONS[it.f].name) + '. ' + esc(mi.text) + '</p></div></div>';
+    } else h += '<h2 id="dt">' + esc(it.title) + '</h2>';
+    h += '<p>' + (ms.length ? 'You propose; members vote' + (S.act >= 2 ? ', and you need a majority' : ', and ties go your way') + '. If your proposal fails, the other option is adopted.' + (S.act >= 2 ? ' Members with Company money or trust below ' + A.DISTRUST_VOTE + ' vote no. So do members with strain, unless the option gains them trust.' : '') : 'No power has joined yet, so you declare this founding principle alone. Every power is watching.') + '</p><div class="opts two">';
+    keys.forEach(function (k) {
+      var o = it.options[k], vp = A.votePreview(S, k), other = it.options[keys.filter(function (x) { return x !== k; })[0]];
+      var tally = !ms.length ? '' : vp.passes ? '<span class="tally up">Passes ' + vp.yes + ' to ' + vp.no + '</span>' : '<span class="tally down">Fails ' + vp.yes + ' to ' + vp.no + '. ' + esc(other.name) + ' instead</span>';
+      h += '<button class="opt" data-do="charter" data-c="' + k + '"><b>' + esc(o.name) + '</b><small>' + esc(o.text) + '</small>' + effectsHtml(o) +
+        (ms.length ? '<span class="seats"><span class="seat yes" title="You vote yes on your own proposal"><span class="you">You</span><i class="vm"><svg><use href="#i-yes"/></svg></i><small>You</small></span>' + vp.votes.map(seatHtml).join('') + '</span>' + tally : '') + '</button>';
+    });
+    return h + '</div></div></div>';
+  }
+
+  /* The title card at the start of an act: what is new, in three pictures. */
+  var PICTOS = {
+    2: [
+      ['Demands', 'Members claim resources or a budget share each season.', '<rect x="20" y="6" width="26" height="26" rx="4" fill="var(--surface)" stroke="var(--ink)" stroke-width="2"/><use href="#i-water" x="25" y="11" width="16" height="16" style="color:var(--river)"/>'],
+      ['Strain', 'Each unmet demand adds a mark. At three, a member walks out.', '<rect x="6" y="16" width="14" height="8" rx="2" fill="var(--bad)"/><rect x="25" y="16" width="14" height="8" rx="2" fill="var(--bad)"/><rect x="44" y="16" width="14" height="8" rx="2" fill="none" stroke="var(--bad)" stroke-width="2"/>'],
+      ['Motions', 'Members table motions. Company money, distrust, and strain buy a no vote. Ties go against you.', '<rect x="18" y="5" width="28" height="30" rx="3" fill="var(--surface)" stroke="var(--accent)" stroke-width="2.4"/><path d="M18 12 H46 M24 20 H40 M24 27 H36" stroke="var(--accent)" stroke-width="2"/>']
+    ],
+    3: [
+      ['Pledges', 'Members pledge to ratify. Four pledges carry the charter.', '<g style="color:var(--good)"><use href="#i-seal" x="2" y="10" width="18" height="18"/><use href="#i-seal" x="23" y="10" width="18" height="18"/></g><circle cx="53" cy="19" r="8" fill="none" stroke="var(--muted)" stroke-width="1.8" stroke-dasharray="3 2.4"/>'],
+      ['All in', 'The Company courts three powers a season, pledged ones first.', '<g fill="var(--company)"><path d="M4 22 h20 l-4 6 h-12z M13 12 h3 v9 h-3z M16 13 l7 3 l-7 3z"/><path d="M22 34 h20 l-4 6 h-12z M31 24 h3 v9 h-3z M34 25 l7 3 l-7 3z" opacity=".8"/><path d="M40 20 h20 l-4 6 h-12z M49 10 h3 v9 h-3z M52 11 l7 3 l-7 3z" opacity=".8"/></g>'],
+      ['Holdouts', 'Powers outside name a grievance. Offer terms, or meet it through the normal gates.', '<circle cx="32" cy="20" r="14" fill="var(--surface)" stroke="var(--warn)" stroke-width="2.4" stroke-dasharray="5 3.5"/><use href="#i-hear" x="24" y="12" width="16" height="16" style="color:var(--warn)"/>']
+    ]
+  };
+  function actCard() {
+    var ai = A.actInfo(S), n = ai.act, ev = (S.lastResolution || []).filter(function (e) { return e.act === n; })[0];
+    var line = ev ? ev.text.replace(/^Act \d begins\. /, '') : '';
+    var goalLine = n === 2 ? 'Hold four members when the act ends, in twelve seasons. You have ' + A.members(S).length + '.' : 'Win four pledges. The vote is held in twelve seasons, or call it from season ' + A.ACTS[3].callFrom + '.';
+    return '<div class="veil" data-do="closemodal"><div class="dlg actcard" role="dialog" aria-modal="true" aria-labelledby="dt"><span class="actno">Act ' + n + ' of 3</span><h2 id="dt">' + esc(ai.name) + '</h2><p>' + esc(line) + '</p>' +
+      '<div class="pictos">' + PICTOS[n].map(function (x) { return '<div class="picto"><svg viewBox="0 0 64 44" aria-hidden="true">' + x[2] + '</svg><div><b>' + x[0] + '</b><br>' + esc(x[1]) + '</div></div>'; }).join('') + '</div>' +
+      '<p class="note">' + goalLine + '</p><div><button class="primary" data-do="closemodal">Begin Act ' + n + '</button></div></div></div>';
   }
 
   function overlay() {
@@ -845,24 +1148,15 @@ details > *:not(summary) { margin-top: 8px; }
         '<button class="opt" data-do="dispute" data-c="out"><b>Stay out</b><ul><li>They drift one step further apart</li><li><span class="down num">-3</span> trust with each</li></ul></button>' +
         '</div></div></div>';
     }
-    if (S.phase === 'council') {
-      var q = A.CHARTER[S.council], ms = A.members(S);
-      var h = '<div class="veil"><div class="dlg" role="dialog" aria-modal="true" aria-labelledby="dt"><h3>Council, end of ' + A.season(S) + ' ' + A.year(S) + '</h3><h2 id="dt">' + esc(q.title) + '</h2>' +
-        '<p>' + (ms.length ? 'You propose; the ' + ms.length + ' member' + (ms.length > 1 ? 's' : '') + ' vote. Your proposal passes unless more members oppose it than support it, counting your own vote. If it fails, the other option is adopted.' : 'No power has joined yet, so you declare this founding principle alone. Every power is watching.') + '</p><div class="opts two">';
-      Object.keys(q.options).forEach(function (k) {
-        var o = q.options[k];
-        h += '<button class="opt" data-do="charter" data-c="' + k + '"><b>' + esc(o.name) + '</b><small>' + esc(o.text) + '</small><ul>' +
-          Object.keys(o.trust).map(function (fid) {
-            var v = o.trust[fid], m = S.factions[fid].member;
-            return '<li><span class="' + (v > 0 ? 'up' : 'down') + ' num">' + (v > 0 ? '+' : '') + v + '</span> ' + esc(A.FACTIONS[fid].name) + (m ? (v >= 0 ? ' (votes yes)' : ' (votes no)') : '') + '</li>';
-          }).join('') + '</ul></button>';
-      });
-      return h + '</div></div></div>';
-    }
+    if (S.phase === 'council') return councilHtml();
     if (S.phase === 'over') {
-      var o = S.outcome, n = A.members(S).length;
-      return '<div class="veil"><div class="dlg' + (o.result === 'loss' ? ' co' : '') + '" role="dialog" aria-modal="true" aria-labelledby="dt"><h3>' + (o.result === 'win' ? 'Victory' : o.result === 'partial' ? 'Partial result' : 'Defeat') + '</h3><h2 id="dt">' + esc(o.title) + '</h2><p>' + esc(o.text) + '</p>' +
-        '<div class="stats"><div class="chip"><b class="num">' + n + ' of 5</b><em>members</em></div><div class="chip"><b class="num">' + A.clients(S).length + '</b><em>Company clients</em></div><div class="chip"><b class="num">' + S.turn + '</b><em>seasons played</em></div></div>' +
+      var o = S.outcome, n = A.members(S).length, seals = '';
+      if (o.pledges !== undefined) seals = '<div class="endseals" role="img" aria-label="' + o.pledges + ' of five powers ratify">' + A.ORDER.map(function (id) {
+        var f = S.factions[id], on = f.member && f.pledged;
+        return '<span><svg viewBox="0 0 34 34" aria-hidden="true">' + (on ? '<circle cx="17" cy="17" r="15" fill="var(--good)"/><path d="M10.5 17.5l4.5 4.6 8.5-9.6" fill="none" stroke="var(--surface)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>' : '<circle cx="17" cy="17" r="15" fill="none" stroke="var(--muted)" stroke-width="2" stroke-dasharray="4 3"/>') + '</svg>' + SHORT[id] + '</span>';
+      }).join('') + '</div>';
+      return '<div class="veil"><div class="dlg' + (o.result === 'loss' ? ' co' : '') + '" role="dialog" aria-modal="true" aria-labelledby="dt"><h3>' + (o.result === 'win' ? 'Victory' : o.result === 'partial' ? 'Partial result' : 'Defeat') + '</h3><h2 id="dt">' + esc(o.title) + '</h2>' + seals + '<p>' + esc(o.text) + '</p>' +
+        '<div class="stats"><div class="chip"><b class="num">Act ' + o.act + '</b><em>' + A.ACTS[o.act].name + '</em></div>' + (o.pledges !== undefined ? '<div class="chip"><b class="num">' + o.pledges + ' of 5</b><em>ratify</em></div>' : '') + '<div class="chip"><b class="num">' + n + ' of 5</b><em>members</em></div><div class="chip"><b class="num">' + A.clients(S).length + '</b><em>Company clients</em></div><div class="chip"><b class="num">' + S.turn + '</b><em>seasons played</em></div></div>' +
         (S.lastResolution.length ? '<h3>Final season</h3>' + lines(S.lastResolution) : '') +
         '<div><button class="primary" data-do="new">Play again</button></div></div></div>';
     }
@@ -873,16 +1167,20 @@ details > *:not(summary) { margin-top: 8px; }
     if (modal === 'help') {
       var first = !prefs.seenHelp;
       return '<div class="veil" data-do="closemodal"><div class="dlg" role="dialog" aria-modal="true" aria-labelledby="dt"><h3>' + (first ? 'Welcome' : 'How to win') + '</h3><h2 id="dt">Reunite the subcontinent by consent</h2>' +
-        '<p>It is 2050. You lead the Deccan Compact. Bring <b>four of the five powers</b> into your federation within <b>twelve seasons</b>.</p>' +
+        '<p>It is 2050. You lead the Deccan Compact. Bring <b>three powers</b> into your federation within <b>twelve seasons</b>. Then hold it together, and win a charter.</p>' +
+        '<div class="track" style="max-width:420px" aria-hidden="true">' + [1, 2, 3].map(function (n) { var l = n === 1 ? 12 : A.ACTS[n].len, b = ''; for (var i = 0; i < l; i++) b += '<i' + (n === S.act ? ' class="now"' : '') + '></i>'; return '<div class="ag cur" style="--n:' + l + '"><span>' + n + ' ' + A.ACTS[n].name + '</span><div class="bars">' + b + '</div></div>'; }).join('') + '</div>' +
+        '<p class="note"><b>Act 1, Neighbors:</b> three founding members. <b>Act 2, Strain:</b> hold four members for twelve seasons as they make demands. <b>Act 3, Charter:</b> four pledges ratify it.</p>' +
         '<div class="helprow"><span class="gi"><svg aria-hidden="true"><use href="#i-trust"/></svg></span><p><b>Trust at ' + A.JOIN_TRUST + '.</b> Envoys, aid, and pacts raise it.</p></div>' +
         '<div class="helprow"><span class="gi"><svg aria-hidden="true"><use href="#i-needs"/></svg></span><p><b>Four of six need points met.</b> Each power has two needs. Open a power to see what raises them.</p></div>' +
         '<div class="helprow"><span class="gi"><svg aria-hidden="true"><use href="#i-co"/></svg></span><p><b>Free of the Company.</b> It courts whoever trusts you least. Outbid it or counter it.</p></div>' +
         '<div class="helprow"><span class="gi"><svg aria-hidden="true"><use href="#i-rival"/></svg></span><p><b>No rival inside.</b> A power will not join beside its rival. Broker talks first.</p></div>' +
-        '<p class="note">When all four gates are open, invite the power. Every action costs Influence: three a season, four once a power has joined. New systems arrive one season at a time, and your council suggests moves on the map. Battles are auto-resolved in this prototype.</p>' +
+        '<p class="note">When every gate is open, invite the power. Every action costs Influence, and you get more as the federation grows. New systems arrive one season at a time, and your council suggests moves on the map. Battles are auto-resolved in this prototype.</p>' +
         '<div><button class="primary" data-do="closemodal">' + (first ? 'Begin' : 'Back to the game') + '</button></div></div></div>';
     }
+    if (modal === 'act') return actCard();
     if (modal === 'confirmNew') {
-      return '<div class="veil" data-do="closemodal"><div class="dlg" role="dialog" aria-modal="true" aria-labelledby="dt"><h2 id="dt">Abandon this game?</h2><p>You are in season ' + S.turn + ' of ' + A.MAX_TURNS + ' with ' + A.members(S).length + ' of 4 powers joined. A new game starts over from Spring 2050.</p>' +
+      var ai = A.actInfo(S);
+      return '<div class="veil" data-do="closemodal"><div class="dlg" role="dialog" aria-modal="true" aria-labelledby="dt"><h2 id="dt">Abandon this game?</h2><p>You are in Act ' + ai.act + ', ' + esc(ai.name) + ', season ' + ai.as + ' of ' + ai.len + ', with ' + A.members(S).length + ' members' + (ai.act === 3 ? ' and ' + ai.goal.have + ' pledges' : '') + '. A new game starts over from Spring 2050.</p>' +
         '<div style="display:flex;gap:8px"><button class="primary" data-do="new">Start a new game</button><button class="ghost" data-do="closemodal">Keep playing</button></div></div></div>';
     }
     return '';
@@ -896,6 +1194,7 @@ details > *:not(summary) { margin-top: 8px; }
       SUG = A.advise(S).filter(function (x) { return x.score >= 12 && x.why; }).slice(0, 3).map(function (x) { x.act = byId[x.id]; return x; });
     }
     if (view === 'relations' && !A.unlocked(S).relations) view = 'home';
+    if (!play && !modal && S.phase !== 'over' && S.act > seenAct) modal = 'act';
     if (view === 'home') main = '<div class="home">' + map() + (sel ? powerPanel(av) : seasonPanel()) + '</div>';
     else if (view === 'relations') main = relationsView(av);
     else if (view === 'build') main = buildView(av);
@@ -911,7 +1210,7 @@ details > *:not(summary) { margin-top: 8px; }
     if (doit === 'skip') { render(); return; }
     if (doit === 'help') { modal = 'help'; render(); return; }
     if (doit === 'asknew') { if (S.turn === 1 && !S.log.length) { newGame(); return; } modal = 'confirmNew'; render(); return; }
-    if (doit === 'closemodal') { if (modal === 'help' && !prefs.seenHelp) { prefs.seenHelp = true; savePrefs(); } modal = null; render(); return; }
+    if (doit === 'closemodal') { if (modal === 'help' && !prefs.seenHelp) { prefs.seenHelp = true; savePrefs(); } if (modal === 'act') { seenAct = S.act; view = 'home'; } modal = null; render(); return; }
     if (doit === 'new') { modal = null; }
     if (doit === 'replay') { view = 'home'; sel = null; if (!startPlay()) render(); return; }
     if (doit === 'pref') { var k = el.getAttribute('data-p'); prefs[k] = el.checked; savePrefs(); }
@@ -925,13 +1224,15 @@ details > *:not(summary) { margin-top: 8px; }
         if (ao) {
           info = { type: ao.type, f: ao.f, a: ao.a, b: ao.b };
           if (ao.type === 'answer') info.res = S.factions[ao.f].request.res;
+          if (ao.type === 'demand') info.res = ao.res;
+          if (ao.type === 'pledge' || ao.type === 'hear' || ao.type === 'terms') info.res = { pledge: 'seal', hear: 'hear', terms: 'scroll' }[ao.type];
           if (ao.type === 'aid') info.res = A.FACTIONS[ao.f].needs.filter(function (n) { return n.key === ao.need; })[0].res;
         }
         r = A.act(S, aid); said = r.msg; hover = null;
       }
     }
     else if (doit === 'end') { r = A.endSeason(S); sel = null; view = 'home'; if (!r.council) said = A.season(S) + ' ' + A.year(S) + ' begins.'; }
-    else if (doit === 'charter') { r = A.chooseCharter(S, el.getAttribute('data-c')); S.lastVoteTurn = before; said = r.msg; }
+    else if (doit === 'charter') { r = A.chooseCharter(S, el.getAttribute('data-c')); said = r.msg; }
     else if (doit === 'dispute') { r = A.resolveDispute(S, el.getAttribute('data-c')); said = r.msg; }
     else if (doit === 'crisis') { r = A.resolveCrisis(S, el.getAttribute('data-c')); said = r.msg; }
     else if (doit === 'new') { newGame(); return; }

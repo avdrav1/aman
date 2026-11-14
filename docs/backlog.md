@@ -11,7 +11,8 @@ Nothing here is committed. The owner chooses what comes next.
 - **Inviting is a chore.** When every gate is open there is no decision in clicking Invite. It could happen on its own at season's end.
 - **No save.** Closing the tab ends the game. Only two preferences persist, in `localStorage` under `aman-prefs`.
 - **No analytics.** Playtest results would have to be reported by hand.
-- **Map labels can collide** with suggestion arrows and floating numbers.
+- **Map labels can still crowd** around the Ganges plain, where the Gangetic Union and Himalayan Accord sit close together. Names now draw above the arrows and rails, with the two powers' gate dots and strain marks on their far sides, but floating numbers and agent flags can still overlap there.
+- **The realistic map needs the regional review.** The land shape and seat cities come from Natural Earth. Territory glows are small circles around each seat so they do not trace present-day countries, but the framing as a whole has not been reviewed by people from across the region.
 - **Friendly ties show on the map only for the selected power,** to cut clutter. This may hide useful information.
 - **Leader portraits are simple line art.** The owner was told they may read as cartoonish and offered a plain emblem instead. He has not said.
 - **Difficulty has swung between rounds.** The owner found joining "fairly hard" early on, before each need showed what raises it. Watch for this after any balance change.
