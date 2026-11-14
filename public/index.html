@@ -23,21 +23,28 @@
   --warn: #a35f00;
   --bad: #b93535;
   --company: #8c2b4c;     /* the Company */
+  --cloud: #ffffff; --cloud-edge: #b9c6dc; --cloud-heavy: #8d9ab6; --fog: #fbfcff; --sand: #a8742c; --relief: #6b6f8c;
   --font-display: "Bricolage Grotesque", "Trebuchet MS", system-ui, sans-serif;
   --font-body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
   --r: 10px;
+  /* each power's color, for the trust lines. Dark mode lifts them for contrast on the dark surface. */
+  --hue-indus: #b3562b; --hue-himal: #4b6cb7; --hue-delta: #1f8a8a; --hue-ganga: #5a8f3c; --hue-coast: #7a4fa3;
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
     color-scheme: dark;
     --bg: #111326; --surface: #1a1d36; --sunk: #151830; --ink: #e8e9f5; --muted: #9da3c6; --line: #2f3359;
     --accent: #f0b03a; --accent-ink: #2b1c00; --river: #62b6dc; --good: #62c690; --warn: #e6a550; --bad: #f08080; --company: #e57ba1;
+    --cloud: #c9cfe8; --cloud-edge: #8d95bd; --cloud-heavy: #6c769e; --fog: #c3c9e4; --sand: #d6a35a; --relief: #8a90b6;
+    --hue-indus: #e8865a; --hue-himal: #8eaaf2; --hue-delta: #4cc7c4; --hue-ganga: #93c96d; --hue-coast: #c09be6;
   }
 }
 :root[data-theme="dark"] {
   color-scheme: dark;
   --bg: #111326; --surface: #1a1d36; --sunk: #151830; --ink: #e8e9f5; --muted: #9da3c6; --line: #2f3359;
   --accent: #f0b03a; --accent-ink: #2b1c00; --river: #62b6dc; --good: #62c690; --warn: #e6a550; --bad: #f08080; --company: #e57ba1;
+  --cloud: #c9cfe8; --cloud-edge: #8d95bd; --cloud-heavy: #6c769e; --fog: #c3c9e4; --sand: #d6a35a; --relief: #8a90b6;
+    --hue-indus: #e8865a; --hue-himal: #8eaaf2; --hue-delta: #4cc7c4; --hue-ganga: #93c96d; --hue-coast: #c09be6;
 }
 * { box-sizing: border-box; }
 html, body { margin: 0; }
@@ -124,7 +131,37 @@ button:focus-visible, summary:focus-visible, [tabindex]:focus-visible, input:foc
 .map .zone { fill: var(--accent); }
 .map .grip { fill: url(#stripes); }
 .map .river { fill: none; stroke: var(--river); stroke-linecap: round; stroke-linejoin: round; opacity: .75; }
-.map .river.minor { stroke-width: 1.5; opacity: .5; }
+.map .river.minor { opacity: .5; }
+.map .bed { fill: none; stroke: var(--sand); stroke-linecap: round; stroke-linejoin: round; opacity: .35; }
+.map .flood { fill: none; stroke: var(--river); stroke-linecap: round; stroke-linejoin: round; opacity: .2; }
+.map svg.wx-good .shimmer { stroke-width: 1.8; opacity: 1; }
+.map svg.dry .shimmer { opacity: .35; }
+/* relief: marks only, never outlines */
+.map .terrain path { fill: none; stroke: var(--relief); stroke-linecap: round; stroke-linejoin: round; }
+.map .t-mtn { stroke-width: 1.1; opacity: .55; }
+.map .t-desert { stroke: var(--sand); stroke-width: 1.6; opacity: .55; }
+.map .t-plateau { stroke-width: 1; opacity: .3; }
+.map .parch { opacity: .6; }
+#cracks path { fill: none; stroke: var(--sand); stroke-width: 1; stroke-linecap: round; stroke-linejoin: round; }
+/* weather */
+.map .cloud { fill: var(--cloud); stroke: var(--cloud-edge); stroke-width: 1; }
+.map .clouds { opacity: .72; }
+.map .clouds.failed { opacity: .45; }
+.map .clouds.good .cloud { fill: var(--cloud-heavy); stroke: none; }
+.map .clouds.good { opacity: .62; }
+.map .fog .bank { fill: var(--fog); opacity: .85; }
+.map .fog .mist { fill: none; stroke: var(--muted); stroke-width: 1.6; stroke-linecap: round; stroke-dasharray: 22 6 40 8; opacity: .4; }
+:root[data-theme="dark"] .map .fog .bank { opacity: .35; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .map .fog .bank { opacity: .35; } }
+.map .heat path { fill: none; stroke: var(--warn); stroke-width: 1.5; stroke-linecap: round; opacity: .6; }
+.map .wxbadge .sun { fill: var(--warn); }
+.map .wxbadge .ray, .map .wxbadge .crk, .map .wxbadge .mist, .map .wxbadge .drop { fill: none; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+.map .wxbadge .ray { stroke: var(--warn); }
+.map .wxbadge .crk { stroke: var(--sand); }
+.map .wxbadge .mist { stroke: var(--muted); stroke-width: 2; }
+.map .wxbadge .mist.warm { stroke: var(--warn); stroke-width: 1.3; }
+.map .wxbadge .drop { stroke: var(--river); }
+.map .wxbadge .cloud.heavy { fill: var(--cloud-heavy); stroke: none; }
 .map .shimmer { fill: none; stroke: var(--surface); stroke-width: 1.2; stroke-linecap: round; stroke-dasharray: 3 14; opacity: .8; }
 .map text { font-family: var(--font-body); font-size: 11px; fill: var(--ink); paint-order: stroke; stroke: color-mix(in srgb, var(--surface) 75%, transparent); stroke-width: 3px; stroke-linejoin: round; }
 .map text.seat { fill: var(--muted); font-size: 9.5px; }
@@ -161,7 +198,8 @@ button:focus-visible, summary:focus-visible, [tabindex]:focus-visible, input:foc
 .map .ask circle { fill: var(--surface); stroke: var(--river); stroke-width: 1.6; }
 .map .pbadge rect { fill: var(--accent); }
 .map .pbadge text { fill: var(--accent-ink); font-size: 9.5px; font-weight: 700; text-anchor: middle; stroke: none; }
-.map .rain { stroke: var(--river); stroke-width: 1.2; stroke-linecap: round; opacity: .55; }
+.map .rain { stroke: var(--river); stroke-width: 1.4; stroke-linecap: round; opacity: .55; }
+.map .wind { fill: none; stroke: var(--river); stroke-width: 1.3; stroke-linecap: round; stroke-dasharray: 16 12; opacity: .35; }
 .map .tok circle { stroke: var(--surface); stroke-width: 1.5; }
 .map .tok.you circle { fill: var(--accent); } .map .tok.you use { color: var(--accent-ink); }
 .map .tok.co circle { fill: var(--surface); stroke: var(--company); } .map .tok.co use { color: var(--company); }
@@ -174,6 +212,7 @@ button:focus-visible, summary:focus-visible, [tabindex]:focus-visible, input:foc
   .map .land, .map .zone, .map .river { transition: fill .6s, opacity .6s, stroke-width .6s; }
 }
 @keyframes flow { to { stroke-dashoffset: -17; } }
+@keyframes wind { to { stroke-dashoffset: -28; } }
 @keyframes rain { from { transform: translate(6px, -16px); opacity: 0; } 30% { opacity: .6; } to { transform: translate(-6px, 16px); opacity: 0; } }
 .legend { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 11px; color: var(--muted); }
 .legend span { display: inline-flex; align-items: center; gap: 5px; }
@@ -193,7 +232,36 @@ button:focus-visible, summary:focus-visible, [tabindex]:focus-visible, input:foc
 .map .sugg text { fill: var(--surface); font-size: 10px; font-weight: 700; text-anchor: middle; stroke: none; }
 .map .sugg:hover .line, .map .sugg:focus .line { stroke: var(--river); stroke-width: 3.4; }
 .map .sugg:hover .nb, .map .sugg:focus .nb { fill: var(--river); }
-.map .ready { fill: none; stroke: var(--good); stroke-width: 2.5; }
+.map .need { fill: none; stroke: var(--muted); stroke-width: 2.5; }
+.map .need.t-good { stroke: var(--good); } .map .need.t-bad { stroke: var(--bad); } .map .need.t-co { stroke: var(--company); } .map .need.t-ask { stroke: var(--river); } .map .need.t-plan { stroke: var(--accent); }
+.map .rpin circle { fill: var(--good); stroke: var(--surface); stroke-width: 1.5; }
+.map .rpin path { fill: none; stroke: var(--surface); stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
+.map .strain rect.hit { fill: transparent; stroke: none; }
+.map .pin { transition: opacity .2s; }
+.map .pin.t-bad.strain rect:not(.hit) { stroke-width: 1.6; }
+/* a chip lights its pins: the rest of the map steps back */
+.map svg.hl .pin:not(.lit), .map svg.hl .node:not(.lit) .need, .map svg.hl .home:not(.lit) .need { opacity: .18; }
+.map svg.hl .node:not(.lit) .base, .map svg.hl .node:not(.lit) .ring, .map svg.hl .node:not(.lit) text.t { opacity: .45; }
+.map .pin.lit { filter: drop-shadow(0 0 3px var(--ink)); }
+.map .node.lit .need { stroke-width: 4; }
+.map .sugg.lit .line { stroke: var(--river); stroke-width: 3.4; } .map .sugg.lit .nb { fill: var(--river); }
+.tip { position: absolute; z-index: 3; max-width: min(280px, calc(100% - 8px)); background: var(--surface); border: 1px solid var(--line); border-radius: 9px; box-shadow: 0 4px 16px rgba(10, 12, 30, .2); padding: 8px 10px; display: flex; flex-direction: column; gap: 6px; font-size: 13px; line-height: 1.35; }
+.tip[hidden] { display: none; }
+.tip p { display: flex; gap: 7px; align-items: flex-start; }
+.tip p svg { width: 16px; height: 16px; flex: none; margin-top: 1px; }
+.tip .ghost { align-self: flex-start; font-size: 12.5px; padding: 3px 9px; }
+.achips { display: flex; flex-wrap: wrap; gap: 6px; }
+.achip { display: inline-flex; align-items: center; gap: 5px; padding: 4px 9px 4px 6px; border-radius: 20px; border: 1px solid var(--line); background: var(--sunk); }
+.achip svg { width: 18px; height: 18px; flex: none; }
+.achip b { font-family: var(--font-display); font-size: 15px; line-height: 1; }
+.achip span { font-size: 11.5px; color: var(--muted); }
+.achip:hover, .achip[aria-pressed="true"] { border-color: var(--ink); }
+.achip[aria-pressed="true"] { background: var(--surface); box-shadow: 0 0 0 1px var(--ink); }
+.attlist summary { font-size: 12.5px; color: var(--muted); font-weight: 500; }
+.sugwhy { font-size: 12.5px; color: var(--muted); min-height: 2.7em; padding: 0 2px; }
+@media (hover: none) { .sugwhy { display: none; } }
+.sug.lit .act { border-color: var(--river); }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 .map .agent { color: var(--company); }
 .map .agent circle { fill: var(--surface); stroke: var(--company); stroke-width: 1.6; }
 .map .agent.blocked { opacity: .55; }
@@ -202,11 +270,20 @@ button:focus-visible, summary:focus-visible, [tabindex]:focus-visible, input:foc
 .sug .act > span:first-child { display: inline-flex; gap: 7px; align-items: center; }
 @media (prefers-reduced-motion: no-preference) {
   .map .spot { animation: spin 6s linear infinite; transform-box: fill-box; transform-origin: center; }
-  .map .ready { animation: pulse 1.6s ease-in-out infinite; }
+  .map .need { animation: pulse 1.6s ease-in-out infinite; }
+  .map .drift { animation: drift 50s linear infinite; }
+  .map .wind { animation: wind 4s linear infinite; }
+  .map .fog .bank, .map .fog .mist { animation: fogdrift 22s ease-in-out infinite alternate; }
+  .map .heat path { animation: heat 3.2s ease-in-out infinite; }
+  .map svg.wx-good .shimmer { animation-duration: 1.2s; }
   .map .agent:not(.blocked), .map .ask { animation: nudge 1.6s ease-in-out infinite; }
 }
 @keyframes spin { to { transform: rotate(360deg); } }
 @keyframes pulse { 0%, 100% { opacity: .25; } 50% { opacity: 1; } }
+/* along the monsoon line, southwest to northeast: WXDIR in the script, about (0.77, -0.64) */
+@keyframes drift { 0% { transform: translate(-176px, 147px); opacity: 0; } 12% { opacity: 1; } 88% { opacity: 1; } 100% { transform: translate(176px, -147px); opacity: 0; } }
+@keyframes fogdrift { from { transform: translateX(-14px); } to { transform: translateX(14px); } }
+@keyframes heat { 0% { transform: translateY(2px); opacity: 0; } 40% { opacity: .8; } 100% { transform: translateY(-7px); opacity: 0; } }
 @keyframes nudge { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-2.5px); } }
 
 /* dossier */
@@ -412,6 +489,152 @@ details > *:not(summary) { margin-top: 8px; }
 .endseals { display: flex; gap: 12px; flex-wrap: wrap; }
 .endseals span { display: flex; flex-direction: column; align-items: center; gap: 3px; font-size: 11px; color: var(--muted); }
 .endseals svg { width: 34px; height: 34px; }
+
+/* trust sparklines on the power chips */
+.spk { display: flex; align-items: center; gap: 5px; }
+.spk svg { flex: none; overflow: visible; }
+.spk .ln { fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linejoin: round; stroke-linecap: round; }
+.spk .th { stroke: currentColor; stroke-width: 1; stroke-dasharray: 2 2; opacity: .45; }
+.spk .end { fill: currentColor; }
+.spk .end.ok { fill: var(--good); stroke: var(--surface); stroke-width: 1; }
+.spk b { font-family: var(--font-display); font-size: 13px; line-height: 1; }
+.pill.member .spk .end.ok { stroke: var(--accent); }
+@media (prefers-reduced-motion: no-preference) {
+  .pill.flip { animation: flip .55s cubic-bezier(.3, 1.4, .5, 1); }
+}
+@keyframes flip { 0% { transform: perspective(300px) rotateX(85deg); } 100% { transform: perspective(300px) rotateX(0); } }
+
+/* the signing moment: drawn in #fx, removes itself */
+.map .stamp .rim { fill: var(--accent); stroke: var(--accent-ink); stroke-width: 1.4; }
+.map .stamp .face { fill: none; stroke: var(--accent-ink); stroke-width: 1.2; opacity: .55; }
+.map .stamp .tick { fill: none; stroke: var(--accent-ink); stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
+.map .stamp.pledge .rim { fill: var(--good); stroke: var(--surface); }
+.map .stamp.pledge .face, .map .stamp.pledge .tick { stroke: var(--surface); }
+.map .glowfx { fill: var(--accent); }
+.map .glowfx.pledge { fill: var(--good); }
+.map .node.signing .base { fill: var(--surface); }
+.map .node.signing .ring { stroke: var(--muted); }
+.map .node.signing text.t { fill: var(--ink); }
+.map .pseal.signing { opacity: 0; }
+
+/* dispute scene: two leaders across a table */
+.scene { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr) minmax(0, 1fr); align-items: start; gap: 4px; padding: 6px 0 2px; }
+.scene .side { display: flex; flex-direction: column; align-items: center; gap: 2px; text-align: center; }
+.scene .side .portrait { width: 84px; height: 84px; }
+.scene .side.a .portrait { transform: rotate(5deg); }
+.scene .side.b .portrait { transform: rotate(-5deg); }
+.scene .side b { font-family: var(--font-display); font-size: 15px; }
+.scene .tv { display: inline-flex; align-items: center; gap: 3px; font-size: 13px; font-weight: 600; }
+.scene .tv .ic { color: var(--muted); }
+ul.fx { margin: 0; padding: 0; list-style: none; font-size: 12.5px; display: flex; flex-direction: column; gap: 2px; }
+.scene .mid { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+.scene .table { width: 100%; max-width: 190px; height: auto; display: block; }
+.scene .table .top { fill: color-mix(in srgb, var(--sand) 28%, var(--sunk)); stroke: color-mix(in srgb, var(--sand) 55%, var(--line)); stroke-width: 1.5; stroke-linejoin: round; }
+.scene .table .leg { stroke: color-mix(in srgb, var(--sand) 55%, var(--line)); stroke-width: 3; stroke-linecap: round; }
+.scene .table .iss { fill: var(--surface); stroke: var(--ink); stroke-width: 2; }
+.scene .table .ten { stroke-width: 2.4; stroke-linecap: round; }
+@media (prefers-reduced-motion: no-preference) {
+  .scene .side.a { animation: slideL .45s ease-out both; }
+  .scene .side.b { animation: slideR .45s ease-out both; }
+  .scene .table .issue { animation: drop .4s .25s ease-out both; }
+}
+@keyframes slideL { from { transform: translateX(-24px); opacity: 0; } }
+@keyframes slideR { from { transform: translateX(24px); opacity: 0; } }
+@keyframes drop { from { transform: translateY(-10px); opacity: 0; } }
+.dcards { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.dcard { gap: 7px; padding: 10px; }
+.dcard > b { display: flex; justify-content: space-between; align-items: center; gap: 6px; font-size: 15px; }
+.fxs { display: flex; flex-wrap: wrap; gap: 5px 10px; align-items: center; }
+.fxc { display: inline-flex; align-items: center; gap: 3px; font-size: 13px; font-weight: 600; }
+.fxc small { font-size: 11px; font-weight: 600; color: var(--muted); }
+.mf { display: inline-flex; }
+.mf .portrait { width: 24px; height: 24px; }
+.rg { width: 30px; height: 12px; flex: none; }
+.mark-strain { width: 14px; height: 14px; color: var(--bad); }
+@media (max-width: 480px) { .scene .side .portrait { width: 66px; height: 66px; } .dcard { padding: 9px 8px; } .fxs { gap: 4px 8px; } }
+
+/* council chamber: seats in a half circle, the proposer at the lectern */
+.chamber { position: relative; width: 100%; max-width: 460px; aspect-ratio: 2 / 1; margin: 0 auto; }
+.chamber > svg.floor { position: absolute; inset: 0; width: 100%; height: 100%; }
+.chamber .floor .bench { fill: none; stroke: var(--line); stroke-width: 9; stroke-linecap: round; }
+.chamber .floor .well { fill: var(--sunk); }
+.chamber .floor .lect { fill: color-mix(in srgb, var(--sand) 30%, var(--sunk)); stroke: color-mix(in srgb, var(--sand) 55%, var(--line)); stroke-width: 1.5; }
+.chamber .seat { position: absolute; transform: translate(-50%, -50%); width: 54px; }
+.chamber .seat .portrait, .chamber .seat .you, .chamber .seat .empty { width: 44px; height: 44px; border-radius: 50%; }
+.chamber .seat .empty { border: 2px dashed var(--line); display: block; }
+.chamber .seat.out small { opacity: .6; }
+.chamber .seat.lect .portrait, .chamber .seat.lect .you { width: 54px; height: 54px; }
+.chamber .seat.lect { width: 64px; }
+.chamber .seat .you { font-size: 12px; }
+.chamber .seat .vm { top: 28px; left: 34px; width: 18px; height: 18px; }
+.chamber .seat.lect .vm { top: 36px; left: 42px; }
+.chamber .seat .vm svg { width: 10px; height: 10px; }
+.chamber .seat .rw { top: -2px; left: 0; }
+.chamber .seat.no .portrait { opacity: 1; }
+.chamber .seat .ring { position: absolute; top: 0; left: 50%; width: 44px; height: 44px; margin-left: -22px; border-radius: 50%; box-shadow: 0 0 0 3px var(--good); pointer-events: none; }
+.chamber .seat.lect .ring { width: 54px; height: 54px; margin-left: -27px; }
+.chamber .seat.no .ring { box-shadow: 0 0 0 3px var(--bad); }
+.chamber .seat.no .portrait, .chamber .seat.no .you { filter: saturate(.4); }
+.chamber .seat small { font-size: 10.5px; }
+.chamber .tallyc { position: absolute; left: 50%; top: 46%; transform: translate(-50%, -50%); display: flex; flex-direction: column; align-items: center; line-height: 1.1; text-align: center; white-space: nowrap; }
+.chamber .tallyc b { font-family: var(--font-display); font-size: 22px; }
+.chamber .tallyc span { font-size: 12px; color: var(--muted); font-weight: 600; }
+.chamber .tallyc.up b { color: var(--good); } .chamber .tallyc.down b { color: var(--bad); }
+@media (prefers-reduced-motion: no-preference) {
+  .chamber.result .seat .vm, .chamber.result .seat .ring, .chamber.result .seat .rw { animation: votein .35s cubic-bezier(.3, 1.5, .5, 1) both; animation-delay: calc(var(--i) * .32s + .2s); }
+  .chamber.result .tallyc { animation: fadein .4s both; animation-delay: calc(var(--n) * .32s + .35s); }
+  .result-after { animation: fadein .4s both; animation-delay: calc(var(--n) * .32s + .55s); }
+}
+@keyframes votein { from { transform: scale(.2); opacity: 0; } }
+@keyframes fadein { from { opacity: 0; } }
+@media (max-width: 480px) {
+  .chamber .seat { width: 46px; }
+  .chamber .seat .portrait, .chamber .seat .you, .chamber .seat .empty, .chamber .seat .ring { width: 36px; height: 36px; }
+  .chamber .seat .ring { margin-left: -18px; }
+  .chamber .seat.lect .portrait, .chamber .seat.lect .you, .chamber .seat.lect .ring { width: 44px; height: 44px; }
+  .chamber .seat.lect .ring { margin-left: -22px; }
+  .chamber .seat .vm { top: 22px; left: 28px; width: 16px; height: 16px; }
+  .chamber .seat.lect .vm { top: 28px; left: 36px; }
+  .chamber .seat small { font-size: 9.5px; }
+  .chamber .tallyc b { font-size: 17px; }
+  .chamber { aspect-ratio: 2 / 1.12; }
+  .chamber .tallyc { top: 44%; }
+}
+.minivote { display: inline-flex; gap: 3px; align-items: center; flex-wrap: wrap; }
+.minivote i { width: 11px; height: 11px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; }
+.minivote i.y { background: var(--good); } .minivote i.n { background: var(--bad); }
+.minivote i svg { width: 7px; height: 7px; }
+.opt .tally { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+
+/* the campaign chart: one trust line per power */
+.hchart { width: 100%; height: auto; display: block; }
+.hchart text { font-family: var(--font-body); font-size: 10px; fill: var(--muted); }
+.hchart text.al { font-weight: 600; fill: var(--ink); font-size: 10.5px; }
+.hchart .band { fill: var(--sunk); }
+.hchart .band.b3 { fill: color-mix(in srgb, var(--accent) 9%, var(--surface)); }
+.hchart .grid { stroke: var(--line); stroke-width: 1; }
+.hchart .thr { stroke: var(--muted); stroke-width: 1; stroke-dasharray: 3 3; opacity: .7; }
+.hchart .bound { stroke: var(--muted); stroke-width: 1; opacity: .5; }
+.hchart .tl { fill: none; stroke-width: 1.6; stroke-linejoin: round; stroke-linecap: round; opacity: .9; }
+.hchart .tl.mem { stroke-width: 3.4; opacity: 1; }
+.hchart .hm { cursor: pointer; outline: none; }
+.hchart .hm:focus-visible .hit, .hchart .hm:hover .hit { stroke: var(--ink); stroke-width: 1.5; }
+.hchart .hm .hit { fill: transparent; }
+.hchart .vote line { stroke: var(--good); stroke-width: 2; }
+.hchart .vote.fail line { stroke: var(--bad); }
+.hread { font-size: 13px; min-height: 2.8em; color: var(--muted); }
+.hread b { color: var(--ink); }
+.hlegend { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 11.5px; color: var(--muted); }
+.hlegend span { display: inline-flex; align-items: center; gap: 4px; }
+.hlegend svg { width: 18px; height: 12px; flex: none; }
+@media (prefers-reduced-motion: no-preference) {
+  .hchart.draw .tl { stroke-dasharray: 1; stroke-dashoffset: 1; animation: draw 2.4s ease-out .3s forwards; }
+  .hchart.draw .hm, .hchart.draw .vote { animation: fadein .3s both; animation-delay: calc(var(--t) * 2.4s + .3s); }
+  .endseals .on svg { animation: stampin .42s cubic-bezier(.55, 0, .9, .45) both; animation-delay: calc(var(--i) * .38s + .2s); }
+}
+@keyframes draw { to { stroke-dashoffset: 0; } }
+@keyframes stampin { 0% { transform: scale(2.4) rotate(-16deg); opacity: 0; } 80% { transform: scale(.92) rotate(0); opacity: 1; } 100% { transform: scale(1); } }
+.dlg.wide { max-width: 720px; }
 </style>
 </head>
 <body>
@@ -431,6 +654,7 @@ details > *:not(summary) { margin-top: 8px; }
   <symbol id="i-seal" viewBox="0 0 16 16"><circle cx="8" cy="8" r="7" fill="currentColor"/><path d="M4.8 8.2 7 10.4l4.2-4.8" fill="none" stroke="var(--surface)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></symbol>
   <symbol id="i-yes" viewBox="0 0 10 10"><path d="M1.8 5.2 4 7.4l4.2-4.8" fill="none" stroke="var(--surface)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></symbol>
   <symbol id="i-no" viewBox="0 0 10 10"><path d="M2.5 2.5l5 5M7.5 2.5l-5 5" fill="none" stroke="var(--surface)" stroke-width="1.8" stroke-linecap="round"/></symbol>
+  <symbol id="i-fort" viewBox="0 0 16 16"><path fill="currentColor" d="M2 14.5V4.5h2.6v2.3h2V4.5h2.8v2.3h2V4.5H14v10z"/></symbol>
   <symbol id="i-lowtrust" viewBox="0 0 16 16"><circle cx="8" cy="8" r="5.6" fill="none" stroke="var(--line)" stroke-width="2.4"/><path d="M8 2.4A5.6 5.6 0 0 1 13.3 6.4" fill="none" stroke="var(--bad)" stroke-width="2.4" stroke-linecap="round"/></symbol>
 </svg>
 <div class="wrap" id="app"></div>
@@ -438,13 +662,13 @@ details > *:not(summary) { margin-top: 8px; }
 <script>
 (function () {
   'use strict';
-  var A = window.Aman, S, sel = null, view = 'home', said = '', hover = null, play = null, SUG = [], modal = null, seenAct = 1;
+  var A = window.Aman, S, sel = null, view = 'home', said = '', hover = null, play = null, SUG = [], ATT = [], attOpen = false, modal = null, seenAct = 1;
   var prefs = { seenHelp: false, adviser: true, details: !!(window.matchMedia && window.matchMedia('(hover: none)').matches) };
   try { var p = JSON.parse(localStorage.getItem('aman-prefs') || '{}'); if (typeof p.adviser === 'boolean') prefs.adviser = p.adviser; if (typeof p.details === 'boolean') prefs.details = p.details; if (p.seenHelp === true) prefs.seenHelp = true; } catch (e) {}
   function savePrefs() { try { localStorage.setItem('aman-prefs', JSON.stringify(prefs)); } catch (e) {} }
 
   // BEGIN GENERATED MAP (tools/build_map.py; rerun it instead of editing by hand)
-  // Natural Earth land and rivers only, Lambert conic, 400x420 frame. No borders.
+  // Natural Earth land, rivers, and physical regions only, Lambert conic, 400x420 frame. No borders.
   var LAND = 'M-6 -6 L406 -6 L406 261.3 L402.6 262.1 L401.4 257 L400.4 260.1 L398.6 261.2 L398.5 252.5 L398.2 255.1 L395.4 258.7 L392.5 260.1 L392.6 252.9 L395.6 241.4 L395.6 237.7 L392.7 229 L388.6 221.8 L389.6 221.6 L387.1 219.6 L386.3 214.1 L385.1 216.2 L385.2 219.7 L382.1 218.1 L378.9 213.5 L380 213 L383.4 215 L385.5 212 L380 207.7 L381.1 205.6 L374.9 203.9 L373.7 204.4 L374.4 206.4 L373.5 207 L371.6 204.1 L372.7 202.5 L371.6 202.5 L372.1 199.7 L369.9 203.1 L369.2 202.8 L369.8 200.4 L367.5 197.5 L367.7 201.2 L361.7 194.6 L358 189.5 L356.8 182.3 L353.9 174.8 L354.3 173 L353.5 173.8 L348.8 165.8 L345.6 169.5 L342.1 170.3 L338 164.5 L336.8 156.6 L336.3 159 L332.6 158.7 L336.9 161.2 L337.1 163 L335.5 164.3 L336.7 166.3 L335.5 166.7 L335.3 168.6 L338 173.9 L333.4 181.7 L331.3 181 L332.9 177.1 L329.6 179.2 L329.1 177.9 L328.6 175.2 L329.7 172.9 L328.4 174.1 L327.8 179.9 L324.8 183.1 L323.3 176 L323.8 181.1 L322 183.9 L320.4 184 L318.5 181.9 L317.8 178.9 L317.6 181.1 L316.5 181.1 L318.1 185.1 L316.2 185.2 L315.5 183.9 L314.1 186.2 L313.7 180.3 L312.4 178.7 L311.9 185.3 L310.1 186 L308 184.1 L307.6 186 L305.9 185.9 L305 185.1 L306.5 178.7 L303 175.6 L303.4 177.2 L306.1 179 L303.5 183.3 L300 185.9 L292.5 188.4 L289.5 192.2 L291.3 199.7 L288.5 205.3 L283.7 209.8 L281.9 209.2 L282.9 210.1 L281.6 211.5 L273.2 214.6 L272.2 214.6 L273 213.8 L272.2 211.9 L268.8 213.8 L268 216.1 L270.5 214.9 L271.4 215.6 L262.7 222.9 L254 234.9 L248 238.2 L241.9 244.8 L230.7 252.2 L229.6 254.5 L230.7 256.6 L229.4 259.8 L222.6 263.1 L216.2 263 L212 271.2 L209.9 271.1 L209.3 269.7 L207.4 269.3 L202.6 271.9 L199.3 280.9 L200.9 289.4 L200 293.2 L202.6 303.6 L200.6 300.3 L199.3 301.8 L203.1 305.3 L201.5 314.9 L196.3 324.9 L194.8 330.8 L195.3 332.7 L193.9 334.6 L195.4 334.2 L196 336.3 L195.8 348.9 L188.4 349.7 L182.6 361.3 L184 363 L189.6 365.1 L183.5 363.9 L175.5 366.2 L172.1 369.2 L170.1 376.5 L162.2 380.8 L159.2 379.7 L154.5 375.8 L148.7 368.5 L145.7 360.5 L144.7 353.6 L146.1 355.1 L146.5 359.2 L147.6 359.3 L146.2 353.7 L144.1 351.3 L138.1 332.7 L131 322.5 L127.8 315.1 L121.1 287.3 L115.5 278.8 L113.6 274.1 L115.4 274.2 L113.3 271.6 L114.2 270.4 L112.2 269.6 L108 258.8 L106.4 242.2 L103.3 227.6 L105.3 222.3 L105 220.4 L103 222.8 L102.7 221.3 L102.9 218.2 L105.3 218.7 L102.7 217.3 L101.4 210.6 L105 198.9 L104.3 192.6 L102.7 191.6 L102 188.8 L103.5 187.5 L101.9 187.6 L108.7 183.8 L101.2 184.2 L103.4 180.4 L101.1 180.2 L101.6 177.6 L105 176.8 L96.9 175.8 L98.4 177.1 L97.9 178.4 L94.6 182 L96.8 183.5 L97.2 186.3 L93.8 191.4 L80.4 196.6 L76.4 196.3 L68.9 190.8 L54.9 172.8 L56.1 170.8 L58.9 173.2 L71 169.9 L75.7 164.2 L75.5 162.9 L73.4 164.9 L70.6 164.6 L64.5 166.8 L59 165.2 L53.8 161.9 L51.6 159.8 L49.1 154.2 L54.1 150.6 L46.8 153.6 L46.2 149.9 L45.4 151.3 L42.3 148.9 L39.7 150 L39.6 148.4 L38.5 148.9 L35.5 144.5 L34.5 136.1 L28.6 134.1 L29 128.9 L26 123.7 L23.4 123.2 L22.1 124.5 L26.4 125.6 L4.6 125.4 L2.9 127 L-4.4 123.1 L-6 123.8 Z M197.8 356.2 L201.6 356.5 L208.1 362.7 L215.1 372.9 L215.5 375.1 L217.6 376.2 L218.3 380.3 L224.9 392.8 L224.7 398.4 L221.5 405.4 L216.7 408.6 L208.2 411.9 L201.6 411.4 L199.1 409.3 L195.7 399.4 L193.8 379.8 L194.3 378.1 L194.3 381.7 L195.1 381.7 L197 369.4 L199.4 364.9 L199.3 359.6 L204.1 361 L201.7 359.1 L198.7 358.6 L197.4 357.2 Z M376.8 325.4 L373.8 320.8 L375.5 316.1 L377 315.5 L375.7 311.1 L376.8 299.3 L379.4 296.4 L379.8 301 L377.6 305.2 L378.8 306.4 L379.5 310.8 L377.8 312.4 Z M340.3 177.6 L336.9 178.2 L338.9 174.4 L336.1 167.3 L337.3 166.9 L341.2 172 Z M398.7 391.9 L397.9 393.2 L395.1 389.5 L395.3 387 L397.2 386.1 L399.1 389.8 Z M374.7 339.7 L372.9 339.9 L372.4 337 L374.5 334.8 L375.6 337.5 Z M381.6 210.6 L384.8 212.2 L384.4 213.6 L382.4 213.9 L380.7 211.6 Z M382.3 223 L379.4 220.6 L382.8 220.4 Z';
   var RIV = {
     indus: 'M196.8 34 L191.7 26.9 L187.5 22.9 L184.5 23.4 L178.3 19.4 L177.8 17.5 L170.8 9.4 L162.3 6.1 L159.5 2.7 L156.2 1 L154.7 -1.4 L155.1 -3.3 L151.7 -6.4 L151.2 -8.1 M118.3 -8.1 L115.4 -5.9 L115 -4.2 L116.4 -2.9 L114.1 -1.7 L111.7 8.5 L106.8 9.5 L106.6 12 L104 12.1 L102 16.7 L100.1 17.6 L99.7 22.3 L96.3 24.2 L94.6 27.7 L94.6 30.9 L88.6 40.7 L87 44.7 L87.1 51.6 L85.9 54 L86.9 57.4 L85.8 60.6 L86.3 66.6 L83.4 70.7 L84.3 73.6 L83.2 78.4 L80.7 80.3 L79.5 80.3 L74.9 84.5 L71.5 85.5 L68.9 89 L66.9 89.1 L66.3 90.2 L65.2 89.9 L63.1 91.4 L61.9 91.2 L61.4 92.4 L60.4 92.2 L60.6 93.9 L59.5 94.7 L60.3 96.1 L58.4 96.6 L57.1 94.7 L56.7 95.8 L52.9 96.8 L52 97.6 L52.3 100.3 L50.8 100.3 L49.9 101.4 L50.5 102.4 L49.1 102.7 L49.2 104 L46.5 105.8 L45.6 113.6 L46.1 115.5 L48.1 117.2 L48.4 118.7 L51.4 122.5 L50.4 123.3 L51.6 124.6 L50 126.8 L50.2 130 L49.5 130.9 L50.3 131.9 L49.3 132 L48.7 134.3 L47.9 133.7 L47.1 135.5 L45.8 135.5 L44.3 141.5 L42.7 141.7 L43 142.6 L41.9 142.7 L42.3 143.8 L40 145 L39.9 146.1 L38.3 146.3',
@@ -457,6 +681,10 @@ details > *:not(summary) { margin-top: 8px; }
   };
   var PT = { lahore: [131, 45], kathmandu: [267, 101], patna: [265, 131], dhaka: [334, 154], kochi: [145, 354], colombo: [196, 398], hyderabad: [178, 248], indus: [131, 45], himal: [267, 101], ganga: [211, 116], delta: [334, 154], coast: [168, 369], home: [178, 248], co: [43, 261], dam: [220, 80], fort: [162, 54], sealIndus: [86, 66], sealFlow: [289, 135], rail1: [187, 195], rail2: [165, 310], hydro1: [199, 166], hydro2: [202, 309], lblIndus: [47, 114], lblGanges: [251, 146], lblBrahma: [339, 114] };
   var ZONE = { indus: [131, 45, 32, 32], himal: [267, 101, 23, 23], ganga: [211, 116, 28, 28], delta: [334, 154, 24, 24], coast: [168, 369, 29, 29], home: [178, 248, 34, 34] };
+  // Physical relief as marks only: ridges for ranges, stipple for deserts, dashes for plateaus.
+  var TERRAIN = { mtn: 'M37.7 65.5l2.8 -2 2.8 2M34.8 73.1l2.8 -2 2.8 2M30.1 78.7l2.8 -2 2.8 2M36.8 78.6l2.8 -2 2.8 2M116 118.8l2.8 -2 2.8 2M122.5 119.8l2.8 -2 2.8 2M104.1 125.9l2.8 -2 2.8 2M111.3 126.6l2.8 -2 2.8 2M118.3 125.6l2.8 -2 2.8 2M106.1 131.4l2.8 -2 2.8 2M104.3 139.7l2.8 -2 2.8 2M72.2 14.9l2.8 -2 2.8 2M67.4 21.6l2.8 -2 2.8 2M75.2 20.4l2.8 -2 2.8 2M72.3 28l2.8 -2 2.8 2M79.5 28.6l2.8 -2 2.8 2M74.3 33.4l2.8 -2 2.8 2M72.4 41.8l2.8 -2 2.8 2M76.3 47.6l2.8 -2 2.8 2M71.9 54.4l2.8 -2 2.8 2M78.5 53.2l2.8 -2 2.8 2M68 59.9l2.8 -2 2.8 2M74.7 59.9l2.8 -2 2.8 2M70.3 66.5l2.8 -2 2.8 2M18.3 89l2.8 -2 2.8 2M8.1 95.1l2.8 -2 2.8 2M14.6 96l2.8 -2 2.8 2M-3.8 102.2l2.8 -2 2.8 2M3.4 102.9l2.8 -2 2.8 2M10.4 101.9l2.8 -2 2.8 2M-1.8 107.7l2.8 -2 2.8 2M6.9 108.4l2.8 -2 2.8 2M29.3 95.8l2.8 -2 2.8 2M34.2 102.2l2.8 -2 2.8 2M29.5 107.7l2.8 -2 2.8 2M34.4 116l2.8 -2 2.8 2M367.5 160.8l2.8 -2 2.8 2M364.6 168.4l2.8 -2 2.8 2M371.8 169.1l2.8 -2 2.8 2M366.6 173.9l2.8 -2 2.8 2M364.8 182.2l2.8 -2 2.8 2M372.4 181.9l2.8 -2 2.8 2M391 103.3l2.8 -2 2.8 2M389 109.6l2.8 -2 2.8 2M395.5 110.6l2.8 -2 2.8 2M384.3 117.4l2.8 -2 2.8 2M391.3 116.4l2.8 -2 2.8 2M379.1 122.2l2.8 -2 2.8 2M387.8 122.9l2.8 -2 2.8 2M377.2 130.5l2.8 -2 2.8 2M384.8 130.1l2.8 -2 2.8 2M381.1 136.4l2.8 -2 2.8 2M376.8 143.1l2.8 -2 2.8 2M383.3 142l2.8 -2 2.8 2M372.8 148.7l2.8 -2 2.8 2M379.5 148.7l2.8 -2 2.8 2M375.1 155.3l2.8 -2 2.8 2M380.2 189.6l2.8 -2 2.8 2M375.3 196.4l2.8 -2 2.8 2M383.1 195.1l2.8 -2 2.8 2M380.2 202.7l2.8 -2 2.8 2M387.4 203.4l2.8 -2 2.8 2M382.2 208.2l2.8 -2 2.8 2M390.9 208.9l2.8 -2 2.8 2M388 216.2l2.8 -2 2.8 2M390.9 222.3l2.8 -2 2.8 2M394.2 227.6l2.8 -2 2.8 2M159.3 347.5l2.8 -2 2.8 2M166.4 346.7l2.8 -2 2.8 2M147.6 353.7l2.8 -2 2.8 2M155.4 352.5l2.8 -2 2.8 2M164.4 353l2.8 -2 2.8 2M170.9 353.9l2.8 -2 2.8 2M152.5 360.1l2.8 -2 2.8 2M154.5 365.5l2.8 -2 2.8 2M160.3 373.5l2.8 -2 2.8 2M185.8 173.5l2.8 -2 2.8 2M192.7 172.7l2.8 -2 2.8 2M156 180.2l2.8 -2 2.8 2M164.4 179.2l2.8 -2 2.8 2M172.8 179.8l2.8 -2 2.8 2M180 180.3l2.8 -2 2.8 2M188.7 178.8l2.8 -2 2.8 2M137.6 186.3l2.8 -2 2.8 2M144.9 187l2.8 -2 2.8 2M151.8 186.1l2.8 -2 2.8 2M161.8 185.8l2.8 -2 2.8 2M167.5 186.8l2.8 -2 2.8 2M176.2 186.2l2.8 -2 2.8 2M184.8 185.8l2.8 -2 2.8 2M132.9 191.9l2.8 -2 2.8 2M139.6 191.8l2.8 -2 2.8 2M148.4 192.6l2.8 -2 2.8 2M157.3 193.4l2.8 -2 2.8 2M164 193.2l2.8 -2 2.8 2M117.1 11.6l2.8 -2 2.8 2M123.9 12.1l2.8 -2 2.8 2M131 11.3l2.8 -2 2.8 2M112.2 18.3l2.8 -2 2.8 2M120 17.1l2.8 -2 2.8 2M129 17.6l2.8 -2 2.8 2M135.5 18.5l2.8 -2 2.8 2M368.4 114.1l2.8 -2 2.8 2M349.4 120.6l2.8 -2 2.8 2M355.9 121.6l2.8 -2 2.8 2M364.2 120.6l2.8 -2 2.8 2M337.5 127.7l2.8 -2 2.8 2M344.7 128.4l2.8 -2 2.8 2M351.7 127.4l2.8 -2 2.8 2M361.7 127.2l2.8 -2 2.8 2M367.3 128.1l2.8 -2 2.8 2M109.4 201.7l2.8 -2 2.8 2M112.3 207.2l2.8 -2 2.8 2M109.4 214.7l2.8 -2 2.8 2M104.7 220.3l2.8 -2 2.8 2M111.4 220.2l2.8 -2 2.8 2M109.6 228.5l2.8 -2 2.8 2M113.5 234.4l2.8 -2 2.8 2M109.1 241.1l2.8 -2 2.8 2M115.7 240l2.8 -2 2.8 2M111.8 246.7l2.8 -2 2.8 2M115.6 254.4l2.8 -2 2.8 2M112.5 260.2l2.8 -2 2.8 2M119.8 259.5l2.8 -2 2.8 2M115.2 267.2l2.8 -2 2.8 2M124.2 266.1l2.8 -2 2.8 2M120.3 273.4l2.8 -2 2.8 2M115.5 279.7l2.8 -2 2.8 2M123.2 279.5l2.8 -2 2.8 2M121.6 285.4l2.8 -2 2.8 2M128.1 286.3l2.8 -2 2.8 2M124.3 291.9l2.8 -2 2.8 2M132.1 291.7l2.8 -2 2.8 2M129.6 300.1l2.8 -2 2.8 2M132.9 306.5l2.8 -2 2.8 2M128.7 312.4l2.8 -2 2.8 2M136.4 311.3l2.8 -2 2.8 2M131.4 317.9l2.8 -2 2.8 2M140 318.4l2.8 -2 2.8 2M136.9 324.9l2.8 -2 2.8 2M144.5 325.5l2.8 -2 2.8 2M139.5 331.7l2.8 -2 2.8 2M148.8 332.1l2.8 -2 2.8 2M145.6 337.9l2.8 -2 2.8 2M242.8 204.7l2.8 -2 2.8 2M251.1 205l2.8 -2 2.8 2M231.1 211.4l2.8 -2 2.8 2M238.2 211.4l2.8 -2 2.8 2M247.9 211.2l2.8 -2 2.8 2M255.5 211l2.8 -2 2.8 2M263.1 211.8l2.8 -2 2.8 2M225.8 218.2l2.8 -2 2.8 2M234.7 218.2l2.8 -2 2.8 2M243.3 218.2l2.8 -2 2.8 2M251.3 218.2l2.8 -2 2.8 2M222.2 223.3l2.8 -2 2.8 2M231.2 223.2l2.8 -2 2.8 2M239.7 224.9l2.8 -2 2.8 2M245.8 223.8l2.8 -2 2.8 2M254.3 224.2l2.8 -2 2.8 2M219.1 231l2.8 -2 2.8 2M226.4 231.5l2.8 -2 2.8 2M233.9 229.8l2.8 -2 2.8 2M244 231l2.8 -2 2.8 2M250.8 230l2.8 -2 2.8 2M214.9 237.5l2.8 -2 2.8 2M224.1 237.5l2.8 -2 2.8 2M231.5 236.9l2.8 -2 2.8 2M239.6 236.2l2.8 -2 2.8 2M210.6 243.7l2.8 -2 2.8 2M218.5 243.5l2.8 -2 2.8 2M227.7 243.6l2.8 -2 2.8 2M235.3 243.9l2.8 -2 2.8 2M198.7 251l2.8 -2 2.8 2M206.3 250.4l2.8 -2 2.8 2M194.7 256.1l2.8 -2 2.8 2M190.9 263l2.8 -2 2.8 2M186.6 269.1l2.8 -2 2.8 2M182.7 276.4l2.8 -2 2.8 2M185.6 282.6l2.8 -2 2.8 2M184.1 288.4l2.8 -2 2.8 2M179.8 295.7l2.8 -2 2.8 2M186.7 294.9l2.8 -2 2.8 2M184 301.3l2.8 -2 2.8 2M192 303.1l2.8 -2 2.8 2M180 308.1l2.8 -2 2.8 2M186.8 309.3l2.8 -2 2.8 2M174.7 314.8l2.8 -2 2.8 2M181.7 314.4l2.8 -2 2.8 2M171.6 321.2l2.8 -2 2.8 2M178.8 320.6l2.8 -2 2.8 2M166.9 327.7l2.8 -2 2.8 2M175.7 327.3l2.8 -2 2.8 2M182.8 327.5l2.8 -2 2.8 2M169.6 333.7l2.8 -2 2.8 2M175.8 150.5l2.8 -2 2.8 2M184.3 150.1l2.8 -2 2.8 2M163.1 158.1l2.8 -2 2.8 2M171.8 156.5l2.8 -2 2.8 2M180 157.7l2.8 -2 2.8 2M187 157.7l2.8 -2 2.8 2M150.6 164.5l2.8 -2 2.8 2M159.3 164l2.8 -2 2.8 2M167.9 163.5l2.8 -2 2.8 2M174.7 164.5l2.8 -2 2.8 2M183.6 164.5l2.8 -2 2.8 2M140.4 171.2l2.8 -2 2.8 2M147.1 170.9l2.8 -2 2.8 2M154.7 170.9l2.8 -2 2.8 2M163.2 169.9l2.8 -2 2.8 2M120.9 177.9l2.8 -2 2.8 2M128.5 177.5l2.8 -2 2.8 2M136.8 177.7l2.8 -2 2.8 2M143.4 177.5l2.8 -2 2.8 2M195.5 74.4l3.6 -2.6 3.6 2.6M199.4 80.4l3.6 -2.6 3.6 2.6M213.8 88.3l3.6 -2.6 3.6 2.6M220.2 96.1l3.6 -2.6 3.6 2.6M228.9 95.9l3.6 -2.6 3.6 2.6M238.6 95.8l3.6 -2.6 3.6 2.6M234.4 103.1l3.6 -2.6 3.6 2.6M243.9 102.1l3.6 -2.6 3.6 2.6M254.8 102.7l3.6 -2.6 3.6 2.6M260.8 109.7l3.6 -2.6 3.6 2.6M270.2 109.2l3.6 -2.6 3.6 2.6M283.6 117l3.6 -2.6 3.6 2.6M73.7 2.3l3.6 -2.6 3.6 2.6M84 1.3l3.6 -2.6 3.6 2.6M94.5 1.9l3.6 -2.6 3.6 2.6M114.3 0.9l3.6 -2.6 3.6 2.6M124.5 2.1l3.6 -2.6 3.6 2.6M133.6 2.1l3.6 -2.6 3.6 2.6M163.3 0.9l3.6 -2.6 3.6 2.6M174.3 1.4l3.6 -2.6 3.6 2.6M182.8 2.3l3.6 -2.6 3.6 2.6M168.6 9.6l3.6 -2.6 3.6 2.6M177.6 8.7l3.6 -2.6 3.6 2.6M189.5 8.5l3.6 -2.6 3.6 2.6M173.1 15.7l3.6 -2.6 3.6 2.6M184 16.5l3.6 -2.6 3.6 2.6M153.1 17.1l3.6 -2.6 3.6 2.6M161.9 17.6l3.6 -2.6 3.6 2.6M147.2 24.4l3.6 -2.6 3.6 2.6M157 23.1l3.6 -2.6 3.6 2.6M168 23.6l3.6 -2.6 3.6 2.6M176.5 24.6l3.6 -2.6 3.6 2.6M153.1 31.2l3.6 -2.6 3.6 2.6M162.3 31.9l3.6 -2.6 3.6 2.6M171.3 31l3.6 -2.6 3.6 2.6M183.3 30.7l3.6 -2.6 3.6 2.6M156.1 37.2l3.6 -2.6 3.6 2.6M166.8 37.9l3.6 -2.6 3.6 2.6M177.7 38.8l3.6 -2.6 3.6 2.6M186.4 38.6l3.6 -2.6 3.6 2.6M162.8 45.7l3.6 -2.6 3.6 2.6M173.2 45.8l3.6 -2.6 3.6 2.6M181.7 45.7l3.6 -2.6 3.6 2.6M191.9 45.8l3.6 -2.6 3.6 2.6M201.5 44.8l3.6 -2.6 3.6 2.6M166.8 52.3l3.6 -2.6 3.6 2.6M177.8 51.3l3.6 -2.6 3.6 2.6M186.4 52.1l3.6 -2.6 3.6 2.6M196.3 53.1l3.6 -2.6 3.6 2.6M207.2 52.4l3.6 -2.6 3.6 2.6M183.2 58.9l3.6 -2.6 3.6 2.6M193.1 58.7l3.6 -2.6 3.6 2.6M201.9 59.1l3.6 -2.6 3.6 2.6M211.7 58.9l3.6 -2.6 3.6 2.6M223 59l3.6 -2.6 3.6 2.6M186.9 66.9l3.6 -2.6 3.6 2.6M196.5 66.4l3.6 -2.6 3.6 2.6M206 65.4l3.6 -2.6 3.6 2.6M217.6 66.7l3.6 -2.6 3.6 2.6M226.4 66.7l3.6 -2.6 3.6 2.6M193.1 72.5l3.6 -2.6 3.6 2.6M201.4 73.8l3.6 -2.6 3.6 2.6M211.3 72.8l3.6 -2.6 3.6 2.6M222.2 73.5l3.6 -2.6 3.6 2.6M232.3 72.8l3.6 -2.6 3.6 2.6M380.9 73.9l3.6 -2.6 3.6 2.6M207.6 80.6l3.6 -2.6 3.6 2.6M216.2 79.6l3.6 -2.6 3.6 2.6M228.1 80l3.6 -2.6 3.6 2.6M237.3 80.1l3.6 -2.6 3.6 2.6M247.4 80.8l3.6 -2.6 3.6 2.6M296.3 79.9l3.6 -2.6 3.6 2.6M317.6 81l3.6 -2.6 3.6 2.6M326.8 80.4l3.6 -2.6 3.6 2.6M337.4 79.7l3.6 -2.6 3.6 2.6M347.1 80.2l3.6 -2.6 3.6 2.6M367.9 80.9l3.6 -2.6 3.6 2.6M377.5 79.3l3.6 -2.6 3.6 2.6M221.5 86.9l3.6 -2.6 3.6 2.6M232 86.6l3.6 -2.6 3.6 2.6M242 88l3.6 -2.6 3.6 2.6M252.4 86.4l3.6 -2.6 3.6 2.6M261.9 86.2l3.6 -2.6 3.6 2.6M272.2 88l3.6 -2.6 3.6 2.6M281.2 87.3l3.6 -2.6 3.6 2.6M291.1 86.3l3.6 -2.6 3.6 2.6M302.3 86.4l3.6 -2.6 3.6 2.6M311 87.2l3.6 -2.6 3.6 2.6M322.3 87.2l3.6 -2.6 3.6 2.6M332.4 87.4l3.6 -2.6 3.6 2.6M341.9 87.3l3.6 -2.6 3.6 2.6M351.8 86.2l3.6 -2.6 3.6 2.6M363 87.1l3.6 -2.6 3.6 2.6M372.9 87.3l3.6 -2.6 3.6 2.6M381 87.9l3.6 -2.6 3.6 2.6M226.3 95.1l3.6 -2.6 3.6 2.6M237.9 93.1l3.6 -2.6 3.6 2.6M247 95l3.6 -2.6 3.6 2.6M256.7 94.7l3.6 -2.6 3.6 2.6M267.1 94.8l3.6 -2.6 3.6 2.6M277.8 93.7l3.6 -2.6 3.6 2.6M287.8 93.8l3.6 -2.6 3.6 2.6M297.5 94.5l3.6 -2.6 3.6 2.6M306.5 94.5l3.6 -2.6 3.6 2.6M318.1 93.9l3.6 -2.6 3.6 2.6M326.5 93.6l3.6 -2.6 3.6 2.6M336.7 93.7l3.6 -2.6 3.6 2.6M346 94.8l3.6 -2.6 3.6 2.6M356.9 94.5l3.6 -2.6 3.6 2.6M368.2 93.7l3.6 -2.6 3.6 2.6M378.3 93.5l3.6 -2.6 3.6 2.6M251 100.6l3.6 -2.6 3.6 2.6M261.1 101.7l3.6 -2.6 3.6 2.6M271.5 101.4l3.6 -2.6 3.6 2.6M283.3 100.7l3.6 -2.6 3.6 2.6M292.7 100.2l3.6 -2.6 3.6 2.6M301 100.7l3.6 -2.6 3.6 2.6M312.5 101.7l3.6 -2.6 3.6 2.6M320.9 100.7l3.6 -2.6 3.6 2.6M331.5 101.9l3.6 -2.6 3.6 2.6M341.5 101.8l3.6 -2.6 3.6 2.6M352.2 100.2l3.6 -2.6 3.6 2.6M361 101.3l3.6 -2.6 3.6 2.6M373.1 101.6l3.6 -2.6 3.6 2.6M267.4 107.3l3.6 -2.6 3.6 2.6M277.9 107.9l3.6 -2.6 3.6 2.6M287.8 107.8l3.6 -2.6 3.6 2.6M297.1 108.3l3.6 -2.6 3.6 2.6M307.6 107.4l3.6 -2.6 3.6 2.6M317.8 107.4l3.6 -2.6 3.6 2.6M326.7 108l3.6 -2.6 3.6 2.6M337.1 107.9l3.6 -2.6 3.6 2.6', desert: 'M11.5 35.9h.1M8.4 41.8h.1M15.5 39.5h.1M22.7 44.9h.1M26.3 46.1h.1M9.8 49.9h.1M14.1 48.7h.1M21 49h.1M25.7 50.5h.1M6.6 52.3h.1M17 53.6h.1M21.6 53.3h.1M4.3 58.1h.1M7.6 57.8h.1M12.7 57.8h.1M6.5 31.1h.1M3.4 37h.1M2.3 38.8h.1M137.7 66h.1M123 70.4h.1M127.6 69.8h.1M138.3 70.5h.1M107.6 75.2h.1M115.5 73.2h.1M120.9 75.1h.1M132 73h.1M135.7 75.1h.1M141.1 74.5h.1M99.2 78.6h.1M110.8 76.9h.1M117.8 76.5h.1M124.1 77h.1M133.6 79.2h.1M138 76.9h.1M92.6 83.4h.1M103.3 83.7h.1M110.6 83.5h.1M114 82.5h.1M125.2 81.2h.1M130.7 82.4h.1M135.9 82.3h.1M94.4 86.8h.1M107.2 85.3h.1M112.7 87.8h.1M118.8 86.6h.1M124.1 85.4h.1M129.1 87.9h.1M87.3 90.3h.1M92.4 92.1h.1M99.7 92.7h.1M104.5 90.5h.1M108.9 90.1h.1M114.9 89.7h.1M119.3 90h.1M125.3 90.7h.1M131.4 89.9h.1M135.9 90.2h.1M72.1 94.6h.1M91 95.9h.1M97.5 95.9h.1M99.4 94.3h.1M106.1 95.1h.1M113 97.2h.1M117.4 96.3h.1M70.6 100.9h.1M77.2 101.3h.1M80 101.4h.1M88 99.7h.1M91.4 100.1h.1M100.1 98.6h.1M104.2 99.1h.1M110.3 100.1h.1M116.2 99.6h.1M121.4 100.7h.1M126 100.1h.1M67.9 104.8h.1M74 105.7h.1M79.3 104.7h.1M82.8 103.5h.1M89.8 102.8h.1M101.7 106h.1M110.3 106h.1M116.7 103.8h.1M121.7 103.1h.1M58.1 107.6h.1M66.4 109.4h.1M76 110.3h.1M89.1 109h.1M98.9 110.1h.1M114.1 108.7h.1M118.5 107.5h.1M56.7 113.1h.1M63.1 113.3h.1M68 113.5h.1M74.1 111.6h.1M79.3 114.2h.1M83.1 111.8h.1M91.2 114.4h.1M95.5 114.1h.1M100.3 112h.1M107.7 112.4h.1M55.6 118.8h.1M60 118.1h.1M67 118.6h.1M70.2 116.3h.1M75.6 118.4h.1M82.8 119.1h.1M87.9 116.7h.1M92.1 118.4h.1M99.1 119h.1M105 116.9h.1M58.6 122.6h.1M62.4 122.4h.1M69.9 121.6h.1M85.9 120.5h.1M55.3 127.6h.1M61.5 125.2h.1M69.5 127.1h.1M77.1 126.6h.1M85.7 125.9h.1M92.1 127.9h.1M97.8 125.7h.1M56.7 131.7h.1M61.1 131.5h.1M67.6 129.7h.1M73.7 130.7h.1M86.3 131.8h.1M94.6 130.6h.1M56 135.7h.1M60.9 134.7h.1M66.2 133.9h.1M72.8 135.2h.1M77.6 133.9h.1M82.9 136.4h.1M85.6 135.9h.1M64.2 138.3h.1', plateau: 'M218.9 144.3h4M203.3 154h4M213.6 151.6h4M227 154.3h4M236.9 152.4h4M249.5 155.4h4M262.5 154.4h4M267.9 153.7h4M207.1 163.7h4M220.8 166h4M234.9 161.5h4M257.6 161.4h4M264.6 165.6h4M208.1 172.9h4M218.7 169.7h4M249.3 172.2h4M256.6 174.6h4M272.6 169.3h4M261.7 180.5h4M276 183h4M279.5 189.6h4M143.9 215.7h4M192.9 218.2h4M128.3 225.4h4M138.6 223h4M152 225.7h4M161.9 223.8h4M174.5 226.8h4M187.5 225.9h4M192.9 225.2h4M132.1 235.1h4M145.8 237.5h4M159.9 232.9h4M182.6 232.9h4M189.6 237.1h4M133.1 244.3h4M143.6 241.2h4M174.3 243.6h4M181.6 246h4M197.6 240.7h4M135.5 252.7h4M148.5 253.8h4M157.2 251.2h4M170.9 251.8h4M180.4 255h4M186.7 252h4M142.1 258.5h4M162.9 261h4M172.2 260.5h4M137.6 270.1h4M144.1 269.5h4M154.3 269.5h4M160 276.8h4M156.8 289.2h4M151.5 297h4M163.6 298.8h4M148.5 306.2h4M167.7 308.1h4M163.9 310.7h4M286.9 1.3h4M327.4 1.5h4M353.1 1h4M147.8 7.4h4M157.7 5.5h4M216.7 8.7h4M223.5 9.3h4M236.9 6.3h4M243.3 8.3h4M257.5 9.9h4M266.6 8.9h4M288 10.1h4M299.5 10h4M312.2 6.1h4M336.5 9h4M353.8 9.7h4M364.9 10.3h4M375 8.4h4M390 9.2h4M141.6 19.1h4M208.4 17.4h4M226.6 19.6h4M242.4 15.6h4M253.3 19.4h4M275.5 15.3h4M282.8 19.4h4M293.6 18.3h4M305.1 19.3h4M321.5 17.8h4M329.7 13.5h4M350.9 17.6h4M364.5 14.6h4M376.5 13.2h4M387.3 17.5h4M396.9 17.3h4M193.3 22.4h4M202.7 26.2h4M209.9 26.5h4M233.1 23h4M247.1 22.1h4M259.6 23.2h4M266 23.3h4M278.6 27.5h4M287.4 22.9h4M302.5 25.8h4M335.7 23.1h4M344.3 27.8h4M358.9 25.5h4M368 26.6h4M379.5 22.1h4M392.5 22.8h4M218 36.6h4M232.7 36.1h4M239.4 34.1h4M255.3 31.8h4M261.9 31.5h4M272.8 34h4M283.2 33.9h4M298.5 37h4M308.8 37h4M317.5 35h4M331.4 32.4h4M347.5 35.3h4M363.6 31.7h4M369.9 34.9h4M381.5 37h4M393.4 32.3h4M212 44.8h4M225.8 39.7h4M236.8 44.7h4M249 42.3h4M259.7 39.9h4M269.7 45h4M292.8 44.2h4M299.4 41.8h4M312.1 44.5h4M335.6 41.6h4M356 39.7h4M365.7 41.3h4M380.8 41.8h4M392 45.5h4M220.4 50.3h4M229.3 49.4h4M241.3 48.6h4M250 49.3h4M262 50.6h4M274.1 48.9h4M283.2 49.6h4M310.6 51.5h4M319.6 52.4h4M329.5 53.5h4M338.2 53.8h4M350.9 54.8h4M365.1 52.8h4M375.1 54.2h4M382.4 53.1h4M237.5 63.5h4M246.3 61.8h4M289.5 60.3h4M316.1 58.4h4M332.9 63.4h4M355.9 59.5h4M393.4 60.1h4M243.7 68.3h4M254.2 70.5h4M263.5 69.4h4M276.6 68.6h4M286.7 70.2h4M298 68.3h4M306.4 72.1h4M316.1 67.1h4M326.1 68.1h4M336.7 70.1h4M354.3 68.7h4M377 66.8h4M381.5 69.9h4M394.5 70.6h4M254.9 75.5h4M282.1 76.9h4M291 77.4h4M342.5 75.1h4M388.5 74.8h4' };
+  var PLAIN = 'M61.6 143.1 L54.1 140.5 L51.6 137.1 L52.1 106.5 L54.4 101.7 L84.8 80.6 L97.8 76.6 L125.4 62.7 L135.4 60.4 L141.9 63.3 L145.9 73.1 L144.7 83 L140.1 93 L131.2 103.1 L109.4 118.1 L91.2 137.6 L87.4 139.1 L74.8 139.3 Z M293.3 120.1 L304.9 117.5 L323.9 127.5 L345.1 153.6 L346.3 159.2 L346.7 168.1 L342.1 170.3 L338 164.5 L336.8 156.6 L336.3 159 L332.6 158.7 L336.9 161.2 L335.3 168.6 L338 173.9 L333.4 181.7 L331.3 181 L332.9 177.1 L329.6 179.2 L329.1 177.9 L329.7 172.9 L327.8 179.9 L324.8 183.1 L323.3 176 L323.8 181.1 L322.1 183.8 L319.5 183.1 L317.8 178.9 L316.5 181.1 L317.9 184 L313.3 184.2 L313.7 180.3 L312.4 178.7 L312 184.3 L305.2 184.6 L306.5 178.7 L303 175.6 L306.1 179 L303.5 183.3 L302.1 184.6 L297.7 183.2 L292.4 178.4 L289.7 164.8 L286.5 158.4 L280 151.5 L272.4 147.1 L264.3 144.4 L214.2 137.7 L199.2 130.7 L184 118 L176.3 115.5 L166.7 106 L161 93.5 L157.9 71.4 L158.7 63.8 L159.6 61.9 L162.5 61.2 L189.2 74.2 L191.8 76.2 L192.8 80 L216.9 91.3 L222.7 97.8 L231.3 102.6 L250.9 106.1 Z M340.3 177.6 L336.9 178.2 L338.9 174.4 L336.1 167.3 L337.3 166.9 L341.2 172 Z';   // Ganges plain and Thar: a mask for fog and parched ground
+  var WX = { monsoonFrom: [-2, 358], monsoonTo: [349, 64], heat1: [91, 105], heat2: [112, 138], heat3: [162, 216], heat4: [194, 160], heat5: [138, 272] };
   // END GENERATED MAP
   var POS = { indus: PT.indus, himal: PT.himal, ganga: PT.ganga, delta: PT.delta, coast: PT.coast };
   var LBL = { indus: [-31, 4, 'end'], himal: [30, -6, 'start'], ganga: [0, 46, 'middle'], delta: [0, 46, 'middle'], coast: [32, 4, 'start'] };
@@ -464,6 +692,7 @@ details > *:not(summary) { margin-top: 8px; }
   // Himalayan Accord sit close together, so their rows go to the far sides, away from each other.
   var ROW = { himal: [31, 4, 'start'], ganga: [-31, 0, 'end'] };
   var PSEAL = { himal: [-12, 23] };   // the pledge check, nudged off the Gangetic Union's ring
+  var AGENT = { himal: [-18, -27] };  // the Company flag, lifted clear of the Gangetic Union's pins
   var RESN = { water: 'Water', energy: 'Energy', food: 'Food', capital: 'Capital', inf: 'Influence' };
 
   function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
@@ -498,7 +727,7 @@ details > *:not(summary) { margin-top: 8px; }
     opt = opt || {};
     var hint = a.hint || '', off = !a.ok;
     return '<button class="act' + (opt.key ? ' key' : '') + '" data-do="act" data-id="' + a.id + '" aria-disabled="' + off + '" data-name="' + esc(opt.label || a.label) + '" data-hint="' + esc(hint) + '" data-why="' + esc(off ? (a.why || '') : '') + '" data-cost="' + esc(costText(a.cost)) + '">' +
-      '<span>' + (opt.n ? '<span class="nbadge">' + opt.n + '</span>' : '') + esc(opt.label || a.label) + '</span>' + costHtml(a.cost) +
+      '<span>' + (opt.n ? '<span class="nbadge">' + opt.n + '</span>' : '') + esc(opt.label || a.label) + (opt.sr && !prefs.details ? '<span class="sr">. ' + esc(opt.sr) + '</span>' : '') + '</span>' + costHtml(a.cost) +
       (prefs.details || opt.inline ? '<small>' + esc(off ? (a.why || '') : hint) + '</small>' : '') + '</button>';
   }
 
@@ -569,7 +798,7 @@ details > *:not(summary) { margin-top: 8px; }
         var tg = f.leftHow === 'walkout' ? '<span class="why">Walked out</span>' : (S.act === 3 && f.grievance ? '<span class="why hold">Holdout</span>' : '');
         body = '<span class="dots" aria-label="' + ok + ' of ' + g.length + ' gates open">' + g.map(function (x) { return '<i' + (x.ok ? ' class="on"' : '') + '></i>'; }).join('') + ' ' + ok + '/' + g.length + ' gates</span>' + tg;
       }
-      h += '<button class="pill' + (f.member ? ' member' : '') + (f.grip >= 2 ? ' client' : '') + (sel === id && view === 'home' ? ' sel' : '') + '" data-do="sel" data-f="' + id + '"><b>' + esc(A.FACTIONS[id].name) + '</b>' + body + '</button>';
+      h += '<button class="pill' + (f.member ? ' member' : '') + (f.grip >= 2 ? ' client' : '') + (sel === id && view === 'home' ? ' sel' : '') + '" data-do="sel" data-f="' + id + '"><b>' + esc(A.FACTIONS[id].name) + '</b>' + sparkHtml(id) + body + '</button>';
     });
     return h + '</div><button class="ghost" data-do="help">How to win</button></div>';
   }
@@ -632,17 +861,95 @@ details > *:not(summary) { margin-top: 8px; }
     return true;
   }
 
-  function strainMarks(x, y, n) {
-    var h = '<g class="strain"><title>Strain ' + n + ' of ' + A.STRAIN_MAX + '. Unmet demands, rejected motions, and lost disputes raise it. Hear its grievances to lower it.</title>';
+  function strainMarks(x, y, n, item) {
+    var h = '<g class="strain' + (item ? ' pin t-bad" data-att="' + item.i + '" data-k="strain' : '') + '">' + (item ? '<rect class="hit" x="' + (x - 16) + '" y="' + (y - 7) + '" width="32" height="14"/>' : '<title>Strain ' + n + ' of ' + A.STRAIN_MAX + '. Unmet demands, rejected motions, and lost disputes raise it. Hear its grievances to lower it.</title>');
     for (var i = 0; i < A.STRAIN_MAX; i++) h += '<rect' + (i < n ? ' class="on"' : '') + ' x="' + (x - 13 + i * 9) + '" y="' + (y - 2) + '" width="7" height="4" rx="1"/>';
     return h + '</g>';
   }
 
+  /* ---------- weather: drawn from the season and S.monsoon only, so it survives every re-render ---------- */
+  // The monsoon arrives from the southwest and sweeps northeast. Clouds travel along lanes parallel
+  // to WX.monsoonFrom -> WX.monsoonTo; the drift keyframes in the CSS use the same direction.
+  var WXDIR = (function () { var dx = WX.monsoonTo[0] - WX.monsoonFrom[0], dy = WX.monsoonTo[1] - WX.monsoonFrom[1], l = Math.sqrt(dx * dx + dy * dy); return [dx / l, dy / l, l]; })();
+  function wxRand(seed) { return function () { seed = (seed * 9301 + 49297) % 233280; return seed / 233280; }; }
+  // A negative delay picks up each animation where the clock says it is, so a re-render does not restart it.
+  function phase(dur, off) { return -(((Date.now() / 1000) + off * dur) % dur).toFixed(2) + 's'; }
+  function weatherWords() {
+    var sea = A.season(S);
+    if (S.monsoon === 'failed') return 'The monsoon has failed: few clouds and parched plains.';
+    if (S.monsoon === 'good') return 'A strong monsoon: heavy cloud, rain, and swollen rivers.';
+    if (S.monsoon) return 'The monsoon: clouds sweep in from the southwest.';
+    return { Winter: 'Winter: fog over the Ganges plain.', Spring: 'Spring: heat over the plains.', Autumn: 'Autumn: clear skies.' }[sea] || '';
+  }
+  function weatherSvg(sea) {
+    var h = '<g class="wx" aria-hidden="true">', i, ux = WXDIR[0], uy = WXDIR[1], L = WXDIR[2];
+    var mid = [(WX.monsoonFrom[0] + WX.monsoonTo[0]) / 2, (WX.monsoonFrom[1] + WX.monsoonTo[1]) / 2];
+    if (S.monsoon) {
+      // [clouds, seconds to cross, size, rain streaks per cloud]
+      var cfg = { failed: [3, 70, 0.7, 0], normal: [10, 52, 1.15, 3], good: [15, 40, 1.45, 5] }[S.monsoon];
+      var n = cfg[0], dur = cfg[1], rnd = wxRand(S.turn * 131 + 7);
+      // the monsoon wind: faint streamlines from the Arabian Sea toward the northeast
+      if (S.monsoon !== 'failed') [-80, 0, 80].forEach(function (off, k) {
+        var a = [WX.monsoonFrom[0] - uy * off, WX.monsoonFrom[1] + ux * off], b = [WX.monsoonTo[0] - uy * off, WX.monsoonTo[1] + ux * off], bend = 30;
+        var c = [(a[0] + b[0]) / 2 + uy * bend, (a[1] + b[1]) / 2 - ux * bend];
+        h += '<path class="wind" d="M' + a[0].toFixed(0) + ' ' + a[1].toFixed(0) + ' Q' + c[0].toFixed(0) + ' ' + c[1].toFixed(0) + ' ' + b[0].toFixed(0) + ' ' + b[1].toFixed(0) + '" style="animation-delay:' + phase(4, k / 3) + '"/>';
+      });
+      h += '<g class="clouds ' + S.monsoon + '">';
+      for (i = 0; i < n; i++) {
+        var t = (i + 0.5) / n, lane = ((i * 3) % 5 - 2) * 42 + (rnd() - 0.5) * 24, s = cfg[2] * (0.75 + rnd() * 0.5);
+        if (S.monsoon === 'failed') lane = (i - 1) * 70 - 40;
+        var bx = mid[0] - uy * lane, by = mid[1] + ux * lane, along = (t - 0.5) * L * 0.95;
+        var rain = '';
+        for (var k = 0; k < cfg[3]; k++) {
+          var rx = (k - (cfg[3] - 1) / 2) * 7 + (rnd() - 0.5) * 3;
+          rain += '<line class="rain" x1="' + rx.toFixed(1) + '" y1="9" x2="' + (rx - 4).toFixed(1) + '" y2="24" style="animation-delay:' + (-(k * 0.27 + rnd() * 0.5)).toFixed(2) + 's"/>';
+        }
+        h += '<g transform="translate(' + bx.toFixed(1) + ' ' + by.toFixed(1) + ')"><g class="drift" style="transform:translate(' + (ux * along).toFixed(1) + 'px,' + (uy * along).toFixed(1) + 'px);animation-duration:' + dur + 's;animation-delay:' + phase(dur, t) + '">' +
+          '<g transform="scale(' + s.toFixed(2) + ')">' + rain + '<use href="#cl" class="cloud"/></g></g></g>';
+      }
+      h += '</g>';
+    } else if (sea === 'Winter') {
+      // fog banks lie along the Ganges plain, masked to it, drifting slowly
+      var banks = [[150, 80, 46], [196, 104, 52], [240, 128, 48], [286, 138, 40], [322, 156, 30], [120, 58, 34]];
+      h += '<g class="fog" mask="url(#plainmask)"><g filter="url(#fogblur)">' + banks.map(function (b, k) { return '<ellipse class="bank" cx="' + b[0] + '" cy="' + b[1] + '" rx="' + b[2] + '" ry="' + (12 + (k % 3) * 3) + '" style="animation-delay:' + phase(22, k / 6) + '"/>'; }).join('') + '</g>' +
+        // and the same long mist strokes the season badge uses
+        banks.map(function (b, k) { return '<path class="mist" d="M' + (b[0] - b[2] * 0.7).toFixed(0) + ' ' + (b[1] + (k % 2 ? 6 : -4)) + ' h' + (b[2] * 1.2).toFixed(0) + '" style="animation-delay:' + phase(22, k / 6 + 0.3) + '"/>'; }).join('') + '</g>';
+    } else if (sea === 'Spring') {
+      // heat shimmer: short wavy lines rising off the dry plains
+      h += '<g class="heat">';
+      ['heat1', 'heat2', 'heat3', 'heat4', 'heat5'].forEach(function (key, k) {
+        var q = WX[key];
+        for (var j = 0; j < 3; j++) {
+          var x = q[0] - 8 + (j % 2) * 5, y = q[1] - j * 5;
+          h += '<path d="M' + x + ' ' + y + ' q2 -2.4 4 0 t4 0 t4 0" style="animation-delay:' + (-(k * 0.6 + j * 0.9)).toFixed(1) + 's"/>';
+        }
+      });
+      h += '</g>';
+    }
+    return h + '</g>';
+  }
+  /* A small weather glyph by the season caption, so the corner reads at a glance. */
+  function wxIcon(sea) {
+    var x = 20, y = 405, sun = function (r, rays) { var s = '<circle class="sun" cx="' + x + '" cy="' + y + '" r="' + r + '"/>'; if (rays) for (var a = 0; a < 8; a++) { var c = Math.cos(a * Math.PI / 4), d = Math.sin(a * Math.PI / 4); s += '<path class="ray" d="M' + (x + c * (r + 2)).toFixed(1) + ' ' + (y + d * (r + 2)).toFixed(1) + ' L' + (x + c * (r + 4.5)).toFixed(1) + ' ' + (y + d * (r + 4.5)).toFixed(1) + '"/>'; } return s; };
+    var cloud = function (cls) { return '<g transform="translate(' + x + ' ' + (y - 2) + ') scale(.42)"><use href="#cl" class="cloud ' + cls + '"/></g>'; };
+    if (S.monsoon === 'failed') return sun(4.5, true) + '<path class="crk" d="M' + (x - 9) + ' ' + (y + 9) + ' l4 -2 l3 2 l4 -3 l3 2 l4 -1"/>';
+    if (S.monsoon) return cloud(S.monsoon === 'good' ? 'heavy' : '') + '<path class="drop" d="M' + (x - 4) + ' ' + (y + 4) + ' l-1.5 4 M' + (x + 1) + ' ' + (y + 4) + ' l-1.5 4' + (S.monsoon === 'good' ? ' M' + (x + 6) + ' ' + (y + 4) + ' l-1.5 4 M' + (x - 9) + ' ' + (y + 4) + ' l-1.5 4' : '') + '"/>';
+    if (sea === 'Winter') return '<path class="mist" d="M' + (x - 9) + ' ' + (y - 4) + ' h14 M' + (x - 5) + ' ' + y + ' h14 M' + (x - 9) + ' ' + (y + 4) + ' h14"/>';
+    if (sea === 'Spring') return sun(4, true) + '<path class="mist warm" d="M' + (x - 9) + ' ' + (y + 9) + ' q2 -2 4 0 t4 0 t4 0 t4 0"/>';
+    return sun(5, true);
+  }
+
   function map() {
-    var u = A.unlocked(S), sea = A.season(S), i;
-    var h = '<svg viewBox="0 0 400 420" class="s-' + sea + (S.monsoon === 'failed' ? ' dry' : '') + '" role="img" aria-label="Map of the five powers and your home state. Gold glow shows trust in you.">' +
+    var u = A.unlocked(S), sea = A.season(S), i, att = ATT, byF = {};
+    att.forEach(function (x, k) { x.i = k; if (x.f) (byF[x.f] = byF[x.f] || []).push(x); });
+    var h = '<svg viewBox="0 0 400 420" class="s-' + sea + (S.monsoon ? ' wx-' + S.monsoon : '') + (S.monsoon === 'failed' ? ' dry' : '') + '" role="img" aria-label="Map of the five powers and your home state. ' + esc(weatherWords()) + ' Gold glow shows trust in you.">' +
       '<defs><clipPath id="frame"><rect width="400" height="420"/></clipPath><clipPath id="landclip"><path d="' + LAND + '"/></clipPath>' +
       '<filter id="soft" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="13"/></filter>' +
+      '<filter id="fogblur" x="-50%" y="-100%" width="200%" height="300%"><feGaussianBlur stdDeviation="7"/></filter>' +
+      '<filter id="mblur"><feGaussianBlur stdDeviation="4"/></filter>' +
+      '<mask id="plainmask" maskUnits="userSpaceOnUse" x="0" y="0" width="400" height="420"><path d="' + PLAIN + '" fill="#fff" filter="url(#mblur)"/></mask>' +
+      '<pattern id="cracks" width="26" height="22" patternUnits="userSpaceOnUse"><path d="M0 7 L6 9 L9 4 L15 6 L19 1 M9 4 L8 0 M6 9 L5 15 L11 19 L17 16 L22 20 L26 18 M17 16 L19 10 L26 9 M15 6 L19 10 M11 19 L10 22"/></pattern>' +
+      '<g id="cl"><ellipse cx="0" cy="3" rx="21" ry="7"/><circle cx="-9" cy="-1" r="7.5"/><circle cx="2" cy="-5" r="10"/><circle cx="12" cy="0" r="6.5"/></g>' +
       '<marker id="ah" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="4.6" markerHeight="4.6" orient="auto"><path d="M0 0 L10 5 L0 10 z" fill="var(--ink)"/></marker>' +
       '<pattern id="stripes" width="7" height="7" patternUnits="userSpaceOnUse" patternTransform="rotate(40)"><rect width="3" height="7" fill="var(--company)"/></pattern></defs>' +
       '<rect class="sea" width="400" height="420"/>' +
@@ -661,11 +968,22 @@ details > *:not(summary) { margin-top: 8px; }
     });
     h += '</g>';
 
-    // rivers: width is the water reaching each power
+    // relief: ridges, desert stipple, plateau dashes. Marks only, no outlines.
+    h += '<g class="terrain" aria-hidden="true"><path class="t-plateau" d="' + TERRAIN.plateau + '"/><path class="t-desert" d="' + TERRAIN.desert + '"/><path class="t-mtn" d="' + TERRAIN.mtn + '"/></g>';
+    // a failed monsoon parches the plains
+    if (S.monsoon === 'failed') h += '<rect class="parch" width="400" height="420" fill="url(#cracks)" mask="url(#plainmask)" aria-hidden="true"/>';
+
+    // rivers: width is the water reaching each power. The season scales every river alike, so
+    // the comparison between rivers still holds: a failed monsoon shrinks them inside a dry bed,
+    // a strong one floods their banks.
+    var wk = S.monsoon === 'failed' ? 0.6 : 1;
     var wi = 2 + S.factions.indus.pips.water * 1.5, wg = 2 + S.factions.delta.pips.flow * 1.5;
+    var big = [[RIV.brahma, 2.6], [RIV.indus, wi], [RIV.gangaUp, 3.5], [RIV.karnali, 3.5], [RIV.gangaLow, wg]];
+    if (S.monsoon === 'failed') h += big.map(function (r) { return '<path class="bed" d="' + r[0] + '" stroke-width="' + (r[1] + 1.5) + '"/>'; }).join('');
+    if (S.monsoon === 'good') h += big.map(function (r) { return '<path class="flood" d="' + r[0] + '" stroke-width="' + (r[1] + 6) + '"/>'; }).join('');
     // minor rivers are drawn thin for orientation; the three that carry game state change width
-    h += '<path class="river minor" d="' + RIV.godavari + '"/><path class="river minor" d="' + RIV.krishna + '"/><path class="river" d="' + RIV.brahma + '" stroke-width="2.6"/>' +
-      '<path class="river" d="' + RIV.indus + '" stroke-width="' + wi + '"/><path class="river" d="' + RIV.gangaUp + '" stroke-width="3.5"/><path class="river" d="' + RIV.karnali + '" stroke-width="3.5"/><path class="river" d="' + RIV.gangaLow + '" stroke-width="' + wg + '"/>' +
+    h += '<path class="river minor" d="' + RIV.godavari + '" stroke-width="' + 1.5 * wk + '"/><path class="river minor" d="' + RIV.krishna + '" stroke-width="' + 1.5 * wk + '"/>' +
+      big.map(function (r) { return '<path class="river" d="' + r[0] + '" stroke-width="' + (r[1] * wk).toFixed(1) + '"/>'; }).join('') +
       '<path class="shimmer" d="' + RIV.indus + '"/><path class="shimmer" d="' + RIV.gangaUp + '"/><path class="shimmer" d="' + RIV.karnali + '"/><path class="shimmer" d="' + RIV.gangaLow + '"/>' +
       '';
     var rlab = '<text class="rl" x="' + PT.lblIndus[0] + '" y="' + PT.lblIndus[1] + '" text-anchor="end">Indus</text><text class="rl" x="' + PT.lblGanges[0] + '" y="' + PT.lblGanges[1] + '" text-anchor="middle">Ganges</text><text class="rl" x="' + PT.lblBrahma[0] + '" y="' + PT.lblBrahma[1] + '">Brahmaputra</text>';
@@ -680,6 +998,9 @@ details > *:not(summary) { margin-top: 8px; }
     if (S.projects.flow) h += seal(PT.sealFlow[0], PT.sealFlow[1], 'River Flow Compact');
     var fortBuilt = S.plansDone.forts, fortPlan = S.factions.indus.plan && A.planOf(S, 'indus').key === 'forts';
     if (fortBuilt || fortPlan) h += '<path class="fort' + (fortBuilt ? '' : ' plan') + '" d="M' + (PT.fort[0] - 7.5) + ' ' + (PT.fort[1] + 5.5) + ' v-11 h3 v3 h3 v-3 h3 v3 h3 v-3 h3 v11 Z"><title>' + (fortBuilt ? 'Border forts' : 'Border forts under construction') + '</title></path>';
+
+    // weather sits above the land and rivers and below every pin and label
+    h += weatherSvg(sea);
 
     // ties: trouble always shows; friendships show for the selected power
     if (u.relations) A.PAIRS.forEach(function (p) {
@@ -698,12 +1019,22 @@ details > *:not(summary) { margin-top: 8px; }
       h += '<g class="co-base"><title>The Company, offshore. ' + ['', 'One ship: it courts one or two powers a season', 'Two ships: it courts two powers a season', 'Three ships: it goes all in, courting three powers a season'][S.act] + '</title>' + fleet.map(function (o, k) { return ship(CO[0] + o[0], CO[1] + o[1], k); }).join('') + '<text x="' + CO[0] + '" y="' + (CO[1] + (S.act > 1 ? 43 : 21)) + '" text-anchor="middle">The Company</text></g>';
     }
 
-    h += '<g class="home"><circle class="base" cx="' + HOME[0] + '" cy="' + HOME[1] + '" r="9"/></g>';
+    // attention pins: a glyph per thing that needs you, tied to a power. pin() marks a glyph as one.
+    function itemOf(id, k) { return (byF[id] || []).filter(function (x) { return x.k === k; })[0]; }
+    function pin(x) { return x ? ' pin t-' + x.tone + (x.done ? ' done' : '') + '" data-att="' + x.i + '" data-k="' + x.k : ''; }
+    function tl(x, t) { return x ? '' : '<title>' + esc(t) + '</title>'; }
+    h += '<g class="home"><circle class="base" cx="' + HOME[0] + '" cy="' + HOME[1] + '" r="9"/>';
+    var vote = att.filter(function (x) { return x.k === 'vote'; })[0];
+    if (vote && !play) h += '<circle class="need t-good" cx="' + HOME[0] + '" cy="' + HOME[1] + '" r="17"/><g class="rpin' + pin(vote) + '" tabindex="0" role="img" aria-label="' + esc(vote.text) + '"><circle cx="' + (HOME[0] + 15) + '" cy="' + (HOME[1] - 13) + '" r="8"/><path d="M' + (HOME[0] + 11.5) + ' ' + (HOME[1] - 13) + ' l2.4 2.6 l4.6 -5"/></g>';
+    h += '</g>';
     var lab = rlab + '<text x="' + HOME[0] + '" y="' + (HOME[1] + 23) + '" text-anchor="middle" font-weight="600">You: Deccan Compact</text>';
     A.ORDER.forEach(function (id) {
       var f = S.factions[id], d = A.FACTIONS[id], p = POS[id], l = LBL[id], C = 2 * Math.PI * 20, g = A.gates(S, id);
-      var cls = 'node' + (f.member ? ' member' : '') + (f.grip >= 2 ? ' client' : '') + (sel === id ? ' sel' : '');
-      h += '<g class="' + cls + '" data-do="sel" data-f="' + id + '" tabindex="0" role="button" aria-label="' + esc(d.name) + ', trust ' + f.trust + (f.request ? ', asks for ' + f.request.res : '') + (f.demand ? ', demands ' + f.demand.amount + ' ' + f.demand.res : '') + (u.demands && (f.member || f.strain) ? ', strain ' + f.strain + ' of ' + A.STRAIN_MAX : '') + (f.pledged ? ', pledged' : '') + (f.leftHow === 'walkout' && !f.member ? ', walked out' : '') + '">' +
+      var mine = (byF[id] || []).filter(function (x) { return !x.done; }), tone = null;
+      ['bad', 'good', 'co', 'ask', 'plan'].forEach(function (t) { if (!tone && mine.some(function (x) { return x.tone === t; })) tone = t; });
+      var cls = 'node' + (f.member ? ' member' : '') + (f.grip >= 2 ? ' client' : '') + (sel === id ? ' sel' : '') + (mine.length ? ' needs' : '');
+      h += '<g class="' + cls + '" data-do="sel" data-f="' + id + '" tabindex="0" role="button" aria-label="' + esc(d.name) + ', trust ' + f.trust + (u.demands && (f.member || f.strain) ? ', strain ' + f.strain + ' of ' + A.STRAIN_MAX : '') + (f.pledged ? ', pledged' : '') + (f.leftHow === 'walkout' && !f.member ? ', walked out' : '') + (mine.length ? '. Needs you: ' + esc(mine.map(function (x) { return x.text; }).join(' ')) : '') + '">' +
+        (tone && !play ? '<circle class="need t-' + tone + '" cx="' + p[0] + '" cy="' + p[1] + '" r="31"/>' : '') +
         '<circle class="halo" cx="' + p[0] + '" cy="' + p[1] + '" r="27"/>' +
         '<circle class="base" cx="' + p[0] + '" cy="' + p[1] + '" r="20"/>' +
         '<circle class="ring" cx="' + p[0] + '" cy="' + p[1] + '" r="20" stroke-dasharray="' + (C * f.trust / 100).toFixed(1) + ' ' + C.toFixed(1) + '" transform="rotate(-90 ' + p[0] + ' ' + p[1] + ')"/>' +
@@ -713,49 +1044,53 @@ details > *:not(summary) { margin-top: 8px; }
       var dots = !f.member || (S.act === 3 && !f.pledged), rw = ROW[id], sy = rw ? p[1] + rw[1] : p[1] + 29;
       var rowX = function (w) { return !rw ? p[0] : rw[2] === 'start' ? p[0] + rw[0] + w / 2 : p[0] + rw[0] - w / 2; };
       if (dots) { var gx = rowX((g.length - 1) * 9 + 6); g.forEach(function (x, i) { h += '<circle class="gd' + (x.ok ? ' on' : '') + '" cx="' + (gx - (g.length - 1) * 4.5 + i * 9) + '" cy="' + sy + '" r="3"/>'; }); sy += 7; }
-      if (u.demands && ((f.member && !dots) || f.strain > 0)) h += strainMarks(rowX(25), sy, f.strain);
+      if (u.demands && ((f.member && !dots) || f.strain > 0)) h += strainMarks(rowX(25), sy, f.strain, itemOf(id, 'strain'));
       // names go in a layer above the suggestion arrows and rails, so a line never cuts through one
       lab += '<text class="nm" data-do="sel" data-f="' + id + '" x="' + (p[0] + l[0]) + '" y="' + (p[1] + l[1]) + '" text-anchor="' + l[2] + '" font-weight="600">' + esc(d.name) + '</text>';
       var tg = !f.member && f.leftHow === 'walkout' ? ['', 'Walked out'] : !f.member && S.act === 3 && f.grievance ? [' hold', 'Holdout'] : null;
       if (tg) lab += '<text class="ntag' + tg[0] + '" x="' + (p[0] + l[0]) + '" y="' + (p[1] + l[1] + 11) + '" text-anchor="' + l[2] + '"><title>' + esc('Its grievance: ' + (f.grievance || 'unheard')) + '</title>' + tg[1] + '</text>';
       if (f.demand) {
         var dm = f.demand, dres = dm.kind === 'claim' ? dm.res : 'capital';
-        h += '<g class="dem"><title>' + esc(dm.kind === 'claim' ? 'Claims ' + dm.amount + ' ' + cap(dm.res) : 'Wants its budget share: ' + dm.amount + ' Capital') + '. Unmet by season\'s end: trust -' + A.DEMAND_TRUST + (S.act === 3 && f.pledged ? '' : ' and a strain mark') + '</title><rect x="' + (p[0] + 13) + '" y="' + (p[1] - 27) + '" width="18" height="18" rx="3"/><use href="#i-' + dres + '" class="ic-' + dres + '" x="' + (p[0] + 16) + '" y="' + (p[1] - 24) + '" width="12" height="12"/></g>';
+        h += '<g class="dem' + pin(itemOf(id, 'demand')) + '"><rect x="' + (p[0] + 13) + '" y="' + (p[1] - 27) + '" width="18" height="18" rx="3"/><use href="#i-' + dres + '" class="ic-' + dres + '" x="' + (p[0] + 16) + '" y="' + (p[1] - 24) + '" width="12" height="12"/></g>';
       }
       if (f.motion && f.member) {
         var mw = f.motion.at - S.turn, mi = A.motionInfo(f.motion.key);
-        h += '<g class="mbadge"><title>' + esc('Its motion, ' + mi.name + ', goes to council ' + (mw ? 'in ' + seasons(mw) : 'at the end of this season')) + '</title><rect x="' + (p[0] - 7.5) + '" y="' + (p[1] - 40) + '" width="15" height="15" rx="2"/><path d="M' + (p[0] - 7.5) + ' ' + (p[1] - 37) + ' h15"/><text x="' + p[0] + '" y="' + (p[1] - 28.5) + '">' + mw + '</text></g>';
+        var mx = itemOf(id, 'motion');
+        h += '<g class="mbadge' + pin(mx) + '">' + tl(mx, 'Its motion, ' + mi.name + ', goes to council ' + (mw ? 'in ' + seasons(mw) : 'at the end of this season')) + '<rect x="' + (p[0] - 7.5) + '" y="' + (p[1] - 40) + '" width="15" height="15" rx="2"/><path d="M' + (p[0] - 7.5) + ' ' + (p[1] - 37) + ' h15"/><text x="' + p[0] + '" y="' + (p[1] - 28.5) + '">' + mw + '</text></g>';
       }
-      if (f.pledged && f.member) { var ps = PSEAL[id] || [-19, 17]; h += '<g class="pseal"><title>Pledged to ratify the charter</title><circle cx="' + (p[0] + ps[0]) + '" cy="' + (p[1] + ps[1]) + '" r="7.5"/><path d="M' + (p[0] + ps[0] - 3.5) + ' ' + (p[1] + ps[1]) + ' l2.4 2.6 l4.6 -5"/></g>'; }
-      if (f.request && revealed('ask', id)) h += '<g class="ask"><title>Asks for 2 ' + cap(f.request.res) + '</title><circle cx="' + (p[0] + 22) + '" cy="' + (p[1] - 18) + '" r="9"/><use href="#i-' + f.request.res + '" class="ic-' + f.request.res + '" x="' + (p[0] + 16) + '" y="' + (p[1] - 24) + '" width="12" height="12"/></g>';
+      if (f.pledged && f.member) { var ps = PSEAL[id] || [-19, 17]; h += '<g class="pseal" data-f="' + id + '"><title>Pledged to ratify the charter</title><circle cx="' + (p[0] + ps[0]) + '" cy="' + (p[1] + ps[1]) + '" r="7.5"/><path d="M' + (p[0] + ps[0] - 3.5) + ' ' + (p[1] + ps[1]) + ' l2.4 2.6 l4.6 -5"/></g>'; }
+      if (f.request && revealed('ask', id)) h += '<g class="ask' + pin(itemOf(id, 'ask')) + '"><circle cx="' + (p[0] + 22) + '" cy="' + (p[1] - 18) + '" r="9"/><use href="#i-' + f.request.res + '" class="ic-' + f.request.res + '" x="' + (p[0] + 16) + '" y="' + (p[1] - 24) + '" width="12" height="12"/></g>';
       if (S.companyTargets.indexOf(id) >= 0 && revealed('court', id)) {
-        var bl = f.countered || blockLeft(f) === 0, ax = p[0] - 25, ay = p[1] - 17;
-        h += '<g class="agent' + (bl ? ' blocked' : '') + '"><title>' + (bl ? 'Company agent: blocked this season' : 'Company agent: courting this power') + '</title><circle cx="' + ax + '" cy="' + ay + '" r="9"/><use href="#i-co" x="' + (ax - 5.5) + '" y="' + (ay - 5.5) + '" width="11" height="11"/>' + (bl ? '<path d="M' + (ax - 7) + ' ' + (ay + 7) + ' L' + (ax + 7) + ' ' + (ay - 7) + '"/>' : '') + '</g>';
+        var bl = f.countered || blockLeft(f) === 0, ao = AGENT[id] || [-25, -17], ax = p[0] + ao[0], ay = p[1] + ao[1];
+        h += '<g class="agent' + (bl ? ' blocked' : '') + pin(itemOf(id, bl ? 'blocked' : 'court')) + '"><circle cx="' + ax + '" cy="' + ay + '" r="9"/><use href="#i-co" x="' + (ax - 5.5) + '" y="' + (ay - 5.5) + '" width="11" height="11"/>' + (bl ? '<path d="M' + (ax - 7) + ' ' + (ay + 7) + ' L' + (ax + 7) + ' ' + (ay - 7) + '"/>' : '') + '</g>';
       }
-      if (!play && (A.canJoin(S, id) || A.canPledge(S, id))) h += '<circle class="ready" cx="' + p[0] + '" cy="' + p[1] + '" r="31"><title>' + (f.member ? 'Ready to pledge' : 'Ready to join') + '</title></circle>';
-      if (f.plan) h += '<g class="pbadge"><title>Its own plan lands in ' + seasons(f.plan.eta) + '</title><rect x="' + (p[0] + 14) + '" y="' + (p[1] + 10) + '" width="14" height="14" rx="3"/><text x="' + (p[0] + 21) + '" y="' + (p[1] + 21) + '">' + f.plan.eta + '</text></g>';
+      var rd = itemOf(id, 'ready');
+      if (rd && !play) { var rp2 = PSEAL[id] || [-19, 17], rx = p[0] + rp2[0], ry = p[1] + rp2[1]; h += '<g class="rpin' + pin(rd) + '"><circle cx="' + rx + '" cy="' + ry + '" r="8"/>' + (f.member ? '<path d="M' + (rx - 3.5) + ' ' + ry + ' l2.4 2.6 l4.6 -5"/>' : '<path d="M' + (rx - 4) + ' ' + ry + ' h8 M' + rx + ' ' + (ry - 4) + ' v8"/>') + '</g>'; }
+      var px = f.plan && itemOf(id, 'plan');
+      if (f.plan) h += '<g class="pbadge' + pin(px) + '">' + tl(px, 'Its own plan lands in ' + seasons(f.plan.eta)) + '<rect x="' + (p[0] + 14) + '" y="' + (p[1] + 10) + '" width="14" height="14" rx="3"/><text x="' + (p[0] + 21) + '" y="' + (p[1] + 21) + '">' + f.plan.eta + '</text></g>';
       h += '</g>';
     });
 
-    // weather
-    if (S.monsoon) {
-      var n = { failed: 9, normal: 34, good: 70 }[S.monsoon], seed = S.turn * 9301 + 49297;
-      h += '<g aria-hidden="true">';
-      for (i = 0; i < n; i++) {
-        seed = (seed * 9301 + 49297) % 233280; var x = 10 + seed / 233280 * 380;
-        seed = (seed * 9301 + 49297) % 233280; var y = 10 + seed / 233280 * 390;
-        h += '<line class="rain" x1="' + x.toFixed(0) + '" y1="' + y.toFixed(0) + '" x2="' + (x - 4).toFixed(0) + '" y2="' + (y + 11).toFixed(0) + '" style="animation-delay:-' + (i % 9) * 0.1 + 's"/>';
-      }
-      h += '</g>';
-    }
     // the council's suggestions, drawn as numbered routes from your capital
-    var nbs = '';
+    var nbs = '', boxes = [[HOME[0] - 62, HOME[1] + 12, HOME[0] + 62, HOME[1] + 27]];
+    A.ORDER.forEach(function (id) {
+      var p = POS[id], l = LBL[id], w = A.FACTIONS[id].name.length * 6.6, x = p[0] + l[0], y = p[1] + l[1];
+      var x0 = l[2] === 'end' ? x - w : l[2] === 'middle' ? x - w / 2 : x;
+      boxes.push([x0, y - 11, x0 + w, y + (S.factions[id].grievance || S.factions[id].leftHow === 'walkout' ? 15 : 4)]);
+    });
+    function blocked(q) {
+      return boxes.some(function (b) { return q[0] > b[0] - 9 && q[0] < b[2] + 9 && q[1] > b[1] - 9 && q[1] < b[3] + 9; }) ||
+        A.ORDER.some(function (id) { var p = POS[id]; return Math.hypot(q[0] - p[0], q[1] - p[1]) < 30; });
+    }
     if (!play) SUG.forEach(function (x, i) {
       var to = x.act.f ? POS[x.act.f] : (x.act.a ? [(POS[x.act.a][0] + POS[x.act.b][0]) / 2, (POS[x.act.a][1] + POS[x.act.b][1]) / 2] : null);
       if (!to) return;
       var dx = to[0] - HOME[0], dy = to[1] - HOME[1], len = Math.sqrt(dx * dx + dy * dy) || 1, ux = dx / len, uy = dy / len, gap = x.act.f ? 34 : 12;
       var a = [HOME[0] + ux * 13, HOME[1] + uy * 13], b = [to[0] - ux * gap, to[1] - uy * gap], bend = (i % 2 ? 1 : -1) * (14 + i * 7);
-      var c = [(a[0] + b[0]) / 2 - uy * bend, (a[1] + b[1]) / 2 + ux * bend], m = [0.25 * a[0] + 0.5 * c[0] + 0.25 * b[0], 0.25 * a[1] + 0.5 * c[1] + 0.25 * b[1]];
+      var c = [(a[0] + b[0]) / 2 - uy * bend, (a[1] + b[1]) / 2 + ux * bend];
+      // the badge sits midway along the arrow, slid along it if that spot covers a name or a node
+      var at = function (t) { var v = 1 - t; return [v * v * a[0] + 2 * v * t * c[0] + t * t * b[0], v * v * a[1] + 2 * v * t * c[1] + t * t * b[1]]; };
+      var m = [0.5, 0.4, 0.6, 0.32, 0.68, 0.25].map(at).filter(function (q) { return !blocked(q); })[0] || at(0.5);
       var d = 'M' + a[0].toFixed(1) + ' ' + a[1].toFixed(1) + ' Q' + c[0].toFixed(1) + ' ' + c[1].toFixed(1) + ' ' + b[0].toFixed(1) + ' ' + b[1].toFixed(1);
       h += '<g class="sugg" data-do="act" data-id="' + x.id + '" tabindex="0" role="button" aria-label="Suggestion ' + (i + 1) + ': ' + esc(x.label) + '"><title>' + esc(x.label + '. ' + x.why) + '</title>' +
         '<path class="casing" d="' + d + '"/><path class="line" d="' + d + '" marker-end="url(#ah)"/></g>';
@@ -764,7 +1099,7 @@ details > *:not(summary) { margin-top: 8px; }
     });
     h += '<g class="labels">' + lab + '</g>' + nbs;
     if (play) (play.q[play.i].at || []).forEach(function (id) { h += '<circle class="spot" cx="' + POS[id][0] + '" cy="' + POS[id][1] + '" r="35"/>'; });
-    h += '<text class="cap" x="12" y="410">' + sea + ' ' + A.year(S) + (S.monsoon ? ': ' + MONSOON_TEXT[S.monsoon] : '') + '</text>';
+    h += '<g class="wxbadge" aria-hidden="true">' + wxIcon(sea) + '<text class="cap" x="34" y="410">' + sea + ' ' + A.year(S) + (S.monsoon ? ': ' + MONSOON_TEXT[S.monsoon] : '') + '</text></g>';
     h += '<g id="fx" aria-hidden="true"></g></svg>';
 
     var lg = '<span><svg viewBox="0 0 16 12"><circle cx="8" cy="6" r="5.5" fill="var(--accent)" opacity=".7"/></svg>Gold glow: trust in you</span>' +
@@ -777,10 +1112,11 @@ details > *:not(summary) { margin-top: 8px; }
       '<span><svg viewBox="0 0 16 12"><rect x="0.5" y="4" width="4" height="3" fill="var(--bad)"/><rect x="5.8" y="4" width="4" height="3" fill="var(--bad)"/><rect x="11.1" y="4" width="4" height="3" fill="none" stroke="var(--bad)"/></svg>Strain: at three it walks out</span>';
     if (u.motions) lg += '<span><svg viewBox="0 0 16 12"><rect x="2.5" y="0.8" width="10.5" height="10.5" rx="2" fill="var(--surface)" stroke="var(--accent)" stroke-width="1.5"/><path d="M2.5 3.4 H13" stroke="var(--accent)"/></svg>Seasons until its motion goes to council</span>';
     if (u.pledges) lg += '<span><svg viewBox="0 0 16 16" style="height:13px;color:var(--good)"><use href="#i-seal"/></svg>Pledged to ratify</span>';
+    if (ATT.length && !play) lg += '<span><svg viewBox="0 0 16 12"><circle cx="8" cy="6" r="5" fill="none" stroke="var(--good)" stroke-width="1.6"/></svg>Ring: needs you. Point at a pin to read it</span>';
     if (prefs.adviser && SUG.length && !play) lg += '<span><span class="nbadge" style="width:14px;height:14px;font-size:9px">1</span>Council suggestion: select to act</span>';
     var capt = '';
     if (play) { var ev = play.q[play.i]; capt = '<div class="caption ' + ev.kind + '" role="status"><span class="step num">' + ev.when + ' &middot; ' + (play.i + 1) + ' of ' + play.q.length + '</span><span class="txt">' + esc(ev.text) + '</span><button class="ghost" data-do="skip">Skip</button></div>'; }
-    return '<section class="panel map"><div class="mapwrap">' + h + capt + '</div><div class="legend">' + lg + '</div></section>';
+    return '<section class="panel map"><div class="mapwrap">' + h + capt + '<div class="tip" id="tip" role="tooltip" hidden></div></div><div class="legend">' + lg + '</div></section>';
   }
 
   /* ---------- motion on the map: tokens travel, numbers float, joins burst ---------- */
@@ -818,6 +1154,37 @@ details > *:not(summary) { margin-top: 8px; }
       c.animate([{ transform: 'scale(1)', opacity: 0.9 }, { transform: 'scale(3.2)', opacity: 0 }], { duration: 900, delay: delay, easing: 'ease-out', fill: 'both' }).onfinish = function () { c.remove(); };
     });
   }
+  /* The signing moment. A seal drops onto the node (a join) or the pledge spot (a pledge), the glow
+     pulses, and the chip flips. Under reduced motion the seal simply sits there a moment, then goes. */
+  function sealShape(r) {
+    var d = '', k, n = 16;
+    for (k = 0; k <= n * 2; k++) { var a = Math.PI * k / n, rr = k % 2 ? r : r * 0.9; d += (k ? 'L' : 'M') + (Math.cos(a) * rr).toFixed(2) + ' ' + (Math.sin(a) * rr).toFixed(2) + ' '; }
+    return d + 'Z';
+  }
+  function stamp(layer, id, kind) {
+    var ps = PSEAL[id] || [-19, 17], at = kind === 'pledge' ? [POS[id][0] + ps[0], POS[id][1] + ps[1]] : POS[id], r = kind === 'pledge' ? 12 : 19;
+    var outer = sv('g', { 'class': 'stamp ' + kind, transform: 'translate(' + at[0] + ' ' + at[1] + ')' }), g = sv('g');
+    g.appendChild(sv('path', { 'class': 'rim', d: sealShape(r) }));
+    g.appendChild(sv('circle', { 'class': 'face', r: (r * 0.66).toFixed(1) }));
+    g.appendChild(sv('path', { 'class': 'tick', d: 'M' + (-r * 0.34) + ' ' + (r * 0.02) + ' l' + (r * 0.24) + ' ' + (r * 0.27) + ' l' + (r * 0.46) + ' ' + (-r * 0.54) }));
+    outer.appendChild(g);
+    function land() {
+      var n = document.querySelector('.map .node[data-f="' + id + '"]'), p = document.querySelector('.map .pseal[data-f="' + id + '"]');
+      if (n) n.classList.remove('signing'); if (p) p.classList.remove('signing');
+      var pill = document.querySelector('.pill[data-f="' + id + '"]');
+      if (pill) { pill.classList.remove('flip'); void pill.offsetWidth; pill.classList.add('flip'); }
+    }
+    if (REDUCE || !g.animate) { layer.appendChild(outer); land(); setTimeout(function () { outer.remove(); }, 1600); return; }
+    // the gold glow pulses under the seal as it lands
+    var z = ZONE[id], glow = sv('ellipse', { 'class': 'glowfx ' + kind, cx: z[0], cy: z[1], rx: z[2] * 1.1, ry: z[3] * 1.1, filter: 'url(#soft)', opacity: 0 });
+    layer.appendChild(glow); layer.appendChild(outer);
+    g.animate([{ transform: 'translateY(-34px) scale(2.6) rotate(-20deg)', opacity: 0 }, { transform: 'translateY(0) scale(1) rotate(0)', opacity: 1, offset: 0.7 }, { transform: 'scale(.86, .8)', offset: 0.85 }, { transform: 'scale(1)', opacity: 1 }],
+      { duration: 560, easing: 'cubic-bezier(.55, 0, .9, .45)', fill: 'both' }).onfinish = function () {
+      land(); burst(layer, at);
+      glow.animate([{ opacity: 0 }, { opacity: 0.85, offset: 0.2 }, { opacity: 0.3, offset: 0.5 }, { opacity: 0.7, offset: 0.7 }, { opacity: 0 }], { duration: 1500, fill: 'both' }).onfinish = function () { glow.remove(); };
+      g.animate([{ opacity: 1 }, { opacity: 1, offset: 0.7 }, { opacity: 0, transform: 'scale(.7)' }], { duration: 1700, fill: 'both' }).onfinish = function () { outer.remove(); };
+    };
+  }
   function playFx(before, act) {
     var layer = document.getElementById('fx');
     if (!layer) return;
@@ -827,9 +1194,15 @@ details > *:not(summary) { margin-top: 8px; }
       A.ORDER.forEach(function (id) {
         var d = S.factions[id].trust - before.trust[id];
         if (d) floatNum(l, POS[id], d, i++);
-        if (S.factions[id].member && !before.member[id]) burst(l, POS[id]);
+        if (S.factions[id].member && !before.member[id]) stamp(l, id, 'join');
+        else if (act && act.type === 'pledge' && act.f === id && S.factions[id].pledged) stamp(l, id, 'pledge');
       });
     }
+    if (!REDUCE && layer.animate) A.ORDER.forEach(function (id) {
+      var joined = S.factions[id].member && !before.member[id], pledged = act && act.type === 'pledge' && act.f === id && S.factions[id].pledged;
+      var el = joined ? document.querySelector('.map .node[data-f="' + id + '"]') : pledged ? document.querySelector('.map .pseal[data-f="' + id + '"]') : null;
+      if (el) el.classList.add('signing');
+    });
     var dests = [];
     if (act) { if (act.f) dests.push(act.f); if (act.a) dests.push(act.a, act.b); }
     if (dests.length) {
@@ -838,43 +1211,44 @@ details > *:not(summary) { margin-top: 8px; }
     } else numbers();
   }
 
-  function todoItems() {
-    var t = [];
-    var callv = A.available(S).filter(function (a) { return a.type === 'callvote'; })[0];
-    if (S.voteCalled === S.turn) t.push({ k: 'good', text: 'The ratification vote is held at the end of this season.' });
-    else if (callv && callv.ok) t.push({ k: 'good', text: 'You hold ' + A.pledges(S).length + ' pledges. You can call the ratification vote.' });
-    A.ORDER.forEach(function (id) { if (A.canJoin(S, id)) t.push({ k: 'good', f: id, text: A.FACTIONS[id].name + ' is ready to join. Invite it.' }); });
-    A.ORDER.forEach(function (id) { if (A.canPledge(S, id)) t.push({ k: 'good', f: id, text: A.FACTIONS[id].name + ' is ready to pledge. Ask it to ratify.' }); });
-    A.ORDER.forEach(function (id) {
-      var f = S.factions[id], nm = A.FACTIONS[id].name;
-      if (f.member && f.strain >= A.STRAIN_MAX - 1) t.push({ k: 'bad', f: id, text: nm + ' is one grievance from walking out. Hear it.' });
-      if (f.demand) { var miss = S.act === 3 && f.pledged ? ' it costs ' + A.DEMAND_TRUST + ' trust. Below ' + A.PLEDGE_KEEP + ' its pledge breaks.' : ' it adds a strain mark.'; t.push({ k: 'ask', f: id, text: f.demand.kind === 'claim' ? nm + ' claims ' + f.demand.amount + ' ' + cap(f.demand.res) + '. Unmet,' + miss : nm + ' wants its budget share: ' + f.demand.amount + ' Capital. Unpaid,' + miss }); }
-      if (f.member && f.motion && f.motion.at === S.turn) t.push({ k: 'plan', f: id, text: nm + '\'s motion goes to council at the end of this season.' });
-    });
-    S.companyTargets.forEach(function (id) {
-      var f = S.factions[id], left = blockLeft(f);
-      if (f.countered || left === 0) t.push({ k: 'co done', f: id, text: 'Company deal with ' + A.FACTIONS[id].name + ': blocked.' });
-      else t.push({ k: 'co', f: id, text: 'The Company is courting ' + A.FACTIONS[id].name + '. Gain ' + left + ' more trust there, or counter it.' });
-    });
-    A.ORDER.forEach(function (id) {
-      var f = S.factions[id];
-      if (f.request) t.push({ k: 'ask', f: id, text: A.FACTIONS[id].name + ' asks for 2 ' + cap(f.request.res) + '.' });
-      if (f.plan && f.plan.eta === 1) t.push({ k: 'plan', f: id, text: A.FACTIONS[id].name + ' finishes its plan this season: ' + (function (n) { return n.charAt(0).toLowerCase() + n.slice(1); })(A.planOf(S, id).name) + '.' });
-    });
-    return t;
+  /* The kinds of attention pin, in the order the chips show them: map glyph, one word, a plural for screen readers. */
+  var KINDS = [
+    ['ready', 'ready', 'ready to join or pledge'], ['vote', 'vote', 'vote to call'], ['strain', 'strain', 'near walking out'],
+    ['demand', 'demand', 'member demands'], ['court', 'Company', 'Company agents courting'], ['ask', 'request', 'requests'],
+    ['motion', 'motion', 'motions due'], ['plan', 'plan', 'plans landing']];
+  /* The same glyph the map draws for each kind, at chip size. */
+  function kindIcon(k) {
+    var g = {
+      ready: '<circle cx="10" cy="10" r="7" fill="var(--good)"/>' + (S.act === 3 ? '<path d="M6.6 10.2 l2.4 2.6 l4.4 -5" fill="none" stroke="var(--surface)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>' : '<path d="M6.5 10 h7 M10 6.5 v7" stroke="var(--surface)" stroke-width="1.8" stroke-linecap="round"/>'),
+      vote: '<circle cx="10" cy="10" r="7" fill="var(--good)"/><path d="M6.6 10.2 l2.4 2.6 l4.4 -5" fill="none" stroke="var(--surface)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>',
+      strain: '<rect x="1.5" y="8" width="5" height="4" rx="1" fill="var(--bad)"/><rect x="7.5" y="8" width="5" height="4" rx="1" fill="var(--bad)"/><rect x="13.5" y="8" width="5" height="4" rx="1" fill="none" stroke="var(--bad)" stroke-width="1.2"/>',
+      demand: '<rect x="3" y="3" width="14" height="14" rx="2.5" fill="var(--surface)" stroke="var(--ink)" stroke-width="1.6"/><circle cx="10" cy="10" r="3" fill="var(--muted)"/>',
+      court: '<circle cx="10" cy="10" r="7.5" fill="var(--surface)" stroke="var(--company)" stroke-width="1.6"/><use href="#i-co" x="5" y="5" width="10" height="10" style="color:var(--company)"/>',
+      ask: '<circle cx="10" cy="10" r="7.5" fill="var(--surface)" stroke="var(--river)" stroke-width="1.6"/><circle cx="10" cy="10" r="3" fill="var(--river)"/>',
+      motion: '<rect x="3" y="3" width="14" height="14" rx="2" fill="var(--surface)" stroke="var(--accent)" stroke-width="1.6"/><path d="M3 6 h14" stroke="var(--accent)" stroke-width="1.3"/><text x="10" y="15" font-size="8" font-weight="700" text-anchor="middle" fill="var(--ink)">0</text>',
+      plan: '<rect x="3" y="3" width="14" height="14" rx="3" fill="var(--accent)"/><text x="10" y="13.5" font-size="9" font-weight="700" text-anchor="middle" fill="var(--accent-ink)">1</text>'
+    }[k];
+    return '<svg viewBox="0 0 20 20" aria-hidden="true">' + g + '</svg>';
   }
 
   function seasonPanel() {
     var news = S.briefing.filter(function (b) { return b.kind === 'info' || b.kind === 'good' || b.kind === 'bad'; });
     var intro = S.briefing.filter(function (b) { return b.kind === 'new'; });
     var plans = S.briefing.filter(function (b) { return b.kind === 'plan'; });
-    var t = todoItems();
+    var t = ATT;
     var h = '<section class="panel"><header><div><h2>This season</h2><small>' + A.season(S) + ' ' + A.year(S) + '</small></div></header>';
     intro.forEach(function (b) { h += '<p class="newsys">' + esc(b.text) + '</p>'; });
     h += '<div class="news">' + news.concat(plans).map(function (b) { return '<p class="' + b.kind + '">' + esc(b.text) + '</p>'; }).join('') + '</div>';
-    h += '<div class="sec"><h3>Needs your attention</h3>' + (t.length ? '<ul class="todo">' + t.map(function (x) {
-      return '<li class="' + x.k + '"><span>' + esc(x.text) + '</span>' + (x.f ? '<button class="ghost" data-do="sel" data-f="' + x.f + '">Open</button>' : '') + '</li>';
-    }).join('') + '</ul>' : '<p class="note">Nothing urgent. Work toward your next member.</p>') + '</div>';
+    // what needs you: a chip per kind, with its count. The pins on the map carry the detail.
+    var live = t.filter(function (x) { return !x.done; }), chips = '';
+    KINDS.forEach(function (kd) {
+      var n = live.filter(function (x) { return x.k === kd[0]; }).length;
+      if (n) chips += '<button class="achip" data-hl="' + kd[0] + '" aria-label="' + n + ' ' + kd[2] + '. Light them on the map." aria-pressed="false">' + kindIcon(kd[0]) + '<b class="num">' + n + '</b><span>' + kd[1] + '</span></button>';
+    });
+    h += '<div class="sec"><h3>Needs you' + (live.length ? ': <span class="num">' + live.length + '</span>' : '') + '</h3>' + (live.length ? '<div class="achips">' + chips + '</div>' +
+      '<details class="attlist"' + (attOpen ? ' open' : '') + '><summary>In words</summary><ul class="todo">' + t.map(function (x) {
+        return '<li class="' + x.tone + (x.done ? ' done' : '') + '"><span>' + esc(x.text) + '</span>' + (x.f ? '<button class="ghost" data-do="sel" data-f="' + x.f + '">Open</button>' : '') + '</li>';
+      }).join('') + '</ul></details>' : '<p class="note">Nothing urgent. Work toward your next member.</p>') + '</div>';
     h += adviser();
     var votes = (S.lastVotes || []).filter(function (v) { return v.turn === S.turn - 1; });
     if (S.lastResolution.length || votes.length) {
@@ -889,7 +1263,9 @@ details > *:not(summary) { margin-top: 8px; }
     if (!prefs.adviser) return h + '<p class="note">The adviser is off. You are on your own.</p></div>';
     if (S.influence < 1) return h + '<p class="note">No Influence left. End the season.</p></div>';
     if (!SUG.length) return h + '<p class="note">Nothing stands out. Build trust where you are closest, or end the season and save your resources.</p></div>';
-    SUG.forEach(function (x, i) { h += '<div class="sug">' + actBtn(x.act, { label: x.label, n: i + 1 }) + '<small>' + esc(x.why) + '</small></div>'; });
+    // each row is the number on the map, the name, and the cost. The reason shows on hover or focus, or inline with Details on.
+    SUG.forEach(function (x, i) { h += '<div class="sug" data-sug="' + x.id + '" data-sugwhy="' + esc(x.why) + '">' + actBtn(x.act, { label: x.label, n: i + 1, sr: x.why }) + (prefs.details ? '<small>' + esc(x.why) + '</small>' : '') + '</div>'; });
+    if (!prefs.details) h += '<p class="sugwhy" id="sugwhy" aria-hidden="true">Point at a suggestion to see why.</p>';
     return h + '</div>';
   }
 
@@ -969,6 +1345,173 @@ details > *:not(summary) { margin-top: 8px; }
         '<text class="r" x="' + (p[0] + (left ? -13 : 13)) + '" y="' + (p[1] + 11) + '" text-anchor="' + (left ? 'end' : 'start') + '" style="fill:' + (r < 0 ? 'var(--bad)' : r > 0 ? 'var(--good)' : 'var(--muted)') + '">' + A.REL_NAMES[r] + '</text>';
     });
     return '<svg class="star" viewBox="0 0 330 122" role="img" aria-label="Ties to the other powers">' + h + '<circle cx="165" cy="61" r="11" fill="' + HUE[id] + '" stroke="var(--surface)" stroke-width="2"/></svg>';
+  }
+
+
+  /* ---------- trust over time: sparklines on the chips, and the campaign chart ---------- */
+  /* The last eight season ends and now, right-aligned so a young game draws a short line. The dashed
+     line is the trust that matters next for this power: joining, its pledge, or seceding. */
+  function sparkHtml(id) {
+    var f = S.factions[id], tl = A.trustLine(S, id);
+    var pts = A.history(S).slice(-8).map(function (h) { return h.trust[id]; }).concat([f.trust]);
+    var lo = Math.min.apply(null, pts.concat([tl.v])), hi = Math.max.apply(null, pts.concat([tl.v]));
+    if (hi - lo < 24) { var m = (hi + lo) / 2; lo = m - 12; hi = m + 12; }
+    var W = 66, H = 18, step = (W - 6) / 8, n = pts.length;
+    function X(i) { return W - 3 - (n - 1 - i) * step; }
+    function Y(v) { return 3 + (hi - v) * (H - 6) / (hi - lo); }
+    var d = pts.map(function (v, i) { return (i ? 'L' : 'M') + X(i).toFixed(1) + ' ' + Y(v).toFixed(1); }).join(' '), ty = Y(tl.v).toFixed(1);
+    var ok = f.member ? (S.act === 3 ? f.trust >= tl.v : true) : f.trust >= tl.v;
+    var say = 'Trust ' + pts.slice(0, -1).join(', ') + (n > 1 ? ', now ' : '') + f.trust + '. It ' + tl.text + '.';
+    return '<span class="spk"><svg viewBox="0 0 ' + W + ' ' + H + '" width="' + W + '" height="' + H + '" role="img" aria-label="' + esc(say) + '"><title>' + esc(say) + '</title>' +
+      '<line class="th" x1="0" x2="' + W + '" y1="' + ty + '" y2="' + ty + '"/><path class="ln" d="' + d + '"/><circle class="end' + (ok && !f.member ? ' ok' : '') + '" cx="' + X(n - 1).toFixed(1) + '" cy="' + Y(f.trust).toFixed(1) + '" r="2.7"/></svg><b class="num">' + f.trust + '</b></span>';
+  }
+
+  /* Event markers on the chart, by kind: what draws and what it is called in the legend. */
+  var HM_RANK = { walkout: 0, secede: 0, rogue: 0, client: 1, join: 2, rejoin: 2, pledge: 3, withdraw: 4 };
+  function hmGlyph(k, x, y) {
+    if (k === 'join' || k === 'rejoin') return '<circle cx="' + x + '" cy="' + y + '" r="5.5" fill="var(--accent)" stroke="var(--accent-ink)" stroke-width="1.4"/>';
+    if (k === 'pledge') return '<circle cx="' + x + '" cy="' + y + '" r="6" fill="var(--good)" stroke="var(--surface)" stroke-width="1.2"/><path d="M' + (x - 3) + ' ' + y + ' l2.1 2.3 l4 -4.5" fill="none" stroke="var(--surface)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>';
+    if (k === 'withdraw') return '<circle cx="' + x + '" cy="' + y + '" r="5" fill="var(--surface)" stroke="var(--good)" stroke-width="1.8" stroke-dasharray="2.4 1.8"/>';
+    if (k === 'client') return '<circle cx="' + x + '" cy="' + y + '" r="6.5" fill="var(--surface)" stroke="var(--company)" stroke-width="1.5"/><use href="#i-co" x="' + (x - 4.5) + '" y="' + (y - 4.5) + '" width="9" height="9" style="color:var(--company)"/>';
+    return '<circle cx="' + x + '" cy="' + y + '" r="6" fill="var(--bad)" stroke="var(--surface)" stroke-width="1.2"/><path d="M' + (x - 2.6) + ' ' + (y - 2.6) + ' l5.2 5.2 M' + (x + 2.6) + ' ' + (y - 2.6) + ' l-5.2 5.2" stroke="var(--surface)" stroke-width="1.7" stroke-linecap="round"/>';
+  }
+  function histChart(animate) {
+    var H = A.history(S), last = H[H.length - 1].turn, narrow = window.innerWidth < 560;
+    var W = narrow ? 340 : 600, Ht = narrow ? 200 : 230, L = 24, R = 38, T = 18, B = 20;
+    var span = Math.max(last, 4);
+    function X(t) { return L + t * (W - L - R) / span; }
+    function Y(v) { return T + (100 - Math.max(10, v)) * (Ht - T - B) / 90; }
+    var h = '', acts = [];
+    H.forEach(function (e) { if (!e.turn) return; var a = acts[acts.length - 1]; if (a && a.act === e.act) a.to = e.turn; else acts.push({ act: e.act, from: e.turn - 1, to: e.turn }); });
+    acts.forEach(function (a) {
+      var x0 = X(a.from), x1 = X(a.to);
+      if (a.act > 1) h += '<rect class="band b' + a.act + '" x="' + x0.toFixed(1) + '" y="' + T + '" width="' + (x1 - x0).toFixed(1) + '" height="' + (Ht - T - B) + '"/>';
+      if (a.from) h += '<line class="bound" x1="' + x0.toFixed(1) + '" x2="' + x0.toFixed(1) + '" y1="' + (T - 4) + '" y2="' + (Ht - B) + '"/>';
+      if (x1 - x0 > 30) h += '<text class="al" x="' + (x0 + 4).toFixed(1) + '" y="' + (T - 5) + '">' + a.act + ' ' + A.ACTS[a.act].name + '</text>';
+    });
+    // the trust lines that decide things: joining, a pledge, seceding
+    [[A.JOIN_TRUST, 'join'], [A.RATIFY_TRUST, 'pledge'], [A.SECEDE_TRUST, 'secede']].forEach(function (g) {
+      var y = Y(g[0]).toFixed(1);
+      h += '<line class="thr" x1="' + L + '" x2="' + (W - R) + '" y1="' + y + '" y2="' + y + '"/><text x="' + (W - R + 12) + '" y="' + (+y + 3.5) + '">' + g[0] + '</text>';
+    });
+    h += '<line class="grid" x1="' + L + '" x2="' + (W - R) + '" y1="' + (Ht - B) + '" y2="' + (Ht - B) + '"/>';
+    [25, 50, 75, 100].forEach(function (v) { h += '<text x="' + (L - 4) + '" y="' + (Y(v) + 3.5).toFixed(1) + '" text-anchor="end">' + v + '</text>'; });
+    // years under the axis
+    for (var yr = 0; yr * 4 < span; yr++) {
+      if (narrow && yr % 2) continue;
+      var xm = X(Math.min(span, yr * 4 + 2));
+      if (xm < W - R) h += '<text x="' + xm.toFixed(1) + '" y="' + (Ht - 6) + '" text-anchor="middle">' + (2050 + yr) + '</text>';
+    }
+    // one line per power; thick while it is a member
+    var lines = '';
+    A.ORDER.forEach(function (id) {
+      var col = 'var(--hue-' + id + ')', pts = H.map(function (e) { return X(e.turn).toFixed(1) + ' ' + Y(e.trust[id]).toFixed(1); });
+      lines += '<path class="tl" pathLength="1" stroke="' + col + '" d="M' + pts.join(' L') + '"/>';
+      var seg = '';
+      for (var i = 1; i < H.length; i++) if (H[i].member[id] && H[i - 1].member[id]) seg += 'M' + pts[i - 1] + ' L' + pts[i] + ' ';
+      if (seg) lines += '<path class="tl mem" pathLength="1" stroke="' + col + '" d="' + seg + '"/>';
+    });
+    h += lines;
+    // markers: one per power per season, the most serious event drawn, every event read out
+    var marks = '', vote = '';
+    H.forEach(function (e) {
+      var byF = {};
+      e.ev.forEach(function (v) { if (v.f) (byF[v.f] = byF[v.f] || []).push(v); });
+      Object.keys(byF).forEach(function (id) {
+        var vs = byF[id].sort(function (p, q) { return HM_RANK[p.k] - HM_RANK[q.k]; }), x = X(e.turn).toFixed(1), y = Y(e.trust[id]).toFixed(1);
+        var txt = e.when + ': ' + vs.map(function (v) { return v.text; }).join(' ') + ' Trust ' + e.trust[id] + '.';
+        marks += '<g class="hm" tabindex="0" role="img" aria-label="' + esc(txt) + '" data-ht="' + esc(txt) + '" style="--t:' + (e.turn / span).toFixed(3) + '"><title>' + esc(txt) + '</title><circle class="hit" cx="' + x + '" cy="' + y + '" r="9"/>' + hmGlyph(vs[0].k, +x, +y) + '</g>';
+      });
+      e.ev.forEach(function (v) {
+        if (v.k !== 'vote') return;
+        var x = X(e.turn).toFixed(1), ok = v.n >= A.ACTS[3].goal, txt = e.when + ': ' + v.text;
+        vote = '<g class="hm vote' + (ok ? '' : ' fail') + '" tabindex="0" role="img" aria-label="' + esc(txt) + '" data-ht="' + esc(txt) + '" style="--t:1"><title>' + esc(txt) + '</title><line x1="' + x + '" x2="' + x + '" y1="' + T + '" y2="' + (Ht - B) + '"/><rect class="hit" x="' + (+x - 8) + '" y="' + T + '" width="16" height="' + (Ht - T - B) + '"/>' +
+          '<circle cx="' + x + '" cy="' + (T + 2) + '" r="8" fill="var(--' + (ok ? 'good' : 'bad') + ')"/><text x="' + x + '" y="' + (T + 5.5) + '" text-anchor="middle" style="fill:var(--surface);font-weight:700">' + v.n + '</text></g>';
+      });
+    });
+    h += marks + vote;
+    var lg = A.ORDER.map(function (id) { return '<span><svg viewBox="0 0 18 12"><path d="M1 6 H17" stroke="var(--hue-' + id + ')" stroke-width="3.4" stroke-linecap="round"/></svg>' + SHORT[id] + '</span>'; }).join('') +
+      '<span><svg viewBox="0 0 18 12"><path d="M1 6 H17" stroke="var(--muted)" stroke-width="1.4"/></svg>Thin: outside</span>' +
+      [['join', 'Joined'], ['pledge', 'Pledged'], ['walkout', 'Left or rogue'], ['client', 'Company client']].map(function (k) { return '<span><svg viewBox="0 0 18 14">' + hmGlyph(k[0], 9, 7) + '</svg>' + k[1] + '</span>'; }).join('');
+    return '<div class="sec hwrap"><svg class="hchart' + (animate ? ' draw' : '') + '" viewBox="0 0 ' + W + ' ' + Ht + '" role="img" aria-label="Trust in you, season by season, one line per power">' + h + '</svg>' +
+      '<div class="hlegend">' + lg + '</div><p class="hread" id="hread" aria-live="polite">Point at a marker to read what happened.</p></div>';
+  }
+
+  /* ---------- the dispute as a scene: two leaders, the issue on the table, four cards ---------- */
+  var TOPIC_IC = { 'border garrisons': 'fort', 'dam releases': 'water', 'tariffs': 'capital', 'river diversions': 'water', 'headwater tolls': 'water', 'trade routes': 'capital' };
+  function miniFace(id) { return '<span class="mf" title="' + esc(A.FACTIONS[id].name) + '">' + portrait(id, moodOf(id).k) + '</span>'; }
+  function trustFx(id, d) { return '<span class="fxc">' + miniFace(id) + '<span class="num ' + (d > 0 ? 'up' : 'down') + '">' + (d > 0 ? '+' : '') + d + '</span>' + mic('trust') + '</span>'; }
+  function relGlyph(a, b, r) {
+    var col = r < 0 ? 'var(--bad)' : r > 0 ? 'var(--good)' : 'var(--muted)';
+    return '<svg class="rg" viewBox="0 0 30 12" aria-hidden="true"><line x1="5" y1="6" x2="25" y2="6" stroke="' + col + '" stroke-width="' + (Math.abs(r) > 1 ? 3.2 : 1.8) + '"' + (r < 0 ? ' stroke-dasharray="3.5 2.5"' : '') + '/><circle cx="5" cy="6" r="3.8" fill="var(--hue-' + a + ')"/><circle cx="25" cy="6" r="3.8" fill="var(--hue-' + b + ')"/></svg>';
+  }
+  function disputeScene() {
+    var D = A.disputeOptions(S), a = D.a, b = D.b, ti = TOPIC_IC[D.topic] || 'capital', r = D.rel;
+    function side(id, cls) { var f = S.factions[id]; return '<div class="side ' + cls + '">' + portrait(id, moodOf(id).k) + '<b>' + SHORT[id] + '</b><span class="tv num" title="Trust in you"><svg class="ic"><use href="#i-trust"/></svg>' + f.trust + '</span>' + (f.member ? '<span class="tag member">Member</span>' : '') + '</div>'; }
+    var tcol = r < 0 ? 'var(--bad)' : 'var(--muted)', dash = r < 0 ? ' stroke-dasharray="5 4"' : '';
+    var table = '<svg class="table" viewBox="0 0 160 92" aria-hidden="true">' +
+      '<path class="ten" d="M2 30 H52" stroke="' + tcol + '"' + dash + '/><path class="ten" d="M108 30 H158" stroke="' + tcol + '"' + dash + '/>' +
+      '<path class="top" d="M24 58 H136 L156 76 H4 Z"/><path class="leg" d="M16 76 v13 M144 76 v13"/>' +
+      '<g class="issue"><circle class="iss" cx="80" cy="30" r="23"/><use href="#i-' + ti + '" class="ic-' + ti + '" x="65" y="15" width="30" height="30"' + (ti === 'fort' ? ' style="color:var(--ink)"' : '') + '/></g></svg>';
+    var names = { a: 'Back ' + SHORT[a], b: 'Back ' + SHORT[b], mediate: 'Mediate', out: 'Stay out' };
+    var cards = D.options.map(function (o) {
+      var fx = '', say = names[o.key] + ':';
+      var ids = o.back ? [o.back, o.back === a ? b : a] : [a, b];
+      ids.forEach(function (id) { fx += trustFx(id, o.trust[id]); say += ' trust ' + (o.trust[id] > 0 ? '+' : '') + o.trust[id] + ' with ' + A.FACTIONS[id].name + ','; });
+      Object.keys(o.strain).forEach(function (id) { fx += '<span class="fxc">' + miniFace(id) + '<span class="num down">+' + o.strain[id] + '</span><svg class="ic mark-strain"><use href="#i-strain"/></svg></span>'; say += ' strain +' + o.strain[id] + ' for ' + A.FACTIONS[id].name + ','; });
+      if (o.rel !== r) { fx += '<span class="fxc">' + relGlyph(a, b, o.rel) + '<small>' + A.REL_NAMES[o.rel] + '</small></span>'; say += ' they become ' + A.REL_NAMES[o.rel].toLowerCase() + ','; }
+      var cost = Object.keys(o.cost).length ? costHtml(o.cost) : '';
+      return '<button class="opt dcard" data-do="dispute" data-c="' + o.key + '"' + (o.ok ? '' : ' disabled title="' + esc(o.why) + '"') + ' aria-label="' + esc(say.replace(/,$/, '.') + (o.ok ? '' : ' ' + o.why)) + '"><b>' + names[o.key] + cost + '</b><span class="fxs">' + fx + '</span></button>';
+    }).join('');
+    return '<div class="veil"><div class="dlg" role="dialog" aria-modal="true" aria-labelledby="dt"><h3>Dispute, ' + A.season(S) + ' ' + A.year(S) + '</h3><h2 id="dt">' + esc(cap(D.topic)) + '<span class="sr">: ' + esc(A.FACTIONS[a].name) + ' and ' + esc(A.FACTIONS[b].name) + ' quarrel, and each wants your backing.</span></h2>' +
+      '<div class="scene">' + side(a, 'a') + '<div class="mid">' + table + '<span class="relchip ' + (r < 0 ? 'neg' : r > 0 ? 'pos' : '') + '">' + A.REL_NAMES[r] + '</span></div>' + side(b, 'b') + '</div>' +
+      '<div class="dcards">' + cards + '</div></div></div>';
+  }
+
+  /* ---------- the council chamber: a seat per power in a half circle, the proposer at the lectern ---------- */
+  var ARC = [162, 126, 90, 54, 18].map(function (deg) { var r = deg * Math.PI / 180; return [50 + 39 * Math.cos(r), 84 - 64 * Math.sin(r)]; });
+  /* lect: 'you' or the power that tabled the motion. votes: id -> { yes, why, d }, or null before a choice.
+     mode: '' (idle or preview) or 'result'. tally: { yes, no, passes } or null. */
+  function chamberHtml(lect, votes, mode, tally) {
+    var arc = A.ORDER.filter(function (id) { return id !== lect; });
+    if (lect !== 'you') arc.splice(2, 0, 'you');
+    var order = [lect].concat(arc), lit = 0, n = (votes ? Object.keys(votes).length : 0) + 1;
+    function seat(id, pos, isLect) {
+      var you = id === 'you', f = you ? null : S.factions[id], v = you ? (votes ? { yes: true, why: 'you' } : null) : votes && votes[id];
+      var inside = you || (votes ? !!votes[id] : f.member);
+      var cls = 'seat' + (isLect ? ' lect' : '') + (inside ? '' : ' out') + (v ? (v.yes ? ' yes' : ' no') : '');
+      var face = you ? '<span class="you">You</span>' : inside ? portrait(id, moodOf(id).k) : '<span class="empty"></span>';
+      var mark = '', tip = you ? 'You' : A.FACTIONS[id].name + (inside ? '' : ': not a member');
+      if (v) {
+        var i = order.indexOf(id), rw = '';
+        if (!you) {
+          if (v.why === 'company') rw = '<svg style="color:var(--company)"><use href="#i-co"/></svg>';
+          else if (v.why === 'distrust') rw = '<svg viewBox="0 0 16 16"><use href="#i-lowtrust"/></svg>';
+          else if (v.why === 'strain') rw = '<svg style="color:var(--bad)"><use href="#i-strain"/></svg>';
+          else if (v.why === 'proposer') rw = '<svg style="color:var(--accent)"><use href="#i-scroll"/></svg>';
+          else if (v.d) rw = '<span class="num ' + (v.d > 0 ? 'up' : 'down') + '">' + (v.d > 0 ? '+' + v.d : v.d) + '</span>';
+        }
+        mark = '<span class="ring"></span><i class="vm"><svg><use href="#i-' + (v.yes ? 'yes' : 'no') + '"/></svg></i>' + (rw ? '<span class="rw">' + rw + '</span>' : '');
+        tip += ' votes ' + (v.yes ? 'yes' : 'no') + (you ? '' : ': ' + WHY[v.why]);
+        lit++;
+        return '<span class="' + cls + '" style="left:' + pos[0].toFixed(1) + '%;top:' + pos[1].toFixed(1) + '%;--i:' + i + '" title="' + esc(tip) + '">' + face + mark + '<small>' + (you ? 'You' : SHORT[id]) + '</small></span>';
+      }
+      return '<span class="' + cls + '" style="left:' + pos[0].toFixed(1) + '%;top:' + pos[1].toFixed(1) + '%" title="' + esc(tip) + '">' + face + '<small>' + (you ? 'You' : SHORT[id]) + '</small></span>';
+    }
+    var h = '<svg class="floor" viewBox="0 0 200 100" preserveAspectRatio="none" aria-hidden="true"><path class="well" d="M30 100 A70 64 0 0 1 170 100 Z"/><path class="bench" d="M14 92 A86 78 0 0 1 186 92"/><path class="lect" d="M88 98 L92 86 H108 L112 98 Z"/></svg>';
+    h += seat(lect, [50, 82], true);
+    arc.forEach(function (id, k) { h += seat(id, ARC[k], false); });
+    if (tally) h += '<span class="tallyc ' + (tally.passes ? 'up' : 'down') + '"><b>' + (mode === 'result' ? (tally.passes ? 'Passes' : 'Fails') : tally.yes + ' to ' + tally.no) + '</b><span class="num">' + (mode === 'result' ? tally.yes + ' to ' + tally.no : tally.passes ? 'passes' : 'fails') + '</span></span>';
+    return '<div class="chamber' + (mode ? ' ' + mode : '') + '" style="--n:' + n + '" role="img" aria-label="Council chamber. ' + (tally ? (tally.passes ? 'Passes ' : 'Fails ') + tally.yes + ' to ' + tally.no : 'Choose a proposal') + '">' + h + '</div>';
+  }
+  function votesMap(list) { var m = {}; (list || []).forEach(function (v) { m[v.id] = v; }); return m; }
+  /* the option a pointer or focus rests on previews its vote in the chamber */
+  var CH = null;
+  function previewVote(k) {
+    var el = document.querySelector('.dlg .chamber');
+    if (!el || !CH || (k && !CH.pv[k])) return;
+    var p = k ? CH.pv[k] : null;
+    el.outerHTML = chamberHtml(CH.lect, p ? votesMap(p.votes) : null, '', p);
   }
 
   function powerPanel(av) {
@@ -1062,7 +1605,7 @@ details > *:not(summary) { margin-top: 8px; }
 
   function recordView() {
     var l = S.log.slice().reverse();
-    return '<section class="panel"><header><div><h2>Record</h2><small>Everything that has happened, newest first.</small></div></header>' + (l.length ? lines(l) : '<p class="note">Nothing yet.</p>') + '</section>';
+    return '<section class="panel"><header><div><h2>Record</h2><small>Trust in you, season by season. Then everything that has happened, newest first.</small></div></header>' + (A.history(S).length > 1 ? histChart(false) : '') + (l.length ? lines(l) : '<p class="note">Nothing yet.</p>') + '</section>';
   }
 
   var WHY = { proposer: 'it tabled this motion', company: 'Company money buys its vote', distrust: 'its trust in you is below ' + A.DISTRUST_VOTE, strain: 'it carries strain and this gains it nothing', cost: 'this costs it trust', gain: 'this gains it trust', neutral: 'this costs it nothing' };
@@ -1091,19 +1634,32 @@ details > *:not(summary) { margin-top: 8px; }
     var it = A.councilItem(S), ms = A.members(S), keys = Object.keys(it.options);
     var done = (S.lastVotes || []).filter(function (v) { return v.turn === S.turn; }).length, total = done + S.agenda.length;
     var kind = { charter: 'Founding question', motion: 'Motion', article: 'Charter article' }[it.kind];
-    var h = '<div class="veil"><div class="dlg" role="dialog" aria-modal="true" aria-labelledby="dt"><h3>Council, end of ' + A.season(S) + ' ' + A.year(S) + ' &middot; ' + kind + (total > 1 ? ', ' + (done + 1) + ' of ' + total : '') + '</h3>';
-    if (it.kind === 'motion') {
-      var mi = A.motionInfo(it.key);
-      h += '<div class="who-row">' + portrait(it.f, moodOf(it.f).k) + '<div><h2 id="dt">' + esc(mi.name) + '</h2><p class="note">Tabled by ' + esc(A.FACTIONS[it.f].name) + '. ' + esc(mi.text) + '</p></div></div>';
-    } else h += '<h2 id="dt">' + esc(it.title) + '</h2>';
-    h += '<p>' + (ms.length ? 'You propose; members vote' + (S.act >= 2 ? ', and you need a majority' : ', and ties go your way') + '. If your proposal fails, the other option is adopted.' + (S.act >= 2 ? ' Members with Company money or trust below ' + A.DISTRUST_VOTE + ' vote no. So do members with strain, unless the option gains them trust.' : '') : 'No power has joined yet, so you declare this founding principle alone. Every power is watching.') + '</p><div class="opts two">';
+    var lect = it.kind === 'motion' ? it.f : 'you';
+    CH = { lect: lect, pv: {} };
+    var h = '<div class="veil"><div class="dlg council" role="dialog" aria-modal="true" aria-labelledby="dt"><h3>Council, ' + A.season(S) + ' ' + A.year(S) + ' &middot; ' + kind + (total > 1 ? ', ' + (done + 1) + ' of ' + total : '') + '</h3>';
+    if (it.kind === 'motion') { var mi = A.motionInfo(it.key); h += '<h2 id="dt">' + esc(mi.name) + '</h2><p class="note">' + esc(SHORT[it.f]) + ' tabled it. ' + esc(mi.text) + '</p>'; }
+    else h += '<h2 id="dt">' + esc(it.title) + '</h2>';
+    h += chamberHtml(lect, null, '', null);
+    h += '<p class="note">' + (ms.length ? (S.act >= 2 ? 'Majority needed. Company money, trust below ' + A.DISTRUST_VOTE + ', or strain without gain votes no.' : 'Ties go your way.') + ' If your proposal fails, the other option is adopted.' : 'No member yet. You declare this founding principle alone.') + '</p><div class="opts two">';
     keys.forEach(function (k) {
       var o = it.options[k], vp = A.votePreview(S, k), other = it.options[keys.filter(function (x) { return x !== k; })[0]];
-      var tally = !ms.length ? '' : vp.passes ? '<span class="tally up">Passes ' + vp.yes + ' to ' + vp.no + '</span>' : '<span class="tally down">Fails ' + vp.yes + ' to ' + vp.no + '. ' + esc(other.name) + ' instead</span>';
-      h += '<button class="opt" data-do="charter" data-c="' + k + '"><b>' + esc(o.name) + '</b><small>' + esc(o.text) + '</small>' + effectsHtml(o) +
-        (ms.length ? '<span class="seats"><span class="seat yes" title="You vote yes on your own proposal"><span class="you">You</span><i class="vm"><svg><use href="#i-yes"/></svg></i><small>You</small></span>' + vp.votes.map(seatHtml).join('') + '</span>' + tally : '') + '</button>';
+      CH.pv[k] = vp;
+      var dots = '<span class="minivote" aria-hidden="true"><i class="y"><svg><use href="#i-yes"/></svg></i>' + vp.votes.map(function (v) { return '<i class="' + (v.yes ? 'y' : 'n') + '"><svg><use href="#i-' + (v.yes ? 'yes' : 'no') + '"/></svg></i>'; }).join('') + '</span>';
+      var tally = !ms.length ? '' : '<span class="tally ' + (vp.passes ? 'up' : 'down') + '">' + dots + (vp.passes ? 'Passes ' + vp.yes + ' to ' + vp.no : 'Fails ' + vp.yes + ' to ' + vp.no + '. ' + esc(other.name) + ' instead') + '</span>';
+      h += '<button class="opt" data-do="charter" data-c="' + k + '"><b>' + esc(o.name) + '</b><small>' + esc(o.text) + '</small>' + effectsHtml(o) + tally + '</button>';
     });
     return h + '</div></div></div>';
+  }
+  /* After you choose: the same chamber, each seat lighting its vote in turn, then the tally. Reads S.lastVote. */
+  var voteShow = null, pendingPlay = false;
+  function voteResultHtml() {
+    var v = voteShow, it = v.kind === 'charter' ? A.CHARTER[v.turn] : A.CHARTER[v.kind + ':' + v.key];
+    var o = it.options[v.chosen], alone = !v.votes.length, lect = v.kind === 'motion' ? v.f : 'you';
+    var title = v.kind === 'motion' ? A.motionInfo(v.key).name : v.title;
+    var line = alone ? 'You declare: ' + o.name + '.' : v.passed ? (v.kind === 'motion' ? (v.chosen === 'pass' ? 'The motion passes.' : 'The motion is rejected.') : 'Adopted: ' + o.name + '.') : 'Your proposal fails. Adopted instead: ' + o.name + '.';
+    return '<div class="veil"><div class="dlg council" role="dialog" aria-modal="true" aria-labelledby="dt"><h3>Council, the vote</h3><h2 id="dt">' + esc(title) + '</h2>' +
+      chamberHtml(lect, votesMap(v.votes), 'result', alone ? null : { yes: v.yes, no: v.no, passes: v.passed }) +
+      '<div class="result-after sec" style="--n:' + (v.votes.length + 1) + '"><p><b>' + esc(line) + '</b></p>' + effectsHtml(o) + '<div><button class="primary" data-do="closemodal">Continue</button></div></div></div></div>';
   }
 
   /* The title card at the start of an act: what is new, in three pictures. */
@@ -1138,26 +1694,18 @@ details > *:not(summary) { margin-top: 8px; }
         '<button class="opt" data-do="crisis" data-c="contain"><b>Contain</b><small>Seal the border and wait</small><ul><li>Capital -1, Food -1</li><li>It stays a Company client</li></ul></button>' +
         '</div></div></div>';
     }
-    if (S.phase === 'dispute') {
-      var dp = S.dispute, na = A.FACTIONS[dp.a].name, nb = A.FACTIONS[dp.b].name, can = S.res.capital >= 3 && S.influence >= 1;
-      return '<div class="veil"><div class="dlg" role="dialog" aria-modal="true" aria-labelledby="dt"><h3>Dispute, ' + A.season(S) + ' ' + A.year(S) + '</h3><h2 id="dt">' + esc(na) + ' and ' + esc(nb) + ' quarrel over ' + esc(dp.topic) + '</h2>' +
-        '<p>The two are ' + A.REL_NAMES[A.rel(S, dp.a, dp.b)].toLowerCase() + ', and each wants your backing. Your trust stands at ' + S.factions[dp.a].trust + ' with ' + esc(na) + ' and ' + S.factions[dp.b].trust + ' with ' + esc(nb) + '.</p><div class="opts two">' +
-        '<button class="opt" data-do="dispute" data-c="a"><b>Back ' + esc(na) + '</b><ul><li><span class="up num">+8</span> ' + esc(na) + '</li><li><span class="down num">-8</span> ' + esc(nb) + '</li></ul></button>' +
-        '<button class="opt" data-do="dispute" data-c="b"><b>Back ' + esc(nb) + '</b><ul><li><span class="up num">+8</span> ' + esc(nb) + '</li><li><span class="down num">-8</span> ' + esc(na) + '</li></ul></button>' +
-        '<button class="opt" data-do="dispute" data-c="mediate"' + (can ? '' : ' disabled') + '><b>Mediate</b><small>3 Capital + 1 Influence' + (can ? '' : ' (you are short)') + '</small><ul><li>They move one step closer</li><li><span class="up num">+3</span> trust with each</li></ul></button>' +
-        '<button class="opt" data-do="dispute" data-c="out"><b>Stay out</b><ul><li>They drift one step further apart</li><li><span class="down num">-3</span> trust with each</li></ul></button>' +
-        '</div></div></div>';
-    }
+    if (S.phase === 'dispute') return disputeScene();
     if (S.phase === 'council') return councilHtml();
     if (S.phase === 'over') {
       var o = S.outcome, n = A.members(S).length, seals = '';
-      if (o.pledges !== undefined) seals = '<div class="endseals" role="img" aria-label="' + o.pledges + ' of five powers ratify">' + A.ORDER.map(function (id) {
+      if (o.pledges !== undefined) { var si = 0; seals = '<div class="endseals" role="img" aria-label="' + o.pledges + ' of five powers ratify">' + A.ORDER.map(function (id) {
         var f = S.factions[id], on = f.member && f.pledged;
-        return '<span><svg viewBox="0 0 34 34" aria-hidden="true">' + (on ? '<circle cx="17" cy="17" r="15" fill="var(--good)"/><path d="M10.5 17.5l4.5 4.6 8.5-9.6" fill="none" stroke="var(--surface)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>' : '<circle cx="17" cy="17" r="15" fill="none" stroke="var(--muted)" stroke-width="2" stroke-dasharray="4 3"/>') + '</svg>' + SHORT[id] + '</span>';
-      }).join('') + '</div>';
-      return '<div class="veil"><div class="dlg' + (o.result === 'loss' ? ' co' : '') + '" role="dialog" aria-modal="true" aria-labelledby="dt"><h3>' + (o.result === 'win' ? 'Victory' : o.result === 'partial' ? 'Partial result' : 'Defeat') + '</h3><h2 id="dt">' + esc(o.title) + '</h2>' + seals + '<p>' + esc(o.text) + '</p>' +
+        return '<span' + (on ? ' class="on" style="--i:' + (si++) + '"' : '') + '><svg viewBox="0 0 34 34" aria-hidden="true">' + (on ? '<circle cx="17" cy="17" r="15" fill="var(--good)"/><path d="M10.5 17.5l4.5 4.6 8.5-9.6" fill="none" stroke="var(--surface)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>' : '<circle cx="17" cy="17" r="15" fill="none" stroke="var(--muted)" stroke-width="2" stroke-dasharray="4 3"/>') + '</svg>' + SHORT[id] + '</span>';
+      }).join('') + '</div>'; }
+      return '<div class="veil"><div class="dlg wide' + (o.result === 'loss' ? ' co' : '') + '" role="dialog" aria-modal="true" aria-labelledby="dt"><h3>' + (o.result === 'win' ? 'Victory' : o.result === 'partial' ? 'Partial result' : 'Defeat') + '</h3><h2 id="dt">' + esc(o.title) + '</h2>' + seals + '<p>' + esc(o.text) + '</p>' +
         '<div class="stats"><div class="chip"><b class="num">Act ' + o.act + '</b><em>' + A.ACTS[o.act].name + '</em></div>' + (o.pledges !== undefined ? '<div class="chip"><b class="num">' + o.pledges + ' of 5</b><em>ratify</em></div>' : '') + '<div class="chip"><b class="num">' + n + ' of 5</b><em>members</em></div><div class="chip"><b class="num">' + A.clients(S).length + '</b><em>Company clients</em></div><div class="chip"><b class="num">' + S.turn + '</b><em>seasons played</em></div></div>' +
-        (S.lastResolution.length ? '<h3>Final season</h3>' + lines(S.lastResolution) : '') +
+        '<h3>Trust in you, the whole campaign</h3>' + histChart(true) +
+        (S.lastResolution.length ? '<details><summary>Final season (' + S.lastResolution.length + ')</summary>' + lines(S.lastResolution) + '</details>' : '') +
         '<div><button class="primary" data-do="new">Play again</button></div></div></div>';
     }
     return '';
@@ -1178,6 +1726,7 @@ details > *:not(summary) { margin-top: 8px; }
         '<div><button class="primary" data-do="closemodal">' + (first ? 'Begin' : 'Back to the game') + '</button></div></div></div>';
     }
     if (modal === 'act') return actCard();
+    if (modal === 'vote' && voteShow) return voteResultHtml();
     if (modal === 'confirmNew') {
       var ai = A.actInfo(S);
       return '<div class="veil" data-do="closemodal"><div class="dlg" role="dialog" aria-modal="true" aria-labelledby="dt"><h2 id="dt">Abandon this game?</h2><p>You are in Act ' + ai.act + ', ' + esc(ai.name) + ', season ' + ai.as + ' of ' + ai.len + ', with ' + A.members(S).length + ' members' + (ai.act === 3 ? ' and ' + ai.goal.have + ' pledges' : '') + '. A new game starts over from Spring 2050.</p>' +
@@ -1193,6 +1742,7 @@ details > *:not(summary) { margin-top: 8px; }
       var byId = {}; av.forEach(function (a) { byId[a.id] = a; });
       SUG = A.advise(S).filter(function (x) { return x.score >= 12 && x.why; }).slice(0, 3).map(function (x) { x.act = byId[x.id]; return x; });
     }
+    ATT = A.attention(S);
     if (view === 'relations' && !A.unlocked(S).relations) view = 'home';
     if (!play && !modal && S.phase !== 'over' && S.act > seenAct) modal = 'act';
     if (view === 'home') main = '<div class="home">' + map() + (sel ? powerPanel(av) : seasonPanel()) + '</div>';
@@ -1201,6 +1751,9 @@ details > *:not(summary) { margin-top: 8px; }
     else if (view === 'charter') main = charterView();
     else main = recordView();
     document.getElementById('app').innerHTML = top() + goal() + nav() + main + (modal ? modalHtml() : (play && (S.phase === 'crisis' || S.phase === 'dispute') ? '' : overlay()));
+    tipFor = null;
+    if (hlLock && !document.querySelector('.achip[data-hl="' + hlLock + '"]')) hlLock = null;
+    if (hlLock) lightPins(hlLock);
     var d = document.querySelector('.dlg button:not(:disabled)'); if (d) d.focus();
   }
 
@@ -1210,7 +1763,14 @@ details > *:not(summary) { margin-top: 8px; }
     if (doit === 'skip') { render(); return; }
     if (doit === 'help') { modal = 'help'; render(); return; }
     if (doit === 'asknew') { if (S.turn === 1 && !S.log.length) { newGame(); return; } modal = 'confirmNew'; render(); return; }
-    if (doit === 'closemodal') { if (modal === 'help' && !prefs.seenHelp) { prefs.seenHelp = true; savePrefs(); } if (modal === 'act') { seenAct = S.act; view = 'home'; } modal = null; render(); return; }
+    if (doit === 'closemodal') {
+      if (modal === 'help' && !prefs.seenHelp) { prefs.seenHelp = true; savePrefs(); }
+      if (modal === 'act') { seenAct = S.act; view = 'home'; }
+      var wasVote = modal === 'vote';
+      modal = null; voteShow = null;
+      if (wasVote && pendingPlay && S.phase !== 'council') { pendingPlay = false; if (view === 'home' && startPlay()) return; }
+      render(); return;
+    }
     if (doit === 'new') { modal = null; }
     if (doit === 'replay') { view = 'home'; sel = null; if (!startPlay()) render(); return; }
     if (doit === 'pref') { var k = el.getAttribute('data-p'); prefs[k] = el.checked; savePrefs(); }
@@ -1232,7 +1792,11 @@ details > *:not(summary) { margin-top: 8px; }
       }
     }
     else if (doit === 'end') { r = A.endSeason(S); sel = null; view = 'home'; if (!r.council) said = A.season(S) + ' ' + A.year(S) + ' begins.'; }
-    else if (doit === 'charter') { r = A.chooseCharter(S, el.getAttribute('data-c')); said = r.msg; }
+    else if (doit === 'charter') {
+      r = A.chooseCharter(S, el.getAttribute('data-c')); said = r.msg;
+      // show the chamber lighting its votes first; the season playback waits for Continue
+      if (r.ok) { voteShow = S.lastVote; modal = 'vote'; pendingPlay = pendingPlay || S.turn !== before; render(); return; }
+    }
     else if (doit === 'dispute') { r = A.resolveDispute(S, el.getAttribute('data-c')); said = r.msg; }
     else if (doit === 'crisis') { r = A.resolveCrisis(S, el.getAttribute('data-c')); said = r.msg; }
     else if (doit === 'new') { newGame(); return; }
@@ -1259,6 +1823,111 @@ details > *:not(summary) { margin-top: 8px; }
   }
   document.addEventListener('mouseover', showDetail);
   document.addEventListener('focusin', showDetail);
+
+  /* ---------- attention pins: the sentence shows beside the pin on hover, focus, or tap ---------- */
+  var tipFor = null, touchDown = false, tipWasOpen = false;
+  function showTip(anchor, items, key) {
+    var tip = document.getElementById('tip'), wrap = anchor && anchor.closest('.mapwrap');
+    if (!tip || !wrap || !items.length) return;
+    var f = items[0].f;
+    tip.innerHTML = items.map(function (x) { return '<p class="' + x.tone + '">' + kindIcon(x.k) + '<span>' + esc(x.text) + '</span></p>'; }).join('') +
+      (f ? '<button class="ghost" data-do="sel" data-f="' + f + '" tabindex="-1">Open ' + esc(A.FACTIONS[f].name) + '</button>' : '');
+    tip.hidden = false;
+    var w = wrap.getBoundingClientRect(), r = anchor.getBoundingClientRect(), tw = tip.offsetWidth, th = tip.offsetHeight;
+    var x = r.left + r.width / 2 - w.left - tw / 2, y = r.top - w.top - th - 8;
+    if (y < 4) y = r.bottom - w.top + 8;
+    tip.style.left = Math.max(4, Math.min(w.width - tw - 4, x)) + 'px';
+    tip.style.top = Math.max(4, Math.min(w.height - th - 4, y)) + 'px';
+    tipFor = key;
+  }
+  function hideTip() { var tip = document.getElementById('tip'); if (tip) tip.hidden = true; tipFor = null; }
+  function pinItems(el) {
+    var p = el.closest && el.closest('[data-att]');
+    if (p) return { anchor: p, key: 'a' + p.getAttribute('data-att'), items: [ATT[+p.getAttribute('data-att')]].filter(Boolean) };
+    var n = el.closest && el.closest('.node.needs');
+    if (n) { var id = n.getAttribute('data-f'); return { anchor: n.querySelector('.base'), key: 'f' + id, items: ATT.filter(function (x) { return x.f === id && !x.done; }) }; }
+    return null;
+  }
+  document.addEventListener('mouseover', function (e) {
+    if (touchDown) return;
+    if (e.target.closest && e.target.closest('#tip')) return;
+    var p = e.target.closest && e.target.closest('[data-att]');
+    if (p) { var it = pinItems(p); showTip(it.anchor, it.items, it.key); }
+    else if (tipFor) hideTip();
+  });
+  document.addEventListener('focusin', function (e) {
+    var it = e.target.matches && (e.target.matches('.node.needs') || e.target.matches('[data-att]')) ? pinItems(e.target) : null;
+    if (it) showTip(it.anchor, it.items, it.key); else if (tipFor && !(e.target.closest && e.target.closest('#tip'))) hideTip();
+  });
+  // On a touch screen the first tap on a pin, or on a power that needs you, shows its sentences.
+  // A second tap, or the Open button in the tip, opens the dossier.
+  document.addEventListener('pointerdown', function (e) {
+    touchDown = e.pointerType === 'touch';
+    var it = touchDown ? pinItems(e.target) : null;
+    tipWasOpen = !!(it && tipFor && (tipFor === it.key || tipFor === 'f' + (it.items[0] && it.items[0].f)));
+  }, true);
+  document.addEventListener('click', function (e) {
+    if (!touchDown) return;
+    var it = pinItems(e.target);
+    if (it && it.items.length && !tipWasOpen) { e.stopPropagation(); e.preventDefault(); showTip(it.anchor, it.items, it.key); return; }
+    if (!it && !(e.target.closest && e.target.closest('#tip, .achip'))) hideTip();
+  }, true);
+
+  /* Chips light the matching pins on the map: on hover or focus, and on tap or click until tapped again. */
+  var hlLock = null;
+  function lightPins(k) {
+    var svg = document.querySelector('.map svg');
+    if (!svg) return;
+    svg.classList.toggle('hl', !!k);
+    Array.prototype.forEach.call(svg.querySelectorAll('.pin'), function (p) { p.classList.toggle('lit', !!k && p.getAttribute('data-k') === k); });
+    Array.prototype.forEach.call(svg.querySelectorAll('.node'), function (n) { n.classList.toggle('lit', !!k && !!n.querySelector('.pin[data-k="' + k + '"]')); });
+    var home = svg.querySelector('.home'); if (home) home.classList.toggle('lit', !!k && !!home.querySelector('.pin[data-k="' + k + '"]'));
+    Array.prototype.forEach.call(document.querySelectorAll('.achip'), function (c) { c.setAttribute('aria-pressed', String(hlLock === c.getAttribute('data-hl'))); });
+  }
+  document.addEventListener('mouseover', function (e) {
+    var c = e.target.closest && e.target.closest('.achip');
+    if (c && !touchDown) lightPins(c.getAttribute('data-hl'));
+    else if (!c && e.target.closest && !e.target.closest('.achips')) lightPins(hlLock);
+  });
+  document.addEventListener('focusin', function (e) { var c = e.target.closest && e.target.closest('.achip'); if (c) lightPins(c.getAttribute('data-hl')); });
+  document.addEventListener('focusout', function (e) { if (e.target.closest && e.target.closest('.achip')) lightPins(hlLock); });
+  document.addEventListener('click', function (e) {
+    var c = e.target.closest && e.target.closest('.achip');
+    if (!c) return;
+    var k = c.getAttribute('data-hl');
+    hlLock = hlLock === k ? null : k;
+    lightPins(hlLock);
+    var m = document.querySelector('.map svg');
+    if (hlLock && m && m.getBoundingClientRect().bottom < 60) m.scrollIntoView({ block: 'start', behavior: REDUCE ? 'auto' : 'smooth' });
+  });
+  document.addEventListener('toggle', function (e) { if (e.target.classList && e.target.classList.contains('attlist')) attOpen = e.target.open; }, true);
+
+  /* A suggestion row and its arrow on the map light each other, and the row's reason shows below the list. */
+  function lightSug(id) {
+    Array.prototype.forEach.call(document.querySelectorAll('.map .sugg'), function (g) { g.classList.toggle('lit', g.getAttribute('data-id') === id); });
+    var row = id && document.querySelector('.sug[data-sug="' + id + '"]'), box = document.getElementById('sugwhy');
+    Array.prototype.forEach.call(document.querySelectorAll('.sug'), function (r) { r.classList.toggle('lit', r === row); });
+    if (box) box.textContent = row ? row.getAttribute('data-sugwhy') : 'Point at a suggestion to see why.';
+  }
+  function sugTarget(e) { var r = e.target.closest && e.target.closest('.sug, .map .sugg'); return r ? r.getAttribute('data-sug') || r.getAttribute('data-id') : null; }
+  document.addEventListener('mouseover', function (e) { lightSug(sugTarget(e)); });
+  document.addEventListener('focusin', function (e) { lightSug(sugTarget(e)); });
+
+  /* In the council, the option under the pointer or focus previews its vote in the chamber. */
+  function councilHover(e) {
+    var o = e.target.closest && e.target.closest('.dlg.council .opt[data-c]');
+    if (o && CH) previewVote(o.getAttribute('data-c'));
+  }
+  document.addEventListener('mouseover', councilHover);
+  document.addEventListener('focusin', councilHover);
+  /* On the campaign chart, a marker under the pointer, focus, or tap reads out below the chart. */
+  function chartRead(e) {
+    var m = e.target.closest && e.target.closest('.hchart .hm'), box = document.getElementById('hread');
+    if (m && box) box.textContent = m.getAttribute('data-ht');
+  }
+  document.addEventListener('mouseover', chartRead);
+  document.addEventListener('focusin', chartRead);
+  document.addEventListener('click', chartRead);
   newGame();
 })();
 </script>

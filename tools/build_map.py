@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """Build the Aman map from Natural Earth data.
 
-Downloads Natural Earth land and river centerlines (public domain) into tools/.cache/,
+Downloads Natural Earth land, river centerlines, and physical regions (public domain) into
+tools/.cache/,
 projects them into the map's 400 x 420 SVG frame, simplifies them, and writes the
 result into public/index.html between the GENERATED MAP marker comments.
 
@@ -12,8 +13,10 @@ Run from the repository root:
 
 Stdlib only. Delete tools/.cache/ to force a fresh download.
 
-Sensitivity rule: this script uses ONLY the land and river layers. Never add an admin,
-boundary, or country layer. The map draws no borders; territory is a soft glow.
+Sensitivity rule: this script uses ONLY the land, river, and physical-region layers. From the
+physical regions it keeps only mountain ranges, deserts, plateaus, and the Ganges plain, and it
+draws them as scattered marks, never as outlines or labels. Never add an admin, boundary, or
+country layer. The map draws no borders; territory is a soft glow.
 
 Everything placed on the map is named here as a longitude and latitude, so changing the
 projection or frame moves it all together. index.html keeps only pixel offsets for labels.
@@ -31,6 +34,7 @@ PAGE = ROOT / "public" / "index.html"
 BASE = "https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/"
 LAND_FILE = "ne_50m_land.geojson"
 RIVER_FILE = "ne_10m_rivers_lake_centerlines.geojson"
+REGION_FILE = "ne_10m_geography_regions_polys.geojson"
 BEGIN = "// BEGIN GENERATED MAP"
 END = "// END GENERATED MAP"
 
@@ -82,6 +86,22 @@ PLACES = {
 # seat cities) is flagged for the regional review the design doc calls for.
 GLOW_R = {"indus": 2.2, "himal": 1.6, "ganga": 2.0, "delta": 1.7, "coast": 2.0, "home": 2.4}
 ZONES = {k: (PLACES[k][0], PLACES[k][1], r, r) for k, r in GLOW_R.items()}
+
+# Terrain: physical regions only, by Natural Earth feature class. Each becomes a scatter of small
+# marks (ridges, stipple, dashes) with no outline, so no shape on the map reads as a region's edge.
+# "Punjab" is classed as a desert in Natural Earth but names a cultural region split by a modern
+# border; it is left out. The Ganges plain is kept only as an invisible mask for weather (winter
+# fog, parched ground in a failed monsoon), together with the Thar.
+TERRAIN_CLASSES = {"Range/mtn": "mtn", "Desert": "desert", "Plateau": "plateau"}
+TERRAIN_SKIP = {"PUNJAB"}
+PLAIN_NAMES = {"GANGES PLAIN", "THAR DESERT"}
+# Weather anchors. The monsoon arrives from the southwest, over the Arabian Sea, and sweeps
+# northeast across the peninsula; clouds travel along lanes parallel to this line.
+WX = {
+    "monsoonFrom": (66.0, 9.0), "monsoonTo": (92.0, 30.0),
+    # spring heat shimmer: the Thar, the Deccan, the central plain
+    "heat1": (71.4, 27.2), "heat2": (73.2, 25.0), "heat3": (77.2, 19.6), "heat4": (79.6, 23.6), "heat5": (75.6, 15.6),
+}
 
 
 def fetch(name):
@@ -297,6 +317,122 @@ def snap(lon, lat, line):
     return min((proj(*q) for q in line), key=lambda q: math.hypot(q[0] - p[0], q[1] - p[1]))
 
 
+def inside(pt, rings):
+    """Even-odd point-in-polygon over a list of rings (so holes count)."""
+    x, y = pt
+    c = False
+    for ring in rings:
+        j = len(ring) - 1
+        for i in range(len(ring)):
+            xi, yi = ring[i]
+            xj, yj = ring[j]
+            if (yi > y) != (yj > y) and x < (xj - xi) * (y - yi) / (yj - yi) + xi:
+                c = not c
+            j = i
+    return c
+
+
+def edge_dist(pt, rings):
+    best = 1e9
+    for ring in rings:
+        for i in range(len(ring)):
+            ax, ay = ring[i - 1]
+            bx, by = ring[i]
+            dx, dy = bx - ax, by - ay
+            L2 = dx * dx + dy * dy
+            t = 0 if not L2 else max(0, min(1, ((pt[0] - ax) * dx + (pt[1] - ay) * dy) / L2))
+            best = min(best, math.hypot(pt[0] - ax - t * dx, pt[1] - ay - t * dy))
+    return best
+
+
+def jitter(i, j, k):
+    """A fixed pseudo-random number in [0, 1) for grid cell (i, j), so the build repeats."""
+    h = (i * 73856093) ^ (j * 19349663) ^ (k * 83492791)
+    h = (h ^ (h >> 13)) * 1274126177 & 0xFFFFFFFF
+    return (h & 0xFFFF) / 65536.0
+
+
+def regions():
+    """Projected rings of the kept physical regions: {class: [(rank, rings)]}, plus the weather mask."""
+    out = {v: [] for v in TERRAIN_CLASSES.values()}
+    plain = []
+    for ft in fetch(REGION_FILE)["features"]:
+        pr, g = ft["properties"], ft["geometry"]
+        name, cla = pr.get("NAME"), pr.get("FEATURECLA")
+        if name in TERRAIN_SKIP or not g:
+            continue
+        kind = TERRAIN_CLASSES.get(cla)
+        if not kind and name not in PLAIN_NAMES:
+            continue
+        polys = g["coordinates"] if g["type"] == "MultiPolygon" else [g["coordinates"]]
+        for poly in polys:
+            rings = []
+            for ring in poly:
+                pts = clip_rect([proj(*p[:2]) for p in ring], -10, -10, W + 10, H + 10)
+                if len(pts) >= 3:
+                    rings.append(pts)
+            if not rings or area(rings[0]) < 20:
+                continue
+            if kind:
+                out[kind].append((pr.get("SCALERANK", 5), rings))
+            if name in PLAIN_NAMES:
+                plain.append(rings)
+    return out, plain
+
+
+def terrain():
+    reg, plain = regions()
+    mtn_rings = [r for _, rr in reg["mtn"] for r in [rr]]
+
+    def in_mtn(q):
+        return any(inside(q, rr) for rr in mtn_rings)
+
+    marks = {"mtn": [], "desert": [], "plateau": []}
+    # ridges: a staggered grid of small chevrons, bigger in the great ranges
+    for rank, rr in reg["mtn"]:
+        big = rank <= 2
+        sx, sy = (10.0, 7.0) if big else (8.0, 6.5)
+        w, h = (3.6, 2.6) if big else (2.8, 2.0)
+        ys = [p[1] for ring in rr for p in ring]
+        xs = [p[0] for ring in rr for p in ring]
+        j = 0
+        y = min(ys) + sy / 2
+        while y < max(ys):
+            x = min(xs) + (sx / 2 if j % 2 else 0)
+            i = 0
+            while x < max(xs):
+                q = (x + (jitter(i, j, 1) - 0.5) * 2.5, y + (jitter(i, j, 2) - 0.5) * 2)
+                if -2 < q[0] < W + 2 and -2 < q[1] < H + 2 and inside(q, rr) and edge_dist(q, rr) > 1.2:
+                    marks["mtn"].append("M%s %sl%s -%s %s %s" % (fmt(q[0] - w), fmt(q[1] + h / 2), fmt(w), fmt(h), fmt(w), fmt(h)))
+                x += sx
+                i += 1
+            y += sy
+            j += 1
+    # deserts: jittered stipple; plateaus: sparse short dashes. Neither draws inside a range.
+    for kind, step, keep in (("desert", 5.5, 0.75), ("plateau", 11.0, 0.8)):
+        for rank, rr in reg[kind]:
+            ys = [p[1] for ring in rr for p in ring]
+            xs = [p[0] for ring in rr for p in ring]
+            j = 0
+            y = min(ys)
+            while y < max(ys):
+                x = min(xs) + (step / 2 if j % 2 else 0)
+                i = 0
+                while x < max(xs):
+                    q = (x + (jitter(i, j, 3) - 0.5) * step * 0.7, y + (jitter(i, j, 4) - 0.5) * step * 0.6)
+                    if jitter(i, j, 5) < keep and 0 < q[0] < W and 0 < q[1] < H and inside(q, rr) and edge_dist(q, rr) > step * 0.4 and not in_mtn(q):
+                        if kind == "desert":
+                            marks[kind].append("M%s %sh.1" % (fmt(q[0]), fmt(q[1])))
+                        else:
+                            marks[kind].append("M%s %sh4" % (fmt(q[0] - 2), fmt(q[1])))
+                    x += step
+                    i += 1
+                y += step * 0.8
+                j += 1
+    mask = " ".join(path(dp(r + [r[0]], 1.0)[:-1], True) for rr in plain for r in rr if len(r) >= 3)
+    return {k: "".join(v) for k, v in marks.items()}, mask
+
+
 def build():
     riv = rivers()
     pt = {}
@@ -312,7 +448,7 @@ def build():
         return "[" + ", ".join(str(round(c)) for c in v) + "]"
 
     L = [BEGIN + " (tools/build_map.py; rerun it instead of editing by hand)",
-         "  // Natural Earth land and rivers only, Lambert conic, %dx%d frame. No borders." % (W, H),
+         "  // Natural Earth land, rivers, and physical regions only, Lambert conic, %dx%d frame. No borders." % (W, H),
          "  var LAND = '" + land() + "';",
          "  var RIV = {"]
     keys = list(riv)
@@ -322,6 +458,11 @@ def build():
     L.append("  };")
     L.append("  var PT = { " + ", ".join(k + ": " + arr(v) for k, v in pt.items()) + " };")
     L.append("  var ZONE = { " + ", ".join(k + ": " + arr(v) for k, v in zone.items()) + " };")
+    marks, mask = terrain()
+    L.append("  // Physical relief as marks only: ridges for ranges, stipple for deserts, dashes for plateaus.")
+    L.append("  var TERRAIN = { " + ", ".join(k + ": '" + v + "'" for k, v in marks.items()) + " };")
+    L.append("  var PLAIN = '" + mask + "';   // Ganges plain and Thar: a mask for fog and parched ground")
+    L.append("  var WX = { " + ", ".join(k + ": " + arr(proj(*v)) for k, v in WX.items()) + " };")
     L.append("  " + END)
     return "\n".join(L)
 
