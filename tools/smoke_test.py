@@ -1,7 +1,9 @@
 """Browser smoke test for Aman.
 
 Plays full games by clicking, at desktop and phone widths, and fails on any console
-error, page error, or sideways scroll. One game follows the adviser through all three
+error, page error, or sideways scroll. It also checks the attention pins and chips, by mouse
+and by touch, the dispute scene, the council chamber, the trust sparklines, and the ending chart.
+One game follows the adviser through all three
 acts; others click at random. It checks that the page works, not that it looks right.
 
 Setup:  pip install playwright && playwright install chromium
@@ -60,8 +62,14 @@ def dialogs(pg):
         head = pg.locator(".dlg .actno, .dlg h3").first
         if head.count():
             seen.add(head.inner_text().strip().lower())
-        if pg.locator(".dlg .seats .seat").count() > 1:
+        if pg.locator(".dlg .chamber .seat").count() >= 6:
             seen.add("seats")
+        if pg.locator(".dlg .chamber.result").count():
+            seen.add("vote result")
+        if pg.locator(".dlg .scene").count():
+            seen.add("dispute scene")
+            if pg.locator(".dlg .scene .portrait").count() == 2 and pg.locator(".dlg .dcard").count() == 4:
+                seen.add("dispute scene ok")
         buttons = pg.locator(".dlg button:not([disabled]):visible")
         if buttons.count():
             click(buttons.nth(random.randrange(buttons.count())))
@@ -125,6 +133,58 @@ def random_play(pg, limit=900):
     return game_over(pg)
 
 
+def attention_checks(pg):
+    """The attention chips match the pins on the map, pins explain themselves, and chips light pins."""
+    skip(pg)
+    chips = pg.locator(".achip")
+    total = sum(int(chips.nth(i).locator("b").inner_text()) for i in range(chips.count()))
+    pins = pg.locator(".map .pin:not(.done)")
+    check("attention chips count the pins on the map", chips.count() > 0 and total == pins.count())
+    check("the full sentences sit in a details list", pg.locator(".attlist li").count() >= total)
+    pins.first.hover()
+    check("hovering a pin shows its sentence", pg.locator("#tip").is_visible() and len(pg.locator("#tip p").first.inner_text()) > 10)
+    k = chips.first.get_attribute("data-hl")
+    chips.first.hover()
+    lit = pg.locator(".map svg.hl .pin.lit")
+    check("hovering a chip lights its pins", lit.count() > 0 and all(lit.nth(i).get_attribute("data-k") == k for i in range(lit.count())))
+    pg.mouse.move(2, 2)
+    check("council suggestion rows keep the reason off screen", pg.locator(".sug small").count() == 0 and pg.locator(".sug .sr").count() > 0)
+    pg.locator(".sug .act").first.hover()
+    check("hovering a suggestion shows its reason", pg.locator("#sugwhy").inner_text() != "Point at a suggestion to see why.")
+    check("the map draws terrain and a weather badge", pg.locator(".map .terrain .t-mtn").count() == 1 and pg.locator(".map .wxbadge").count() == 1)
+
+
+def touch_checks(browser):
+    """At phone width with touch, the first tap on a pin shows the sentence; Open in the tip opens the power."""
+    ctx = browser.new_context(viewport={"width": 390, "height": 844}, has_touch=True, is_mobile=True)
+    tp = ctx.new_page()
+    tp.on("console", lambda m: errors.append(m.text) if m.type == "error" else None)
+    tp.on("pageerror", lambda e: errors.append(str(e)))
+    tp.goto(PAGE)
+    tp.wait_for_timeout(400)
+    if tp.locator(".dlg .primary").count():
+        tp.locator(".dlg .primary").tap()
+    for _ in range(6):
+        if tp.locator(".map .pin:not(.done)").count():
+            break
+        b = tp.locator("[data-do=end]:not([disabled])")
+        if b.count():
+            b.first.tap()
+        tp.wait_for_timeout(200)
+        dialogs(tp)
+    pin = tp.locator(".map .pin:not(.done)").first
+    check("a pin shows on the phone map", pin.count() == 1)
+    if pin.count():
+        pin.tap()
+        check("a tap on a pin shows its sentence and stays on the season", tp.locator("#tip").is_visible() and tp.locator(".portrait").count() == 0)
+        open_btn = tp.locator("#tip button")
+        if open_btn.count():
+            open_btn.tap()
+            check("Open in the tip opens the power", tp.locator(".portrait").count() == 1)
+    check("no sideways scroll at phone width with touch", tp.evaluate("document.documentElement.scrollWidth") <= 390)
+    ctx.close()
+
+
 def no_sideways(pg):
     return pg.evaluate("document.documentElement.scrollWidth") <= pg.viewport_size["width"]
 
@@ -159,6 +219,11 @@ with sync_playwright() as p:
         follow_adviser(pg)
         end_season(pg)
     check("council suggestions are drawn on the map", pg.locator(".sugg").count() > 0)
+    check("each power chip carries a trust sparkline", pg.locator(".pill .spk svg path.ln").count() == 5)
+    pg.locator("[data-do=view][data-v=record]").click()
+    check("the Record tab shows the trust chart", pg.locator(".hchart path.tl:not(.mem)").count() == 5)
+    pg.locator("[data-do=view][data-v=home]").click()
+    attention_checks(pg)
 
     pg.locator(".pill").nth(0).click()
     check("power dossier opens", pg.locator(".portrait").count() == 1 and pg.locator(".dial").count() == 1)
@@ -175,10 +240,17 @@ with sync_playwright() as p:
     check("an adviser game reaches Act 3 by clicking", reached == 3)
     check("the Act 2 title card showed", "act 2 of 3" in seen)
     check("the Act 3 title card showed", "act 3 of 3" in seen)
-    check("a council vote showed member seats", "seats" in seen)
+    check("a council vote showed the chamber, a seat per power and you", "seats" in seen)
+    check("the chamber lit the votes after a choice", "vote result" in seen)
+    check("a dispute showed as a scene: two leaders and four cards", "dispute scene ok" in seen)
     if not game_over(pg):
         adviser_game(pg)
     check("the adviser game reaches an ending", game_over(pg))
+    check("the ending draws a trust line per power", pg.locator(".dlg .hchart path.tl:not(.mem)").count() == 5)
+    check("the ending chart marks events", pg.locator(".dlg .hchart .hm").count() > 0)
+    if pg.locator(".dlg .hchart .hm").count():
+        pg.locator(".dlg .hchart .hm").first.hover()
+        check("hovering a chart marker reads it out", "Point at" not in pg.locator("#hread").inner_text())
     pg.set_viewport_size({"width": 400, "height": 800})
     check("no sideways scroll at phone width, game over", no_sideways(pg))
     pg.set_viewport_size({"width": 1280, "height": 900})
@@ -192,6 +264,8 @@ with sync_playwright() as p:
     pg.locator(".pill").nth(3).click()
     check("no sideways scroll at phone width", no_sideways(pg))
     check("a random game at phone width reaches an ending", random_play(pg))
+
+    touch_checks(browser)
 
     browser.close()
 

@@ -22,6 +22,7 @@
   const HEAR_COST = { inf: 1, capital: 2 };
   const TERMS_COST = { inf: 2, capital: 3 };
   const TERMS_TRUST = 35;
+  const DISPUTE = { back: 8, talks: 3, out: -3, cost: { capital: 3, inf: 1 } };
   const DISTRUST_VOTE = 50;      // members below this trust vote against you (acts 2 and 3)
   const MEMBER_DRIFT = { 1: 1, 2: -1, 3: -1 };  // members' trust each season with needs met. From act 2 they expect more.
   const EXPECT_AT = 70, EXPECT_HIGH = -4;       // from act 2, members above this trust lose more each season
@@ -305,7 +306,7 @@
       companyTargets: [], escalated: false, crisis: null, rel: {}, dispute: null, monsoon: null, plansDone: {}, council: null,
       act: 1, actStart: { 1: 1, 2: null, 3: null }, agenda: [], exits: [], lastVotes: [], lastVote: null, passed: {}, voteCalled: null,
       stats: { walkouts: 0, secessions: 0, demandsMet: 0, demandsMissed: 0, motionsPassed: 0, motionsFailed: 0, pledgesLost: 0, termsOffered: 0 },
-      briefing: [], log: [], lastResolution: []
+      briefing: [], log: [], lastResolution: [], history: []
     };
     ORDER.forEach(function (id) {
       const d = FACTIONS[id];
@@ -315,6 +316,7 @@
         demand: null, strain: 0, lastStrain: null, motion: null, motionIdx: 0, left: null, leftHow: null, grievance: null, pledged: false, terms: false };
     });
     PAIRS.forEach(function (p) { const k = pk(p[0], p[1]); S.rel[k] = REL_START[k] || 0; });
+    S.history.push(histEntry(S, 1));
     startTurn(S);
     return S;
   }
@@ -764,28 +766,50 @@
   }
 
   /* ---------- dispute between two powers ---------- */
+  /* The four ways to settle the dispute in front of you, with their effects, for the scene and the bots.
+     resolveDispute applies exactly these numbers. */
+  function disputeOptions(S) {
+    if (!S.dispute) return null;
+    const a = S.dispute.a, b = S.dispute.b, r = rel(S, a, b);
+    const bothIn = S.act >= 2 && S.factions[a].member && S.factions[b].member;
+    function t(x, y) { const o = {}; o[a] = x; o[b] = y; return o; }
+    function back(w, l) {
+      const st = {}; if (bothIn) st[l] = 1;
+      const tr = {}; tr[w] = DISPUTE.back; tr[l] = -DISPUTE.back;
+      return { key: w === a ? 'a' : 'b', back: w, trust: tr, rel: r, strain: st, cost: {}, ok: true, why: '' };
+    }
+    const canTalk = S.res.capital >= DISPUTE.cost.capital && S.influence >= DISPUTE.cost.inf;
+    return {
+      a: a, b: b, topic: S.dispute.topic, rel: r,
+      options: [
+        back(a, b), back(b, a),
+        { key: 'mediate', trust: t(DISPUTE.talks, DISPUTE.talks), rel: clamp(r + 1, -2, 2), strain: {}, cost: Object.assign({}, DISPUTE.cost), ok: canTalk, why: canTalk ? '' : 'Mediation costs 3 Capital and 1 Influence.' },
+        { key: 'out', trust: t(DISPUTE.out, DISPUTE.out), rel: clamp(r - 1, -2, 2), strain: {}, cost: {}, ok: true, why: '' }
+      ]
+    };
+  }
   function resolveDispute(S, choice) {
     if (S.phase !== 'dispute') return { ok: false, msg: 'No dispute to settle.' };
     const a = S.dispute.a, b = S.dispute.b;
     let msg;
     if (choice === 'mediate') {
-      if (S.res.capital < 3 || S.influence < 1) return { ok: false, msg: 'Mediation costs 3 Capital and 1 Influence.' };
-      S.res.capital -= 3; S.influence -= 1; shiftRel(S, a, b, 1); trust(S, a, 3); trust(S, b, 3);
+      if (S.res.capital < DISPUTE.cost.capital || S.influence < DISPUTE.cost.inf) return { ok: false, msg: 'Mediation costs 3 Capital and 1 Influence.' };
+      S.res.capital -= DISPUTE.cost.capital; S.influence -= DISPUTE.cost.inf; shiftRel(S, a, b, 1); trust(S, a, DISPUTE.talks); trust(S, b, DISPUTE.talks);
       S.factions[a].touched = S.factions[b].touched = true;
-      msg = 'You hosted talks on ' + S.dispute.topic + '. ' + fname(a) + ' and ' + fname(b) + ' are now ' + REL_NAMES[rel(S, a, b)].toLowerCase() + '. Trust +3 with each.';
+      msg = 'You hosted talks on ' + S.dispute.topic + '. ' + fname(a) + ' and ' + fname(b) + ' are now ' + REL_NAMES[rel(S, a, b)].toLowerCase() + '. Trust +' + DISPUTE.talks + ' with each.';
       log(S, msg, 'good');
     } else if (choice === 'a' || choice === 'b') {
       const w = choice === 'a' ? a : b, l = choice === 'a' ? b : a;
-      trust(S, w, 8); trust(S, l, -8);
-      msg = 'You backed ' + fname(w) + ' over ' + S.dispute.topic + '. Trust +8 there, -8 with ' + fname(l) + '.';
+      trust(S, w, DISPUTE.back); trust(S, l, -DISPUTE.back);
+      msg = 'You backed ' + fname(w) + ' over ' + S.dispute.topic + '. Trust +' + DISPUTE.back + ' there, -' + DISPUTE.back + ' with ' + fname(l) + '.';
       if (S.act >= 2 && S.factions[w].member && S.factions[l].member) {
         addStrain(S, l, 1, 'you sided against it over ' + S.dispute.topic);
         msg += ' ' + fname(l) + ' takes it as a grievance: strain ' + S.factions[l].strain + ' of ' + STRAIN_MAX + '.';
       }
       log(S, msg, 'warn');
     } else {
-      trust(S, a, -3); trust(S, b, -3); shiftRel(S, a, b, -1);
-      msg = 'You stayed out of it. Both resent your silence (trust -3), and they are now ' + REL_NAMES[rel(S, a, b)].toLowerCase() + '.';
+      trust(S, a, DISPUTE.out); trust(S, b, DISPUTE.out); shiftRel(S, a, b, -1);
+      msg = 'You stayed out of it. Both resent your silence (trust ' + DISPUTE.out + '), and they are now ' + REL_NAMES[rel(S, a, b)].toLowerCase() + '.';
       log(S, msg, 'warn');
     }
     S.dispute = null; S.phase = 'actions';
@@ -1091,7 +1115,7 @@
 
   function resolve(S) {
     const R = [];
-    const as = actSeason(S);
+    const as = actSeason(S), actWas = S.act;
     // ignored requests
     ORDER.forEach(function (id) {
       const f = S.factions[id];
@@ -1211,7 +1235,52 @@
     R.forEach(function (r) { log(S, r.text, r.kind); });
     S.lastResolution = R;
     checkEnd(S, R);
+    recordHistory(S, actWas);
     if (S.phase !== 'over') startTurn(S);
+  }
+
+  /* ---------- history: one entry per season end, for the sparklines and the campaign chart ----------
+     Reads state only. It never touches S.rng and changes no rule. Entry 0 is the starting position. */
+  function histEntry(S, act) {
+    const e = { turn: S.turn, act: act, when: S.turn ? season(S) + ' ' + year(S) : 'Start', trust: {}, member: {}, pledged: {}, grip: {}, ev: [] };
+    ORDER.forEach(function (id) {
+      const f = S.factions[id];
+      e.trust[id] = f.trust; e.member[id] = f.member; e.pledged[id] = f.member && f.pledged; e.grip[id] = f.grip;
+    });
+    return e;
+  }
+  /* What changed since the last entry, as events: k is join, rejoin, walkout, secede, rogue, pledge, withdraw, client, act, vote, or end. */
+  function recordHistory(S, actWas) {
+    const H = S.history, prev = H[H.length - 1], e = histEntry(S, actWas), ev = e.ev;
+    ORDER.forEach(function (id) {
+      const f = S.factions[id], nm = fname(id);
+      if (e.member[id] && !prev.member[id]) {
+        const again = H.some(function (h) { return h.member[id]; });
+        ev.push({ k: again ? 'rejoin' : 'join', f: id, text: nm + (again ? ' returns to the federation.' : ' joins the federation.') });
+      }
+      if (!e.member[id] && prev.member[id]) {
+        const how = f.leftHow || 'secede';
+        ev.push({ k: how, f: id, text: nm + { walkout: ' walks out.', secede: ' secedes.', rogue: ' goes rogue and leaves.' }[how] });
+      }
+      if (e.pledged[id] && !prev.pledged[id]) ev.push({ k: 'pledge', f: id, text: nm + ' pledges to ratify.' });
+      if (!e.pledged[id] && prev.pledged[id]) ev.push({ k: 'withdraw', f: id, text: nm + ' withdraws its pledge.' });
+      if (e.grip[id] >= 2 && prev.grip[id] < 2) ev.push({ k: 'client', f: id, text: nm + ' becomes a Company client.' });
+      if (e.grip[id] >= 3 && prev.grip[id] < 3 && !(prev.member[id] && !e.member[id])) ev.push({ k: 'rogue', f: id, text: nm + ' goes rogue.' });
+    });
+    if (S.act !== actWas) ev.push({ k: 'act', act: S.act, text: 'Act ' + S.act + ', ' + ACTS[S.act].name + ', begins with ' + NUMW[members(S).length].toLowerCase() + ' members.' });
+    if (S.outcome) {
+      if (S.outcome.pledges !== undefined) ev.push({ k: 'vote', n: S.outcome.pledges, fs: pledges(S), text: 'The ratification vote. ' + (S.outcome.pledges ? NUMW[S.outcome.pledges] : 'None') + ' of five ratify: ' + S.outcome.title.toLowerCase().replace(/^aman$/, 'Aman') + '.' });
+      else ev.push({ k: 'end', text: S.outcome.title + '.' });
+    }
+    H.push(e);
+  }
+  function history(S) { return S.history || []; }
+  /* The trust line that matters most for a power right now, for the sparklines. */
+  function trustLine(S, id) {
+    const f = S.factions[id];
+    if (!f.member) return { v: JOIN_TRUST, text: 'joins at ' + JOIN_TRUST };
+    if (S.act === 3) return f.pledged ? { v: PLEDGE_KEEP, text: 'keeps its pledge at ' + PLEDGE_KEEP } : { v: RATIFY_TRUST, text: 'pledges at ' + RATIFY_TRUST };
+    return { v: SECEDE_TRUST, text: 'secedes below ' + SECEDE_TRUST };
   }
 
   function over(S, o, R) {
@@ -1293,15 +1362,49 @@
   }
   function motionInfo(key) { return MOTION_BY_KEY[key] || null; }
 
+  /* What needs the player this season, one item per thing, each tied to a power (f) where there is one.
+     k is the kind, which the map draws as a pin: vote, ready, strain, demand, motion, court, blocked, ask, plan.
+     tone is the color family. done marks an item that is already settled (a blocked Company deal).
+     Reads state only; changes nothing. */
+  function attention(S) {
+    const t = [], cap = function (s) { return s.charAt(0).toUpperCase() + s.slice(1); };
+    const callv = available(S).filter(function (a) { return a.type === 'callvote'; })[0];
+    if (S.voteCalled === S.turn) t.push({ k: 'vote', tone: 'good', text: 'The ratification vote is held at the end of this season.' });
+    else if (callv && callv.ok) t.push({ k: 'vote', tone: 'good', text: 'You hold ' + pledges(S).length + ' pledges. You can call the ratification vote.' });
+    ORDER.forEach(function (id) { if (canJoin(S, id)) t.push({ k: 'ready', tone: 'good', f: id, text: fname(id) + ' is ready to join. Invite it.' }); });
+    ORDER.forEach(function (id) { if (canPledge(S, id)) t.push({ k: 'ready', tone: 'good', f: id, text: fname(id) + ' is ready to pledge. Ask it to ratify.' }); });
+    ORDER.forEach(function (id) {
+      const f = S.factions[id], nm = fname(id);
+      if (f.member && f.strain >= STRAIN_MAX - 1) t.push({ k: 'strain', tone: 'bad', f: id, text: nm + ' is one grievance from walking out. Hear it.' });
+      if (f.demand) {
+        const miss = S.act === 3 && f.pledged ? ' it costs ' + DEMAND_TRUST + ' trust. Below ' + PLEDGE_KEEP + ' its pledge breaks.' : ' it adds a strain mark.';
+        t.push({ k: 'demand', tone: 'ask', f: id, res: f.demand.kind === 'claim' ? f.demand.res : 'capital', text: f.demand.kind === 'claim' ? nm + ' claims ' + f.demand.amount + ' ' + cap(f.demand.res) + '. Unmet,' + miss : nm + ' wants its budget share: ' + f.demand.amount + ' Capital. Unpaid,' + miss });
+      }
+      if (f.member && f.motion && f.motion.at === S.turn) t.push({ k: 'motion', tone: 'plan', f: id, text: nm + '\'s motion goes to council at the end of this season.' });
+    });
+    S.companyTargets.forEach(function (id) {
+      const f = S.factions[id], left = Math.max(0, BLOCK_GAIN - (f.trust - f.trustAtStart));
+      if (f.countered || left === 0) t.push({ k: 'blocked', tone: 'co', done: true, f: id, text: 'Company deal with ' + fname(id) + ': blocked.' });
+      else t.push({ k: 'court', tone: 'co', f: id, text: 'The Company is courting ' + fname(id) + '. Gain ' + left + ' more trust there, or counter it.' });
+    });
+    ORDER.forEach(function (id) {
+      const f = S.factions[id];
+      if (f.request) t.push({ k: 'ask', tone: 'ask', f: id, res: f.request.res, text: fname(id) + ' asks for ' + f.request.amount + ' ' + cap(f.request.res) + '.' });
+      if (f.plan && f.plan.eta === 1) { const n = planOf(S, id).name; t.push({ k: 'plan', tone: 'plan', f: id, text: fname(id) + ' finishes its plan this season: ' + n.charAt(0).toLowerCase() + n.slice(1) + '.' }); }
+    });
+    return t;
+  }
+
   root.Aman = {
     create: create, available: available, act: act, endSeason: endSeason, chooseCharter: chooseCharter,
     resolveCrisis: resolveCrisis, resolveDispute: resolveDispute, advise: advise, gates: gates, unlocked: unlocked, rel: rel, gaps: gaps, planOf: planOf, REL_NAMES: REL_NAMES, PAIRS: PAIRS, yields: yields, fightOdds: fightOdds, canJoin: canJoin, needTotal: needTotal,
     members: members, clients: clients, season: season, year: year,
     FACTIONS: FACTIONS, PROJECTS: PROJECTS, TECH: TECH, CHARTER: CHARTER, ORDER: ORDER,
     BLOCK_GAIN: BLOCK_GAIN, MAX_TURNS: MAX_TURNS, JOIN_TRUST: JOIN_TRUST, JOIN_NEEDS: JOIN_NEEDS,
-    actInfo: actInfo, hardenedBy: hardenedBy, SECEDE_TRUST: SECEDE_TRUST, EXPECT_AT: EXPECT_AT, EXPECT_HIGH: EXPECT_HIGH, MEMBER_DRIFT: MEMBER_DRIFT, DEMAND_TRUST: DEMAND_TRUST, DEMAND_GAIN: DEMAND_GAIN, actSeason: actSeason, councilItem: councilItem, votePreview: votePreview, pledges: pledges, pledgeGaps: pledgeGaps, canPledge: canPledge, motionInfo: motionInfo,
+    actInfo: actInfo, attention: attention, hardenedBy: hardenedBy, SECEDE_TRUST: SECEDE_TRUST, EXPECT_AT: EXPECT_AT, EXPECT_HIGH: EXPECT_HIGH, MEMBER_DRIFT: MEMBER_DRIFT, DEMAND_TRUST: DEMAND_TRUST, DEMAND_GAIN: DEMAND_GAIN, actSeason: actSeason, councilItem: councilItem, votePreview: votePreview, pledges: pledges, pledgeGaps: pledgeGaps, canPledge: canPledge, motionInfo: motionInfo,
     ACTS: ACTS, MOTIONS: MOTIONS, ARTICLES: ARTICLES, RATIFY_TRUST: RATIFY_TRUST, RATIFY_NEEDS: RATIFY_NEEDS, STRAIN_MAX: STRAIN_MAX, PLEDGE_KEEP: PLEDGE_KEEP,
-    DISTRUST_VOTE: DISTRUST_VOTE, HEAR_COST: HEAR_COST, TERMS_COST: TERMS_COST, JOIN_SPILL: JOIN_SPILL
+    DISTRUST_VOTE: DISTRUST_VOTE, HEAR_COST: HEAR_COST, TERMS_COST: TERMS_COST, JOIN_SPILL: JOIN_SPILL,
+    disputeOptions: disputeOptions, history: history, trustLine: trustLine
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = root.Aman;
 })(typeof window !== 'undefined' ? window : globalThis);
