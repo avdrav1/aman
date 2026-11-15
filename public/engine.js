@@ -616,7 +616,7 @@
       res: { water: 3, energy: 3, food: 3, capital: 5 },
       influence: 3, shortage: false,
       factions: {}, projects: {}, tech: {}, research: null, charter: {},
-      companyTargets: [], escalated: false, coReach: 0, crisis: null, rel: {}, dispute: null, monsoon: null, plansDone: {}, council: null,
+      companyTargets: [], escalated: false, coReach: 0, crisis: null, battle: null, lastBattle: null, rel: {}, dispute: null, monsoon: null, plansDone: {}, council: null,
       act: 1, actStart: { 1: 1, 2: null, 3: null }, agenda: [], exits: [], lastVotes: [], lastVote: null, passed: {}, voteCalled: null,
       stats: { walkouts: 0, secessions: 0, demandsMet: 0, demandsMissed: 0, motionsPassed: 0, motionsFailed: 0, pledgesLost: 0, termsOffered: 0 },
       briefing: [], log: [], lastResolution: [], history: []
@@ -1085,24 +1085,13 @@
       msg = 'You met ' + fname(id) + ' at the table and funded what it was promised. The Company loses its client. Trust +12.';
       log(S, msg, 'good');
     } else if (choice === 'fight') {
-      const p = fightOdds(S);
-      if (S.rng() < p) {
-        f.grip = 1;
-        if (S.tech.civil) {
-          ORDER.forEach(function (o) { if (o !== id) trust(S, o, 2); });
-          msg = 'Battle won (auto-resolved). Your forces held the line and protected civilians. Other factions take note: trust +2.';
-        } else {
-          trust(S, id, -6);
-          ORDER.forEach(function (o) { if (o !== id) trust(S, o, -2); });
-          msg = 'Battle won (auto-resolved). The raids stop, but ' + fname(id) + ' resents the defeat (trust -6) and the others grow wary (trust -2).';
-        }
-        log(S, msg, 'warn');
-      } else {
-        S.res.capital = Math.max(0, S.res.capital - 3); S.res.food = Math.max(0, S.res.food - 2);
-        f.grip = 2; trust(S, id, -4);
-        msg = 'Battle lost (auto-resolved). Raiders burn depots: Capital -3, Food -2. ' + fname(id) + ' stays a Company client.';
-        log(S, msg, 'bad');
-      }
+      // the auto-resolved battle, in one call: the sim and the adviser take this path
+      enterBattle(S, id);
+      return autoBattle(S);
+    } else if (choice === 'battle') {
+      // the playable battle: the UI runs it, then calls finishBattle
+      enterBattle(S, id, true);
+      return { ok: true, battle: true, msg: 'You march to defend the federation against Company contractors.' };
     } else {
       S.res.capital = Math.max(0, S.res.capital - 1); S.res.food = Math.max(0, S.res.food - 1);
       f.grip = 2; trust(S, id, -2);
@@ -1111,6 +1100,49 @@
     }
     nextPhase(S);
     return { ok: true, msg: msg };
+  }
+
+  /* ---------- battle ---------- */
+  /* A battle is always against Company forces, never a power. S.battle holds what the battle layer needs:
+     kind ('crisis'), f (the rogue power the Company strikes from), and odds for the auto-resolved path.
+     The battle's own rules live in battle.js; the engine only enters the phase and applies the result. */
+  function enterBattle(S, id, live) {
+    S.battle = { kind: 'crisis', site: 'dam', f: id, odds: fightOdds(S), turn: S.turn };
+    // the playable battle gets its own seed; the auto-resolved path draws nothing extra, so the sim is unchanged
+    if (live) S.battle.seed = Math.floor(S.rng() * 4294967296);
+    S.phase = 'battle';
+  }
+  /* Roll the battle with fightOdds. One draw from S.rng, exactly as the old dice roll, so the sim is unchanged. */
+  function autoBattle(S) {
+    if (S.phase !== 'battle') return { ok: false, msg: 'No battle to fight.' };
+    return finishBattle(S, { won: S.rng() < S.battle.odds, auto: true });
+  }
+  /* result: { won, auto }. Applies the outcome the crisis dialog promised. */
+  function finishBattle(S, result) {
+    if (S.phase !== 'battle' || !S.battle) return { ok: false, msg: 'No battle to finish.' };
+    const id = S.battle.f, f = S.factions[id], how = result.auto ? ' (auto-resolved)' : '';
+    let msg;
+    if (result.won) {
+      f.grip = 1;
+      if (S.tech.civil) {
+        ORDER.forEach(function (o) { if (o !== id) trust(S, o, 2); });
+        msg = 'Battle won' + how + '. Your forces held the line and protected civilians. Other factions take note: trust +2.';
+      } else {
+        trust(S, id, -6);
+        ORDER.forEach(function (o) { if (o !== id) trust(S, o, -2); });
+        msg = 'Battle won' + how + '. The raids stop, but ' + fname(id) + ' resents the defeat (trust -6) and the others grow wary (trust -2).';
+      }
+      log(S, msg, 'warn');
+    } else {
+      S.res.capital = Math.max(0, S.res.capital - 3); S.res.food = Math.max(0, S.res.food - 2);
+      f.grip = 2; trust(S, id, -4);
+      msg = 'Battle lost' + how + '. Raiders burn depots: Capital -3, Food -2. ' + fname(id) + ' stays a Company client.';
+      log(S, msg, 'bad');
+    }
+    S.lastBattle = { f: id, won: !!result.won, auto: !!result.auto, turn: S.turn, msg: msg };
+    S.battle = null;
+    nextPhase(S);
+    return { ok: true, msg: msg, won: !!result.won };
   }
 
   /* ---------- dispute between two powers ---------- */
@@ -1788,7 +1820,7 @@
   root.Aman = {
     digest: digest,
     create: create, available: available, act: act, endSeason: endSeason, chooseCharter: chooseCharter,
-    resolveCrisis: resolveCrisis, resolveDispute: resolveDispute, advise: advise, gates: gates, unlocked: unlocked, rel: rel, gaps: gaps, planOf: planOf, REL_NAMES: REL_NAMES, PAIRS: PAIRS, yields: yields, fightOdds: fightOdds, canJoin: canJoin, needTotal: needTotal,
+    resolveCrisis: resolveCrisis, resolveDispute: resolveDispute, finishBattle: finishBattle, autoBattle: autoBattle, advise: advise, gates: gates, unlocked: unlocked, rel: rel, gaps: gaps, planOf: planOf, REL_NAMES: REL_NAMES, PAIRS: PAIRS, yields: yields, fightOdds: fightOdds, canJoin: canJoin, needTotal: needTotal,
     members: members, clients: clients, season: season, year: year,
     FACTIONS: FACTIONS, PROJECTS: PROJECTS, TECH: TECH, CHARTER: CHARTER, ORDER: ORDER,
     BLOCK_GAIN: BLOCK_GAIN, MAX_TURNS: MAX_TURNS, JOIN_TRUST: JOIN_TRUST, JOIN_NEEDS: JOIN_NEEDS,

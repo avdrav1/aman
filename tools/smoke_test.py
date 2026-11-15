@@ -53,10 +53,21 @@ def act_now(pg):
     return int(t.get_attribute("data-act")) if t.count() else 0
 
 
+def finish_battle(pg):
+    """A battle screen opened from a crisis: let the battle bot play it out, then continue."""
+    if not pg.locator("#battle").count():
+        return False
+    pg.evaluate("AmanBattleUI.runBot()")
+    click(pg.locator("#battle [data-bt=done]"))
+    seen.add("battle fought")
+    return True
+
+
 def dialogs(pg):
     """Dismiss playback and answer any decision dialog at random."""
     skip(pg)
     for _ in range(40):
+        finish_battle(pg)
         if not pg.locator(".dlg").count() or game_over(pg):
             return
         head = pg.locator(".dlg .actno, .dlg h3").first
@@ -113,7 +124,7 @@ def random_play(pg, limit=900):
         if game_over(pg):
             return True
         skip(pg)
-        if pg.locator(".dlg").count():
+        if finish_battle(pg) or pg.locator(".dlg").count():
             dialogs(pg)
             continue
         r = random.random()
@@ -192,6 +203,32 @@ def touch_checks(browser):
     ctx.close()
 
 
+def battle_checks(pg):
+    """The battle screen on its own: the how-to card, a building placed by key and click, the bot to the end, Continue."""
+    pg.evaluate("window.__bt = null; AmanBattleUI.open({ ctx: { seed: 777, odds: 0.6 }, title: 'Hold the dam', place: 'test', onDone: function (r) { window.__bt = r; } })")
+    pg.wait_for_timeout(200)
+    check("the battle opens on a how-to card", pg.locator("#battle .bt-card.on [data-bt=start]").count() == 1)
+    pg.locator("#battle [data-bt=start]").click()
+    check("the battle shows gauges for the dam, depot, and town", pg.locator("#battle .bt-g").count() == 3)
+    box = pg.locator("#battle canvas").bounding_box()
+    W, H = pg.evaluate("[AmanBattle.W, AmanBattle.H]")
+    s = min(box["width"] / W, box["height"] / H)
+    ox, oy = box["x"] + (box["width"] - W * s) / 2, box["y"] + (box["height"] - H * s) / 2
+    before = pg.evaluate("AmanBattleUI.state().supply")
+    pg.keyboard.press("w")
+    pg.mouse.click(ox + 300 * s, oy + 200 * s)
+    placed = pg.evaluate("AmanBattleUI.state().ents.filter(function (e) { return e.kind === 'watchtower'; }).length")
+    check("a watchtower is placed by key and click, and costs supply", placed == 1 and pg.evaluate("AmanBattleUI.state().supply") < before)
+    pg.keyboard.press(" ")
+    check("Space pauses the battle", "Resume" in pg.locator("#battle [data-bt=pause]").inner_text())
+    pg.keyboard.press(" ")
+    r = pg.evaluate("AmanBattleUI.runBot()")
+    check("the battle bot plays a battle to its end", r and r["over"])
+    check("the battle ends on a result card", pg.locator("#battle .bt-card.on [data-bt=done]").count() == 1)
+    pg.locator("#battle [data-bt=done]").click()
+    check("Continue closes the battle and reports the result", pg.locator("#battle").count() == 0 and pg.evaluate("window.__bt && window.__bt.over") is True)
+
+
 def A_UNLOCKED_RELATIONS(pg):
     return pg.locator("[data-do=view][data-v=relations]").count() > 0
 
@@ -218,6 +255,8 @@ with sync_playwright() as p:
     pg.locator(".dlg .primary").click()
     check("welcome guide closes", pg.locator(".dlg").count() == 0)
     check("the track shows three acts", pg.locator(".top .track .ag").count() == 3 and act_now(pg) == 1)
+
+    battle_checks(pg)
 
     pg.locator("[data-do=help]").click()
     check("How to win opens", pg.locator(".dlg").count() == 1)

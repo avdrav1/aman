@@ -53,7 +53,7 @@ From "how might we make it more visual":
 
 From the original design:
 
-- **The real-time battle layer.**
+- **The real-time battle layer.** Planned in `docs/battle.md`. M0 is built: the `'battle'` phase with a placeholder screen.
 - **All four rogue types** and conquest as a costly option.
 - **A choice of which power to play.** The sixteen powers are built; the player is always the Deccan Compact.
 
