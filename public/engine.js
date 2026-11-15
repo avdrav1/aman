@@ -1090,7 +1090,7 @@
       return autoBattle(S);
     } else if (choice === 'battle') {
       // the playable battle: the UI runs it, then calls finishBattle
-      enterBattle(S, id);
+      enterBattle(S, id, true);
       return { ok: true, battle: true, msg: 'You march to defend the federation against Company contractors.' };
     } else {
       S.res.capital = Math.max(0, S.res.capital - 1); S.res.food = Math.max(0, S.res.food - 1);
@@ -1106,8 +1106,10 @@
   /* A battle is always against Company forces, never a power. S.battle holds what the battle layer needs:
      kind ('crisis'), f (the rogue power the Company strikes from), and odds for the auto-resolved path.
      The battle's own rules live in battle.js; the engine only enters the phase and applies the result. */
-  function enterBattle(S, id) {
-    S.battle = { kind: 'crisis', f: id, odds: fightOdds(S), turn: S.turn };
+  function enterBattle(S, id, live) {
+    S.battle = { kind: 'crisis', site: 'dam', f: id, odds: fightOdds(S), turn: S.turn };
+    // the playable battle gets its own seed; the auto-resolved path draws nothing extra, so the sim is unchanged
+    if (live) S.battle.seed = Math.floor(S.rng() * 4294967296);
     S.phase = 'battle';
   }
   /* Roll the battle with fightOdds. One draw from S.rng, exactly as the old dice roll, so the sim is unchanged. */

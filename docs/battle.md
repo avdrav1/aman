@@ -1,6 +1,27 @@
 # The battle layer
 
-Scope and plan for the real-time battle layer, agreed November 2026. M0 (the engine plumbing and a placeholder screen) is built; the rest is not.
+Scope and plan for the real-time battle layer, agreed November 2026. M0 (the engine plumbing) and M1 (a greybox battle at a dam) are built. M2 to M4 are not.
+
+## What is built (M1)
+
+- **Entry:** a rogue crisis offers **Defend the towns**, which opens a choice: **Fight it** (the battle screen; needs a screen 760 px wide) or **Auto-resolve** (`fightOdds`, one roll). `resolveCrisis(S, 'battle')` draws the battle's seed from `S.rng`; the auto path draws nothing extra, so the sim is unchanged.
+- **`public/battle.js`** (`window.AmanBattle`): the rules, deterministic at 10 ticks a second. `setup(ctx)`, `command(B, cmd)`, `step(B)`, `available(B)`, `canPlace`, `result(B)`, `waves(B)`, `bot(B)`, `simulate(ctx)`.
+- **The field:** 960 by 600. A river with two crossings, the Dam and a Ford. Your bank is the west; the Company enters from the east at two points.
+- **Yours:** Depot (trains engineers), Dam, Town; 2 engineers and 2 guards to start; supply `35 + 30 x odds`, plus 1 a second and a bounty per Company unit stopped.
+- **Buildings:** Barricade (10, blocks ground units), Watchtower (25, range 150, strong against drones), Workshop (30, trains guards and interceptors). Engineers build what you place, then repair.
+- **Units:** Guard (15, holds a point, cannot hit drones), Interceptor (20, ranged, strong against drones), Engineer (10).
+- **The Company:** 8 waves from 45 s to 355 s: drones (fly straight at the dam or town), contractors (cross at the dam or the ford, fight what they meet), and a convoy in the last wave. Numbers scale by `1.55 - odds`.
+- **Win or lose:** win when every wave is stopped (about 6.5 minutes). Lose if the Depot falls or the Company takes the Dam. The Town's damage is reported, for M2's conduct score.
+- **The screen (`public/battle-ui.js`, `window.AmanBattleUI`):** a how-to card, then the field on a canvas with gauges for the Dam, Depot, and Town, wave pips, supply, pause (Space) and 1x or 2x. Q, W, E place buildings. Click or drag to select troops, click to move them. A result card reports time, Dam, Town, and losses; Continue calls `finishBattle`.
+- **Bot and sim:** `tools/sim.js` plays the battle bot at four odds. Today: 2% at 45% odds, 67% at 60%, 85% at 75%, 100% at 95%. Steeper than the odds; M4 calibrates it.
+- **Smoke test:** opens the battle screen, places a watchtower by key and click, pauses, lets the bot finish, and continues. A crisis battle met in a random game is played out by the bot.
+
+## Open questions from M1
+
+- Does a 6 to 7 minute battle feel right inside a 33-season campaign? Only playing it will tell.
+- Winning still costs trust with the rogue power (-6) and everyone else (-2) unless you have civil defense. M2's conduct score is meant to replace that.
+- The dam usually ends badly damaged even in a win. Is holding it too hard, or is that the right tension?
+- Is the 760 px minimum right? Below it, only auto-resolve is offered.
 
 ## Context
 

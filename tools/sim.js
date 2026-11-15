@@ -1,10 +1,12 @@
 /* Balance check for Aman. Plays games with three bots, all the way through the three acts, and prints outcomes.
+   Then plays the real-time battle (battle.js) with its bot at four odds.
    "greedy" always takes the adviser's first suggestion (Aman.advise).
    "random" picks any legal action.
    "neglect" follows the adviser but never meets demands, hears grievances, or counters the Company.
    Run: node tools/sim.js [games per bot, default 2000]
    Games run in parallel worker threads, one chunk of seeds each. Results are gathered in seed order, so the output repeats exactly. */
 const A = require('../public/engine.js');
+const AB = require('../public/battle.js');
 const { Worker, isMainThread, parentPort, workerData } = require('worker_threads');
 const os = require('os');
 
@@ -108,12 +110,25 @@ function report(name, games) {
   console.log('        ' + JSON.stringify(tally));
 }
 
+/* The playable battle (battle.js) played by its bot at several odds. Auto-resolve wins at exactly the odds;
+   the bot is a fixed plan, so a fair battle has it winning roughly as often, and a human more. */
+function battles() {
+  const n = 100, line = [];
+  [0.45, 0.6, 0.75, 0.95].forEach(function (odds) {
+    let won = 0, secs = 0, dam = 0, town = 0;
+    for (let i = 1; i <= n; i++) { const r = AB.simulate({ seed: i * 7919, odds: odds }); if (r.won) won++; secs += r.seconds; dam += r.dam; town += r.town; }
+    line.push('odds ' + Math.round(odds * 100) + '%: bot wins ' + pct(won, n) + ', ' + Math.round(secs / n) + ' s, dam ' + Math.round(100 * dam / n) + '%, town ' + Math.round(100 * town / n) + '%');
+  });
+  console.log('battle  ' + line.join('\n        '));
+}
+
 async function main() {
   const N = +process.argv[2] || 2000;
   const chunks = Math.max(1, Math.min(8, Math.floor(os.cpus().length / 3)));
   const names = ['greedy', 'neglect', 'random'];
   const all = await Promise.all(names.map(function (n) { return runBot(n, N, chunks); }));
   names.forEach(function (n, i) { report(n, all[i]); });
+  battles();
   // one trace
   console.log('trace, seed 42, greedy:');
   const S = play(42, greedy, true);

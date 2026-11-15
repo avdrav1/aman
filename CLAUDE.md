@@ -29,6 +29,8 @@ Opening `public/index.html` straight from disk also works.
 | --- | --- |
 | `public/engine.js` | All rules. No DOM. Runs in the browser as `window.Aman` and in Node via `require`. |
 | `public/index.html` | All UI: CSS, the SVG map, panels, dialogs, animation. Talks to the engine only through `window.Aman`. |
+| `public/battle.js` | The real-time battle's rules. No DOM. Runs as `window.AmanBattle` and in Node. Deterministic: 10 ticks a second, its own seeded random stream. |
+| `public/battle-ui.js` | The battle screen: canvas, HUD, and input, in its own `#battle` layer outside `#app`. Talks to the battle only through `window.AmanBattle`. |
 | `tools/sim.js` | Plays thousands of games with two bots and prints outcome counts. |
 | `tools/smoke_test.py` | Playwright script: plays full games by clicking, fails on any console error. |
 | `tools/build_map.py` | Stdlib Python. Builds the map (land, rivers, every placed point) from Natural Earth land and river layers only, and writes it into `index.html` between the `GENERATED MAP` markers. Run `python3 tools/build_map.py --write`; move map items by editing its lon/lat tables, not the pixels. |
@@ -36,7 +38,7 @@ Opening `public/index.html` straight from disk also works.
 | `docs/rules.md` | Every rule and number as currently implemented. |
 | `docs/acts.md` | The three-act campaign: design, deviations, and the UI as built. |
 | `docs/powers.md` | The sixteen powers, the engine's `POWERS` table, and choices flagged for regional review. |
-| `docs/battle.md` | The real-time battle layer: scope, milestones, and what is built (M0 so far). |
+| `docs/battle.md` | The real-time battle layer: scope, milestones, and what is built (M0 and M1). |
 | `docs/backlog.md` | What is known to be weak, and what was proposed but not built. |
 
 ## Architecture rules
@@ -46,7 +48,8 @@ Opening `public/index.html` straight from disk also works.
 3. **`Aman.advise(S)` is both the in-game adviser and the test bot.** Changing its scores changes the simulated win rate and what players are told. Re-run the sim after touching it.
 4. **The engine is deterministic given a seed.** All randomness goes through `S.rng`. Do not call `Math.random` in the engine.
 5. **The UI re-renders everything on each state change** by rebuilding `#app.innerHTML`. Transient animation (tokens, floating numbers, bursts) is added to the `#fx` SVG layer after render and removes itself. Anything that must survive a re-render has to be derived from state.
-6. **Every event carries a location.** Entries in `S.lastResolution` and `S.briefing` have `f` (a power id), `fs`, or `f2`, so the season playback can spotlight them on the map. Keep this when adding events.
+6. **Battle rules live in `battle.js`, never in `battle-ui.js`.** The same split as the engine: the screen calls `AmanBattle.command` and `step`, and reads state. The campaign engine only enters the `'battle'` phase and applies a result with `finishBattle`; it never runs a battle itself.
+7. **Every event carries a location.** Entries in `S.lastResolution` and `S.briefing` have `f` (a power id), `fs`, or `f2`, so the season playback can spotlight them on the map. Keep this when adding events.
 
 ## Working conventions
 

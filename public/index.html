@@ -745,6 +745,58 @@ ul.fx { margin: 0; padding: 0; list-style: none; font-size: 12.5px; display: fle
 .endseals { display: grid; grid-template-columns: repeat(auto-fill, minmax(70px, 1fr)); gap: 8px 6px; }
 .endseals span { text-align: center; }
 .endseals svg { width: 28px; height: 28px; }
+
+/* ---------- the battle screen (battle-ui.js) ---------- */
+body.in-battle { overflow: hidden; }
+#battle { position: fixed; inset: 0; z-index: 30; background: var(--bg); color: var(--ink); display: grid; grid-template-rows: auto 1fr auto; }
+#battle button { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 6px 10px; display: inline-flex; align-items: center; gap: 6px; }
+#battle button:hover:not(:disabled) { border-color: var(--accent); }
+#battle button:disabled { opacity: .45; cursor: default; }
+#battle button.on { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
+#battle button.primary { background: var(--accent); color: var(--accent-ink); border: 0; padding: 9px 18px; }
+#battle .ic { display: inline-flex; width: 18px; height: 18px; color: var(--accent); }
+#battle .ic svg { width: 100%; height: 100%; }
+#battle small { color: var(--muted); }
+.bt-top { display: flex; align-items: center; gap: 18px; padding: 8px 16px; border-bottom: 1px solid var(--line); background: var(--surface); flex-wrap: wrap; }
+.bt-name { display: flex; flex-direction: column; line-height: 1.2; min-width: 0; }
+.bt-name b { font-family: var(--font-display); font-size: 17px; }
+.bt-waves { display: flex; flex-direction: column; gap: 3px; }
+.bt-waves .pips { display: flex; gap: 4px; }
+.bt-waves .pips i { width: 14px; height: 6px; border-radius: 3px; background: var(--line); }
+.bt-waves .pips i.done { background: var(--company); }
+.bt-gs { display: flex; gap: 12px; }
+.bt-g { display: flex; flex-direction: column; gap: 3px; min-width: 70px; }
+.bt-g > i { height: 7px; border-radius: 4px; background: var(--line); overflow: hidden; display: block; }
+.bt-g > i > i { display: block; height: 100%; background: var(--good); transition: width .3s; }
+.bt-g.low > i > i { background: var(--bad); }
+.bt-supply { display: flex; align-items: baseline; gap: 5px; margin-left: auto; }
+.bt-supply .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--accent); align-self: center; }
+.bt-supply b { font-family: var(--font-display); font-size: 20px; font-variant-numeric: tabular-nums; min-width: 2.2ch; text-align: right; }
+.bt-ctl { display: flex; gap: 6px; }
+.bt-field { position: relative; min-height: 0; }
+.bt-field canvas { display: block; position: absolute; inset: 0; touch-action: none; }
+.bt-card { position: absolute; inset: 0; display: none; align-items: center; justify-content: center; background: rgba(10, 12, 30, .45); padding: 16px; }
+.bt-card.on { display: flex; }
+.bt-panel { background: var(--surface); border-radius: var(--r); padding: 22px 24px; max-width: 560px; box-shadow: 0 10px 40px rgba(0, 0, 0, .3); }
+.bt-panel h2 { font-family: var(--font-display); margin: 0 0 6px; font-size: 24px; }
+.bt-panel h2.up { color: var(--good); } .bt-panel h2.down { color: var(--bad); }
+.bt-panel p { margin: 0 0 12px; }
+.bt-how { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin: 14px 0; }
+.bt-how > div { display: flex; flex-direction: column; gap: 4px; background: var(--sunk); border-radius: 8px; padding: 10px; }
+.bt-how .ic { width: 26px; height: 26px; }
+.bt-note { font-size: 13px; color: var(--muted); }
+.bt-stats { display: flex; gap: 10px; flex-wrap: wrap; margin: 6px 0 16px; }
+.bt-stats span { display: flex; flex-direction: column; background: var(--sunk); border-radius: 8px; padding: 8px 12px; font-size: 12px; color: var(--muted); }
+.bt-stats b { font-family: var(--font-display); font-size: 20px; color: var(--ink); }
+.bt-bar { display: flex; align-items: center; gap: 16px; padding: 8px 16px; border-top: 1px solid var(--line); background: var(--surface); flex-wrap: wrap; min-height: 56px; }
+.bt-build, .bt-sel { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.bt-build button { flex-direction: column; gap: 1px; padding: 5px 10px; min-width: 76px; }
+.bt-build button small, .bt-sel button small { font-variant-numeric: tabular-nums; }
+.bt-sel { border-left: 1px solid var(--line); padding-left: 16px; }
+.bt-cnt { display: inline-flex; align-items: center; gap: 3px; font-weight: 600; }
+.bt-q { display: inline-flex; gap: 2px; opacity: .8; }
+.bt-q .ic { width: 14px; height: 14px; }
+.bt-hint { color: var(--bad); font-size: 13px; margin-left: auto; }
 </style>
 </head>
 <body>
@@ -769,6 +821,8 @@ ul.fx { margin: 0; padding: 0; list-style: none; font-size: 12.5px; display: fle
 </svg>
 <div class="wrap" id="app"></div>
 <script src="engine.js"></script>
+<script src="battle.js"></script>
+<script src="battle-ui.js"></script>
 <script>
 (function () {
   'use strict';
@@ -1959,17 +2013,22 @@ ul.fx { margin: 0; padding: 0; list-style: none; font-size: 12.5px; display: fle
       '<p class="note">' + goalLine + '</p><div><button class="primary" data-do="closemodal">Begin Act ' + n + '</button></div></div></div>';
   }
 
-  /* The battle phase. M0 placeholder: the playable battle (battle.js) is not built yet, so this screen
-     stands in for it with Win and Lose, plus the auto-resolved roll the sim uses. */
+  /* The battle phase: fight it on the battle screen (battle-ui.js), or auto-resolve with one roll.
+     The battle needs a wide screen; a phone gets auto-resolve only. */
+  var BATTLE_MIN_W = 760;
   function battleHtml() {
-    var b = S.battle, odds = Math.round(b.odds * 100);
-    return '<div class="veil"><div class="dlg co" role="dialog" aria-modal="true" aria-labelledby="dt"><h3>Battle, ' + A.season(S) + ' ' + A.year(S) + '</h3><h2 id="dt">Company contractors strike from ' + esc(A.FACTIONS[b.f].name) + '</h2>' +
-      '<p>You defend federation towns against Company forces. ' + esc(A.FACTIONS[b.f].name) + '\'s people are not the enemy.</p>' +
-      '<p class="note">The playable battle is not built yet. This screen stands in for it.</p><div class="opts">' +
-      '<button class="opt" data-do="battle" data-c="win"><b>Win the battle</b><small>Placeholder</small><ul><li>Grip falls to 1' + (S.tech.civil ? ', others trust +2' : ', but trust -6 there and -2 elsewhere') + '</li></ul></button>' +
-      '<button class="opt" data-do="battle" data-c="lose"><b>Lose the battle</b><small>Placeholder</small><ul><li>Capital -3, Food -2</li><li>It stays a Company client</li></ul></button>' +
+    var b = S.battle, odds = Math.round(b.odds * 100), nm = A.FACTIONS[b.f].name, wide = window.innerWidth >= BATTLE_MIN_W;
+    return '<div class="veil"><div class="dlg co" role="dialog" aria-modal="true" aria-labelledby="dt"><h3>Battle, ' + A.season(S) + ' ' + A.year(S) + '</h3><h2 id="dt">Hold the dam</h2>' +
+      '<p>Company contractors strike from ' + esc(nm) + '\'s land to seize a dam. ' + esc(nm) + '\'s people are not the enemy.</p><div class="opts two">' +
+      '<button class="opt" data-do="battle" data-c="fight"' + (wide ? '' : ' disabled title="The battle needs a wider screen."') + '><b>Fight it</b><small>' + (wide ? 'A real-time battle, about seven minutes' : 'Needs a wider screen') + '</small><ul><li>Hold the dam and your depot through ' + AmanBattle.WAVES.length + ' waves</li><li>Better odds mean fewer Company troops</li></ul></button>' +
       '<button class="opt" data-do="battle" data-c="auto"><b>Auto-resolve</b><small>' + odds + '% odds</small><ul><li>One roll decides it</li></ul></button>' +
-      '</div></div></div>';
+      '</div><p class="note">Win: grip falls to 1' + (S.tech.civil ? ', others trust +2' : ', but trust -6 there and -2 elsewhere') + '. Lose: Capital -3, Food -2, and it stays a Company client.</p></div></div>';
+  }
+  function openBattle() {
+    var b = S.battle, nm = A.FACTIONS[b.f].name;
+    AmanBattleUI.open({ ctx: b, title: 'Hold the dam', place: 'Company contractors strike from ' + nm + '\'s land',
+      lede: 'Company contractors want the dam. Hold it, and your depot, through ' + AmanBattle.WAVES.length + ' waves. Protect the town.',
+      onDone: function (res) { A.finishBattle(S, { won: res.won }); render(); } });
   }
 
   function overlay() {
@@ -2093,7 +2152,10 @@ ul.fx { margin: 0; padding: 0; list-style: none; font-size: 12.5px; display: fle
     }
     else if (doit === 'dispute') { r = A.resolveDispute(S, el.getAttribute('data-c')); said = r.msg; }
     else if (doit === 'crisis') { r = A.resolveCrisis(S, el.getAttribute('data-c')); said = r.msg; }
-    else if (doit === 'battle') { var bc = el.getAttribute('data-c'); r = bc === 'auto' ? A.autoBattle(S) : A.finishBattle(S, { won: bc === 'win' }); said = r.msg; }
+    else if (doit === 'battle') {
+      if (el.getAttribute('data-c') === 'fight') { openBattle(); return; }
+      r = A.autoBattle(S); said = r.msg;
+    }
     else if (doit === 'new') { newGame(); return; }
     if (S.turn !== before && view === 'home' && startPlay()) return;
     render();
