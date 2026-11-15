@@ -36,11 +36,12 @@ Opening `public/index.html` straight from disk also works.
 | `docs/rules.md` | Every rule and number as currently implemented. |
 | `docs/acts.md` | The three-act campaign: design, deviations, and the UI as built. |
 | `docs/powers.md` | The sixteen powers, the engine's `POWERS` table, and choices flagged for regional review. |
+| `docs/battle.md` | The real-time battle layer: scope, milestones, and what is built (M0 so far). |
 | `docs/backlog.md` | What is known to be weak, and what was proposed but not built. |
 
 ## Architecture rules
 
-1. **Rules live in `engine.js`, never in `index.html`.** The UI reads state and calls `Aman.act(S, id)`, `endSeason`, `chooseCharter`, `resolveCrisis`, `resolveDispute`. If the UI needs to know something, add an engine function and export it.
+1. **Rules live in `engine.js`, never in `index.html`.** The UI reads state and calls `Aman.act(S, id)`, `endSeason`, `chooseCharter`, `resolveCrisis`, `resolveDispute`, `finishBattle`, `autoBattle`. If the UI needs to know something, add an engine function and export it.
 2. **`Aman.available(S)` is the single source of what the player can do.** It returns every action with `ok`, `why`, `cost`, and `hint`. The UI renders buttons from it; the bots choose from it. A new action goes here first.
 3. **`Aman.advise(S)` is both the in-game adviser and the test bot.** Changing its scores changes the simulated win rate and what players are told. Re-run the sim after touching it.
 4. **The engine is deterministic given a seed.** All randomness goes through `S.rng`. Do not call `Math.random` in the engine.
@@ -85,4 +86,4 @@ The owner asked about hosting. The game is static files in `public/`, so any sta
 
 ## Likely next steps
 
-The owner has not chosen. Candidates: give the Company a budget and goals, make powers react to the player, save and resume, analytics for playtests, and eventually the real-time battle layer. Ask before starting any of these.
+The owner chose the real-time battle layer, against Company forces only, as a 5 to 10 minute base-builder. The plan and milestones are in `docs/battle.md`; playtest after each milestone. Other candidates, not started: give the Company a budget and goals, make powers react to the player, save and resume, analytics for playtests. Ask before starting any of these.

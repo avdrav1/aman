@@ -1959,16 +1959,30 @@ ul.fx { margin: 0; padding: 0; list-style: none; font-size: 12.5px; display: fle
       '<p class="note">' + goalLine + '</p><div><button class="primary" data-do="closemodal">Begin Act ' + n + '</button></div></div></div>';
   }
 
+  /* The battle phase. M0 placeholder: the playable battle (battle.js) is not built yet, so this screen
+     stands in for it with Win and Lose, plus the auto-resolved roll the sim uses. */
+  function battleHtml() {
+    var b = S.battle, odds = Math.round(b.odds * 100);
+    return '<div class="veil"><div class="dlg co" role="dialog" aria-modal="true" aria-labelledby="dt"><h3>Battle, ' + A.season(S) + ' ' + A.year(S) + '</h3><h2 id="dt">Company contractors strike from ' + esc(A.FACTIONS[b.f].name) + '</h2>' +
+      '<p>You defend federation towns against Company forces. ' + esc(A.FACTIONS[b.f].name) + '\'s people are not the enemy.</p>' +
+      '<p class="note">The playable battle is not built yet. This screen stands in for it.</p><div class="opts">' +
+      '<button class="opt" data-do="battle" data-c="win"><b>Win the battle</b><small>Placeholder</small><ul><li>Grip falls to 1' + (S.tech.civil ? ', others trust +2' : ', but trust -6 there and -2 elsewhere') + '</li></ul></button>' +
+      '<button class="opt" data-do="battle" data-c="lose"><b>Lose the battle</b><small>Placeholder</small><ul><li>Capital -3, Food -2</li><li>It stays a Company client</li></ul></button>' +
+      '<button class="opt" data-do="battle" data-c="auto"><b>Auto-resolve</b><small>' + odds + '% odds</small><ul><li>One roll decides it</li></ul></button>' +
+      '</div></div></div>';
+  }
+
   function overlay() {
     if (S.phase === 'crisis') {
       var id = S.crisis, d = A.FACTIONS[id], odds = Math.round(A.fightOdds(S) * 100);
       return '<div class="veil"><div class="dlg co" role="dialog" aria-modal="true" aria-labelledby="dt"><h2 id="dt">' + esc(d.name) + ' has gone rogue</h2>' +
-        '<p>Armed by the Company, its militias are raiding across your border. It still has a grievance, and a way back in.</p><div class="opts">' +
+        '<p>Company contractors are raiding federation towns from its land. Its people are not the enemy. It still has a grievance, and a way back in.</p><div class="opts">' +
         '<button class="opt" data-do="crisis" data-c="address"' + (S.res.capital < 4 ? ' disabled' : '') + '><b>Address the grievance</b><small>4 Capital' + (S.res.capital < 4 ? ' (you have ' + S.res.capital + ')' : '') + '</small><ul><li>Company grip falls to zero</li><li>Trust +12</li></ul></button>' +
-        '<button class="opt" data-do="crisis" data-c="fight"><b>Defend the border</b><small>Battle, auto-resolved. ' + odds + '% odds</small><ul><li>Win: grip falls to 1' + (S.tech.civil ? ', others trust +2' : ', but trust -6 there and -2 elsewhere') + '</li><li>Lose: Capital -3, Food -2</li></ul></button>' +
+        '<button class="opt" data-do="crisis" data-c="battle"><b>Defend the towns</b><small>Battle against Company contractors. Fight it, or auto-resolve at ' + odds + '% odds</small><ul><li>Win: grip falls to 1' + (S.tech.civil ? ', others trust +2' : ', but trust -6 there and -2 elsewhere') + '</li><li>Lose: Capital -3, Food -2</li></ul></button>' +
         '<button class="opt" data-do="crisis" data-c="contain"><b>Contain</b><small>Seal the border and wait</small><ul><li>Capital -1, Food -1</li><li>It stays a Company client</li></ul></button>' +
         '</div></div></div>';
     }
+    if (S.phase === 'battle') return battleHtml();
     if (S.phase === 'dispute') return disputeScene();
     if (S.phase === 'council') return councilHtml();
     if (S.phase === 'over') {
@@ -2025,7 +2039,7 @@ ul.fx { margin: 0; padding: 0; list-style: none; font-size: 12.5px; display: fle
     else if (view === 'build') main = buildView(av);
     else if (view === 'charter') main = charterView();
     else main = recordView();
-    document.getElementById('app').innerHTML = top() + goal() + nav() + main + (modal ? modalHtml() : (play && (S.phase === 'crisis' || S.phase === 'dispute') ? '' : overlay()));
+    document.getElementById('app').innerHTML = top() + goal() + nav() + main + (modal ? modalHtml() : (play && (S.phase === 'crisis' || S.phase === 'battle' || S.phase === 'dispute') ? '' : overlay()));
     tipFor = null;
     if (hlLock && !document.querySelector('.achip[data-hl="' + hlLock + '"]')) hlLock = null;
     if (hlLock) lightPins(hlLock);
@@ -2079,6 +2093,7 @@ ul.fx { margin: 0; padding: 0; list-style: none; font-size: 12.5px; display: fle
     }
     else if (doit === 'dispute') { r = A.resolveDispute(S, el.getAttribute('data-c')); said = r.msg; }
     else if (doit === 'crisis') { r = A.resolveCrisis(S, el.getAttribute('data-c')); said = r.msg; }
+    else if (doit === 'battle') { var bc = el.getAttribute('data-c'); r = bc === 'auto' ? A.autoBattle(S) : A.finishBattle(S, { won: bc === 'win' }); said = r.msg; }
     else if (doit === 'new') { newGame(); return; }
     if (S.turn !== before && view === 'home' && startPlay()) return;
     render();
