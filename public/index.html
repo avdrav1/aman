@@ -1710,8 +1710,15 @@ ul.fx { margin: 0; padding: 0; list-style: none; font-size: 12.5px; display: fle
     });
     return out;
   }
+  /* A motion is put to the vote as itself: yes means pass it. The engine counts each vote as for or
+     against your choice, so when you reject a motion every vote and the tally flip. `won` is whether
+     your side carried the vote; `you` is your own vote on the item. */
+  function asCast(kind, opt, vp) {
+    if (kind !== 'motion' || opt !== 'reject') return { votes: vp.votes, yes: vp.yes, no: vp.no, passes: vp.passes, won: vp.passes, you: true };
+    return { votes: vp.votes.map(function (v) { return Object.assign({}, v, { yes: !v.yes }); }), yes: vp.no, no: vp.yes, passes: !vp.passes, won: vp.passes, you: false };
+  }
   /* lect: 'you' or the power that tabled the motion. votes: id -> { yes, why, d }, or null before a choice.
-     mode: '' (idle or preview) or 'result'. tally: { yes, no, passes } or null.
+     mode: '' (idle or preview) or 'result'. tally: asCast's shape, or null.
      Every power has a seat; one outside the federation shows as an empty chair. */
   function chamberHtml(lect, votes, mode, tally) {
     var arc = A.ORDER.filter(function (id) { return id !== lect; });
@@ -1719,7 +1726,7 @@ ul.fx { margin: 0; padding: 0; list-style: none; font-size: 12.5px; display: fle
     var pos = arcSeats(arc.length), order = [lect].concat(arc.filter(function (id) { return id === 'you' || (votes ? votes[id] : S.factions[id].member); }));
     var n = (votes ? Object.keys(votes).length : 0) + 1;
     function seat(id, p, isLect) {
-      var you = id === 'you', f = you ? null : S.factions[id], v = you ? (votes ? { yes: true, why: 'you' } : null) : votes && votes[id];
+      var you = id === 'you', f = you ? null : S.factions[id], v = you ? (votes ? { yes: !tally || tally.you, why: 'you' } : null) : votes && votes[id];
       var inside = you || (votes ? !!votes[id] : f.member);
       var cls = 'seat' + (isLect ? ' lect' : '') + (inside ? '' : ' out') + (v ? (v.yes ? ' yes' : ' no') : '');
       var face = you ? '<span class="you">You</span>' : inside ? portrait(id, moodOf(id).k) : '<span class="empty"></span>';
@@ -1742,7 +1749,7 @@ ul.fx { margin: 0; padding: 0; list-style: none; font-size: 12.5px; display: fle
     var h = '<svg class="floor" viewBox="0 0 200 100" preserveAspectRatio="none" aria-hidden="true"><path class="well" d="M42 100 A58 50 0 0 1 158 100 Z"/><path class="bench" d="M8 94 A92 84 0 0 1 192 94"/><path class="bench in" d="M40 94 A60 52 0 0 1 160 94"/><path class="lect" d="M88 98 L92 86 H108 L112 98 Z"/></svg>';
     h += seat(lect, [50, 84], true);
     arc.forEach(function (id, k) { h += seat(id, pos[k], false); });
-    if (tally) h += '<span class="tallyc ' + (tally.passes ? 'up' : 'down') + '"><b>' + (mode === 'result' ? (tally.passes ? 'Passes' : 'Fails') : tally.yes + ' to ' + tally.no) + '</b><span class="num">' + (mode === 'result' ? tally.yes + ' to ' + tally.no : tally.passes ? 'passes' : 'fails') + '</span></span>';
+    if (tally) h += '<span class="tallyc ' + (tally.won ? 'up' : 'down') + '"><b>' + (mode === 'result' ? (tally.passes ? 'Passes' : 'Fails') : tally.yes + ' to ' + tally.no) + '</b><span class="num">' + (mode === 'result' ? tally.yes + ' to ' + tally.no : tally.passes ? 'passes' : 'fails') + '</span></span>';
     // who votes no, and why: the names the faces alone cannot carry
     var noes = votes ? Object.keys(votes).filter(function (id) { return !votes[id].yes; }) : [];
     var noLine = noes.length ? '<p class="noes"><b>No:</b> ' + noes.map(function (id) { return '<span title="' + esc(WHY[votes[id].why] || '') + '"><i class="swt" style="background:' + hue(id) + '"></i>' + esc(SH(id)) + '</span>'; }).join('') + '</p>' : '';
@@ -1903,12 +1910,15 @@ ul.fx { margin: 0; padding: 0; list-style: none; font-size: 12.5px; display: fle
     if (it.kind === 'motion') { var mi = A.motionInfo(it.key); h += '<h2 id="dt">' + esc(mi.name) + '</h2><p class="note">' + esc(A.FACTIONS[it.f].name) + ' tabled it. ' + esc(mi.text) + '</p>'; }
     else h += '<h2 id="dt">' + esc(it.title) + '</h2>';
     h += chamberHtml(lect, null, '', null);
-    h += '<p class="note">' + (ms.length ? (S.act >= 2 ? 'Majority needed. Company money, trust below ' + A.DISTRUST_VOTE + ', or strain without gain votes no.' : 'Ties go your way.') + ' If your proposal fails, the other option is adopted.' : 'No member yet. You declare this founding principle alone.') + '</p><div class="opts two">';
+    if (it.kind === 'motion') h += '<p class="note">You vote on the motion. A majority decides, and a tie goes against you. Company money, trust below ' + A.DISTRUST_VOTE + ', or strain without gain votes against you.</p><div class="opts two">';
+    else h += '<p class="note">' + (ms.length ? (S.act >= 2 ? 'Majority needed. Company money, trust below ' + A.DISTRUST_VOTE + ', or strain without gain votes no.' : 'Ties go your way.') + ' If your proposal fails, the other option is adopted.' : 'No member yet. You declare this founding principle alone.') + '</p><div class="opts two">';
     keys.forEach(function (k) {
-      var o = it.options[k], vp = A.votePreview(S, k), other = it.options[keys.filter(function (x) { return x !== k; })[0]];
+      var o = it.options[k], vp = asCast(it.kind, k, A.votePreview(S, k)), other = it.options[keys.filter(function (x) { return x !== k; })[0]];
       CH.pv[k] = vp;
-      var dots = '<span class="minivote" aria-hidden="true"><i class="y"><svg><use href="#i-yes"/></svg></i>' + vp.votes.map(function (v) { return '<i class="' + (v.yes ? 'y' : 'n') + '"><svg><use href="#i-' + (v.yes ? 'yes' : 'no') + '"/></svg></i>'; }).join('') + '</span>';
-      var tally = !ms.length ? '' : '<span class="tally ' + (vp.passes ? 'up' : 'down') + '">' + dots + (vp.passes ? 'Passes ' + vp.yes + ' to ' + vp.no : 'Fails ' + vp.yes + ' to ' + vp.no + '. ' + esc(other.name) + ' instead') + '</span>';
+      var dots = '<span class="minivote" aria-hidden="true"><i class="' + (vp.you ? 'y' : 'n') + '"><svg><use href="#i-' + (vp.you ? 'yes' : 'no') + '"/></svg></i>' + vp.votes.map(function (v) { return '<i class="' + (v.yes ? 'y' : 'n') + '"><svg><use href="#i-' + (v.yes ? 'yes' : 'no') + '"/></svg></i>'; }).join('') + '</span>';
+      var said = it.kind === 'motion' ? 'Motion ' + (vp.passes ? 'passes ' : 'fails ') + vp.yes + ' to ' + vp.no + (vp.won ? '' : ' anyway')
+        : vp.passes ? 'Passes ' + vp.yes + ' to ' + vp.no : 'Fails ' + vp.yes + ' to ' + vp.no + '. ' + esc(other.name) + ' instead';
+      var tally = !ms.length ? '' : '<span class="tally ' + (vp.won ? 'up' : 'down') + '">' + dots + said + '</span>';
       h += '<button class="opt" data-do="charter" data-c="' + k + '"><b>' + esc(o.name) + '</b><small>' + esc(o.text) + '</small>' + effectsHtml(o) + tally + '</button>';
     });
     return h + '</div></div></div>';
@@ -1919,9 +1929,11 @@ ul.fx { margin: 0; padding: 0; list-style: none; font-size: 12.5px; display: fle
     var v = voteShow, it = v.kind === 'charter' ? A.CHARTER[v.turn] : A.CHARTER[v.kind + ':' + v.key];
     var o = it.options[v.chosen], alone = !v.votes.length, lect = v.kind === 'motion' ? v.f : 'you';
     var title = v.kind === 'motion' ? A.motionInfo(v.key).name : v.title;
-    var line = alone ? 'You declare: ' + o.name + '.' : v.passed ? (v.kind === 'motion' ? (v.chosen === 'pass' ? 'The motion passes.' : 'The motion is rejected.') : 'Adopted: ' + o.name + '.') : 'Your proposal fails. Adopted instead: ' + o.name + '.';
+    var cast = asCast(v.kind, v.proposed, { votes: v.votes, yes: v.yes, no: v.no, passes: v.passed });
+    var line = alone ? 'You declare: ' + o.name + '.' : v.kind === 'motion' ? (v.chosen === 'pass' ? 'The motion passes.' : 'The motion is rejected.') + ' You voted ' + (v.proposed === 'pass' ? 'for' : 'against') + ' it.'
+      : v.passed ? 'Adopted: ' + o.name + '.' : 'Your proposal fails. Adopted instead: ' + o.name + '.';
     return '<div class="veil"><div class="dlg council" role="dialog" aria-modal="true" aria-labelledby="dt"><h3>Council, the vote</h3><h2 id="dt">' + esc(title) + '</h2>' +
-      chamberHtml(lect, votesMap(v.votes), 'result', alone ? null : { yes: v.yes, no: v.no, passes: v.passed }) +
+      chamberHtml(lect, votesMap(cast.votes), 'result', alone ? null : cast) +
       '<div class="result-after sec" style="--n:' + (v.votes.length + 1) + '"><p><b>' + esc(line) + '</b></p>' + effectsHtml(o) + '<div><button class="primary" data-do="closemodal">Continue</button></div></div></div></div>';
   }
 

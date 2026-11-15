@@ -1417,12 +1417,14 @@
     if (it.kind === 'motion') {
       const m = MOTION_BY_KEY[it.key], pf = S.factions[m.f];
       pf.motion = null;
+      // the tally on the motion itself, the winning side first, and how you voted when you lost
+      const tally = Math.max(yes, no) + ' to ' + Math.min(yes, no) + (passed ? '' : '. You voted ' + (opt === 'pass' ? 'for' : 'against') + ' it');
       if (chosen === 'pass') {
         S.passed[m.key] = m.f; S.stats.motionsPassed += 1; addStrain(S, m.f, -1);
-        msg = 'The council passes ' + fname(m.f) + '\'s motion, ' + m.name + ', ' + (passed ? yes + ' to ' + no : no + ' to ' + yes + ' against your proposal') + '.';
+        msg = 'The council passes ' + fname(m.f) + '\'s motion, ' + m.name + ', ' + tally + '.';
       } else {
         S.stats.motionsFailed += 1; addStrain(S, m.f, 1, 'the council voted down its motion on ' + m.short);
-        msg = 'The council rejects ' + fname(m.f) + '\'s motion, ' + m.name + ', ' + (passed ? yes + ' to ' + no : no + ' to ' + yes + ' against your proposal') + '. ' + fname(m.f) + ' strain ' + pf.strain + ' of ' + STRAIN_MAX + '.';
+        msg = 'The council rejects ' + fname(m.f) + '\'s motion, ' + m.name + ', ' + tally + '. ' + fname(m.f) + ' strain ' + pf.strain + ' of ' + STRAIN_MAX + '.';
       }
     } else {
       S.charter[it.key] = chosen;
