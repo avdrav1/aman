@@ -53,6 +53,11 @@ def act_now(pg):
     return int(t.get_attribute("data-act")) if t.count() else 0
 
 
+def settle(pg):
+    """Wait out the short beat in which a battle round plays out."""
+    pg.wait_for_function("!document.querySelector('.panel.battle.resolving')", timeout=5000)
+
+
 def finish_battle(pg):
     """A battle on the map, entered from a crisis: pick moves at random until it is decided, then continue."""
     if not pg.locator(".panel.battle").count():
@@ -66,6 +71,7 @@ def finish_battle(pg):
         if not moves.count():
             break
         click(moves.nth(random.randrange(moves.count())))
+        settle(pg)
     return True
 
 
@@ -218,9 +224,9 @@ FORCE_CRISIS = """
 """
 
 
-def battle_checks(browser, width):
+def battle_checks(browser, width, motion="no-preference"):
     """The battle on the map: entered from a crisis, three rounds of moves, and Continue applies the result."""
-    bp = browser.new_page(viewport={"width": width, "height": 900})
+    bp = browser.new_page(viewport={"width": width, "height": 900}, reduced_motion=motion)
     bp.on("console", lambda m: errors.append(m.text) if m.type == "error" else None)
     bp.on("pageerror", lambda e: errors.append(str(e)))
     bp.add_init_script(FORCE_CRISIS)
@@ -228,20 +234,29 @@ def battle_checks(browser, width):
     bp.wait_for_timeout(400)
     while bp.locator(".dlg [data-do=closemodal]").count():
         bp.locator(".dlg [data-do=closemodal]").last.click()
-    w = " at %d px" % width
+    w = " at %d px" % width + (", reduced motion" if motion == "reduce" else "")
     check("a rogue crisis offers to defend the towns" + w, bp.locator(".dlg [data-do=crisis][data-c=battle]").count() == 1)
     bp.locator(".dlg [data-do=crisis][data-c=battle]").click()
     check("the battle opens beside the map, with no dialog" + w, bp.locator(".panel.battle").count() == 1 and bp.locator(".dlg").count() == 0 and bp.locator(".mapwrap > svg").count() == 1)
     check("the map shows the strike, the target, and the supply line" + w, bp.locator(".map .bt-strike").count() == 1 and bp.locator(".map .bt-target").count() == 1 and bp.locator(".map .bt-supply").count() == 1)
     check("the panel offers hold, move out, cut, and auto-resolve" + w, bp.locator(".panel.battle [data-do=bmove]").count() == 3 and bp.locator(".panel.battle [data-c=auto]").count() == 1)
     check("allies march to the strike" + w, bp.locator(".map .bt-ally").count() >= 1 and bp.locator(".bt-allies .mf").count() >= 1)
+    check("the towns at stake show beside the place, with a tug of war in the panel" + w, bp.locator(".map .bt-houses.risk").count() == 1 and bp.locator(".bt-tug .knot").count() == 1)
+    bp.locator(".panel.battle [data-do=bmove][data-c=hold]").hover()
+    check("pointing at a move previews it on the map" + w, bp.locator(".mapwrap[data-pv=hold]").count() == 1)
     bp.locator(".panel.battle [data-do=bmove][data-c=evac]").click()
+    if motion == "reduce":
+        check("under reduced motion the round shows at once" + w, bp.locator(".panel.battle.resolving").count() == 0)
+    else:
+        check("a round plays out before its result shows" + w, bp.locator(".panel.battle.resolving").count() == 1 and bp.locator(".bt-score .rd.evac").count() == 0)
+        settle(bp)
     check("moving people out loses the round and earns trust" + w, bp.locator(".bt-score .rd.evac").count() == 1 and bp.locator(".map .bt-mark.evac").count() == 1)
     check("auto-resolve goes once a round is played" + w, bp.locator(".panel.battle [data-c=auto]").count() == 0)
     for _ in range(2):
         if bp.locator(".panel.battle [data-c=finish]").count():
             break
         bp.locator(".panel.battle [data-do=bmove][data-c=hold]").click()
+        settle(bp)
     check("the battle is decided within three rounds" + w, bp.locator(".panel.battle [data-c=finish]").count() == 1)
     bp.locator(".panel.battle [data-c=finish]").click()
     check("Continue ends the battle and the season goes on" + w, bp.locator(".panel.battle").count() == 0 and bp.locator(".map .btl").count() == 0)
@@ -277,7 +292,7 @@ with sync_playwright() as p:
     check("the track shows three acts", pg.locator(".top .track .ag").count() == 3 and act_now(pg) == 1)
 
     battle_checks(browser, 1280)
-    battle_checks(browser, 390)
+    battle_checks(browser, 390, "reduce")
 
     pg.locator("[data-do=help]").click()
     check("How to win opens", pg.locator(".dlg").count() == 1)

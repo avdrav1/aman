@@ -40,6 +40,28 @@ It drops the "StarCraft moment" from `docs/design.md`.
   - win: grip 1, or 0 after a cut. Trust -6 with the rogue power and -2 elsewhere, or +2 to others with civil defense doctrine;
   - loss: Capital -3, Food -2, grip 2, trust -4 with the rogue power.
 
+## Presentation
+
+The rules above never change. This is how the map and panel stage them:
+
+- **Stakes before you choose:**
+  - three small houses beside the place under attack;
+  - pointing at a move previews it on the map. Hold shows the trust you'd lose if it fails. Move out shows a path to your land and the trust gained. Cut marks the strike point out at sea and the rogue power going free.
+- **The beat:** after you choose, the round plays out for about two seconds before the result shows.
+  - Contractor tokens advance along the strike, and allies converge. People walk out toward your land when you move them, and your strike heads for the supply line when you cut it.
+  - A needle sweeps the move's chance bar, slows, and lands in the green or the red, matching the engine's draw. The card flashes green, or red with a shake.
+  - Clicks wait until the beat ends.
+- **After it lands:**
+  - a burst where you held or cut;
+  - sparks over the houses where towns burned;
+  - houses stay green, burnt, or empty for the rest of the battle;
+  - after a failed cut, reinforcements run up the supply line.
+- **Escalation:**
+  - a tug-of-war rope in the panel, with the knot pulled toward whoever leads;
+  - a tag on any round that can end the battle: "Hold it and you win," "Lose it and the Company wins," or a pulsing "Final round" at 1 to 1;
+  - everything outside the fight dims.
+- **Reduced motion:** no beat. The result shows at once, with no tokens, needle, bursts, or pulses.
+
 ## Balance
 
 `fightOdds` counts every member. Here members count only where they march. So the base chance per round comes from `fightOdds` without the member term (`roundChance` inverts best of three, `3q^2 - 2q^3`). Allies on the spot supply the rest.
