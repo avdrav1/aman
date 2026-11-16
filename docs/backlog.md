@@ -46,14 +46,14 @@ From "how might we make the game more strategic":
 From "how might we make it more visual":
 
 - **A visual calendar** replacing the season bars, showing monsoons, votes, plan landings, and research.
-- **Decision scenes for crises:** the rogue-power crisis is still a text dialog. It could be a scene like disputes, and the auto-resolved battle could show on the map.
+- **Decision scenes for crises:** the rogue-power crisis is still a text dialog. It could be a scene like disputes. The battle itself now plays on the map.
 - **Action cards** dragged onto the map in place of buttons.
 - **A richer map:** cities that grow, trade ships.
 - **A playable replay:** the ending chart is static. Scrubbing it could replay the map season by season from `S.history`, which would need relations and needs recorded too.
 
 From the original design:
 
-- **The real-time battle layer.** Planned in `docs/battle.md`. M0 is built: the `'battle'` phase with a placeholder screen.
+- **The real-time battle layer.** A greybox was built and playtested, then replaced by a three-round battle on the map. See `docs/battle.md`. Not built: the dispute-sabotage trigger, carry-over of resources, and common defense as a squad.
 - **All four rogue types** and conquest as a costly option.
 - **A choice of which power to play.** The sixteen powers are built; the player is always the Deccan Compact.
 

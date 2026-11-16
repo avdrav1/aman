@@ -138,7 +138,7 @@ A member secedes if its trust falls below 40. It gains a step of Company grip. F
 - Each time it courts more powers in a season than ever before, the briefing says so.
 - You block a deal by gaining 10 trust with that power in the season, or by countering.
 - Unblocked, grip rises by 1. Grip 1: taking money. Grip 2: client, will not join. Grip 3: rogue, leaves the federation if a member.
-- **A rogue power triggers a crisis** next season: address the grievance (4 Capital, grip to 0, trust +12), defend (a battle against Company contractors: the `'battle'` phase, settled by `finishBattle` or by `autoBattle`, which rolls the odds below; or fought on the battle screen, see `docs/battle.md`), or contain (Capital -1, Food -1, stays a client). Several rogues in one season are resolved one after another.
+- **A rogue power triggers a crisis** next season: address the grievance (4 Capital, grip to 0, trust +12), defend (a battle against Company contractors in up to three rounds on the map: hold a place, move its people out, or cut the supply line; or `autoBattle`, which rolls the odds below. See `docs/battle.md`), or contain (Capital -1, Food -1, stays a client). Several rogues in one season are resolved one after another.
 - **Battle odds:** 45%, +3.5% per member, +15% with a common defense force, +20% with civil defense doctrine, at most 95%.
 
 ## Relations (from season 3)

@@ -131,7 +131,7 @@ The prototype cut the design down to test the loop. The gaps between it and the 
 - **5 powers, not 16,** plus the player's fixed home state.
 - **12 seasons,** not an open-ended campaign.
 - **Only the player's state is playable.**
-- **Battles are one dice roll.**
+- **Battles play on the campaign map in three rounds,** not a real-time screen. See `docs/battle.md`.
 - **The charter is three two-way votes,** not a tree.
 - **Only the Company-client rogue type exists.** Spoilers appear as secession. Splinters and warlords are not built.
 - **Conquest is not in the prototype at all.**

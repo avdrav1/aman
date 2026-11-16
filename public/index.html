@@ -746,57 +746,49 @@ ul.fx { margin: 0; padding: 0; list-style: none; font-size: 12.5px; display: fle
 .endseals span { text-align: center; }
 .endseals svg { width: 28px; height: 28px; }
 
-/* ---------- the battle screen (battle-ui.js) ---------- */
-body.in-battle { overflow: hidden; }
-#battle { position: fixed; inset: 0; z-index: 30; background: var(--bg); color: var(--ink); display: grid; grid-template-rows: auto 1fr auto; }
-#battle button { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 6px 10px; display: inline-flex; align-items: center; gap: 6px; }
-#battle button:hover:not(:disabled) { border-color: var(--accent); }
-#battle button:disabled { opacity: .45; cursor: default; }
-#battle button.on { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
-#battle button.primary { background: var(--accent); color: var(--accent-ink); border: 0; padding: 9px 18px; }
-#battle .ic { display: inline-flex; width: 18px; height: 18px; color: var(--accent); }
-#battle .ic svg { width: 100%; height: 100%; }
-#battle small { color: var(--muted); }
-.bt-top { display: flex; align-items: center; gap: 18px; padding: 8px 16px; border-bottom: 1px solid var(--line); background: var(--surface); flex-wrap: wrap; }
-.bt-name { display: flex; flex-direction: column; line-height: 1.2; min-width: 0; }
-.bt-name b { font-family: var(--font-display); font-size: 17px; }
-.bt-waves { display: flex; flex-direction: column; gap: 3px; }
-.bt-waves .pips { display: flex; gap: 4px; }
-.bt-waves .pips i { width: 14px; height: 6px; border-radius: 3px; background: var(--line); }
-.bt-waves .pips i.done { background: var(--company); }
-.bt-gs { display: flex; gap: 12px; }
-.bt-g { display: flex; flex-direction: column; gap: 3px; min-width: 70px; }
-.bt-g > i { height: 7px; border-radius: 4px; background: var(--line); overflow: hidden; display: block; }
-.bt-g > i > i { display: block; height: 100%; background: var(--good); transition: width .3s; }
-.bt-g.low > i > i { background: var(--bad); }
-.bt-supply { display: flex; align-items: baseline; gap: 5px; margin-left: auto; }
-.bt-supply .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--accent); align-self: center; }
-.bt-supply b { font-family: var(--font-display); font-size: 20px; font-variant-numeric: tabular-nums; min-width: 2.2ch; text-align: right; }
-.bt-ctl { display: flex; gap: 6px; }
-.bt-field { position: relative; min-height: 0; }
-.bt-field canvas { display: block; position: absolute; inset: 0; touch-action: none; }
-.bt-card { position: absolute; inset: 0; display: none; align-items: center; justify-content: center; background: rgba(10, 12, 30, .45); padding: 16px; }
-.bt-card.on { display: flex; }
-.bt-panel { background: var(--surface); border-radius: var(--r); padding: 22px 24px; max-width: 560px; box-shadow: 0 10px 40px rgba(0, 0, 0, .3); }
-.bt-panel h2 { font-family: var(--font-display); margin: 0 0 6px; font-size: 24px; }
-.bt-panel h2.up { color: var(--good); } .bt-panel h2.down { color: var(--bad); }
-.bt-panel p { margin: 0 0 12px; }
-.bt-how { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin: 14px 0; }
-.bt-how > div { display: flex; flex-direction: column; gap: 4px; background: var(--sunk); border-radius: 8px; padding: 10px; }
-.bt-how .ic { width: 26px; height: 26px; }
-.bt-note { font-size: 13px; color: var(--muted); }
-.bt-stats { display: flex; gap: 10px; flex-wrap: wrap; margin: 6px 0 16px; }
-.bt-stats span { display: flex; flex-direction: column; background: var(--sunk); border-radius: 8px; padding: 8px 12px; font-size: 12px; color: var(--muted); }
-.bt-stats b { font-family: var(--font-display); font-size: 20px; color: var(--ink); }
-.bt-bar { display: flex; align-items: center; gap: 16px; padding: 8px 16px; border-top: 1px solid var(--line); background: var(--surface); flex-wrap: wrap; min-height: 56px; }
-.bt-build, .bt-sel { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
-.bt-build button { flex-direction: column; gap: 1px; padding: 5px 10px; min-width: 76px; }
-.bt-build button small, .bt-sel button small { font-variant-numeric: tabular-nums; }
-.bt-sel { border-left: 1px solid var(--line); padding-left: 16px; }
-.bt-cnt { display: inline-flex; align-items: center; gap: 3px; font-weight: 600; }
-.bt-q { display: inline-flex; gap: 2px; opacity: .8; }
-.bt-q .ic { width: 14px; height: 14px; }
-.bt-hint { color: var(--bad); font-size: 13px; margin-left: auto; }
+/* ---------- the battle on the map: the Company's supply line and strike, allies marching, each round's mark ---------- */
+.map .bt-supply { fill: none; stroke: var(--company); stroke-width: 2; stroke-dasharray: 2 5; stroke-linecap: round; opacity: .85; }
+.map .bt-supply.tried { opacity: .4; }
+.map .bt-strike { fill: none; stroke: var(--company); stroke-width: 3.4; stroke-linecap: round; stroke-dasharray: 10 6; }
+.map .bt-ally { fill: none; stroke: var(--accent); stroke-width: 2.6; stroke-linecap: round; stroke-dasharray: 5 4; }
+.map .bt-target { fill: none; stroke: var(--company); stroke-width: 2.6; }
+.map .bt-next circle { fill: var(--surface); stroke: var(--company); stroke-width: 1.4; stroke-dasharray: 3 2; }
+.map .bt-next text { fill: var(--company); font-size: 9.5px; font-weight: 700; }
+.map .bt-mark circle { stroke: var(--surface); stroke-width: 1.5; }
+.map .bt-mark.held circle { fill: var(--good); }
+.map .bt-mark.lost circle { fill: var(--bad); }
+.map .bt-mark.evac circle { fill: var(--accent); }
+.map .bt-mark use { color: var(--surface); }
+@media (prefers-reduced-motion: no-preference) {
+  .map .bt-target { animation: btpulse 1.4s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
+  .map .bt-strike, .map .bt-ally, .map .bt-supply:not(.tried) { animation: btflow 1s linear infinite; }
+}
+@keyframes btpulse { 50% { transform: scale(1.2); opacity: .5; } }
+@keyframes btflow { to { stroke-dashoffset: -16; } }
+.panel.battle { border-color: color-mix(in srgb, var(--company) 45%, var(--line)); }
+.bt-lede { margin: 0; }
+.bt-score { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+.bt-score .rd { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 7px 4px; border-radius: 8px; background: var(--sunk); border: 1.5px solid transparent; font-size: 12px; color: var(--muted); text-align: center; }
+.bt-score .rd b { font-family: var(--font-display); font-size: 14px; color: var(--ink); }
+.bt-score .rd .ic { width: 16px; height: 16px; }
+.bt-score .rd.now { border-color: var(--company); }
+.bt-score .rd.held { background: color-mix(in srgb, var(--good) 20%, var(--sunk)); }
+.bt-score .rd.lost { background: color-mix(in srgb, var(--bad) 20%, var(--sunk)); }
+.bt-score .rd.evac { background: color-mix(in srgb, var(--accent) 22%, var(--sunk)); }
+.bt-last { margin: 0; padding: 8px 10px; border-radius: 8px; background: var(--sunk); border-left: 3px solid var(--muted); font-size: 14px; }
+.bt-last.good { border-left-color: var(--good); } .bt-last.bad { border-left-color: var(--bad); } .bt-last.evac { border-left-color: var(--accent); }
+.bt-allies { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; font-size: 13px; color: var(--muted); }
+.bt-allies .mf .portrait { width: 26px; height: 26px; }
+.bt-moves { display: grid; gap: 8px; }
+.bt-moves .opt { padding: 10px 12px; }
+.bt-moves .opt > b { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.bt-moves .opt > b .num { font-size: 15px; }
+.bt-chance { height: 6px; border-radius: 3px; background: var(--line); overflow: hidden; }
+.bt-chance i { display: block; height: 100%; background: var(--good); }
+.bt-out h3 { margin: 0; font-family: var(--font-display); font-size: 20px; text-transform: none; letter-spacing: 0; }
+.bt-out h3.up { color: var(--good); } .bt-out h3.down { color: var(--bad); }
+.bt-out ul { margin: 0; padding-left: 18px; font-size: 14px; }
+.bt-foot { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
 </style>
 </head>
 <body>
@@ -821,8 +813,6 @@ body.in-battle { overflow: hidden; }
 </svg>
 <div class="wrap" id="app"></div>
 <script src="engine.js"></script>
-<script src="battle.js"></script>
-<script src="battle-ui.js"></script>
 <script>
 (function () {
   'use strict';
@@ -1158,6 +1148,7 @@ body.in-battle { overflow: hidden; }
       '<mask id="plainmask" maskUnits="userSpaceOnUse" x="0" y="0" width="' + MAPW + '" height="' + MAPH + '"><path d="' + PLAIN + '" fill="#fff" filter="url(#mblur)"/></mask>' +
       '<pattern id="cracks" width="26" height="22" patternUnits="userSpaceOnUse"><path d="M0 7 L6 9 L9 4 L15 6 L19 1 M9 4 L8 0 M6 9 L5 15 L11 19 L17 16 L22 20 L26 18 M17 16 L19 10 L26 9 M15 6 L19 10 M11 19 L10 22"/></pattern>' +
       '<g id="cl"><ellipse cx="0" cy="3" rx="21" ry="7"/><circle cx="-9" cy="-1" r="7.5"/><circle cx="2" cy="-5" r="10"/><circle cx="12" cy="0" r="6.5"/></g>' +
+      '<marker id="ahco" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="3.6" markerHeight="3.6" orient="auto"><path d="M0 0 L10 5 L0 10 z" fill="var(--company)"/></marker>' +
       '<marker id="ah" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="4.6" markerHeight="4.6" orient="auto"><path d="M0 0 L10 5 L0 10 z" fill="var(--ink)"/></marker>' +
       '<pattern id="stripes" width="7" height="7" patternUnits="userSpaceOnUse" patternTransform="rotate(40)"><rect width="3" height="7" fill="var(--company)"/></pattern></defs>';
   }
@@ -1337,7 +1328,7 @@ body.in-battle { overflow: hidden; }
     h = h.replace('<!--ARROWS-->', function () { return arrows; }) + '<g class="labels">' + lab + '</g>' + nbs;
     if (play) (play.q[play.i].at || []).forEach(function (id) { var p = id === ME ? HOME : POS[id]; if (p) h += '<circle class="spot" cx="' + p[0] + '" cy="' + p[1] + '" r="' + (NR + 11) + '"/>'; });
     h += '<g class="wxbadge" aria-hidden="true">' + wxIcon(sea) + '<text class="cap" x="34" y="' + (MAPH - 10) + '">' + sea + ' ' + A.year(S) + (S.monsoon ? ': ' + MONSOON_TEXT[S.monsoon] : '') + '</text></g>';
-    h += '<g id="fx" aria-hidden="true"></g></svg>';
+    h += battleLayer() + '<g id="fx" aria-hidden="true"></g></svg>';
 
     var lg = '<span><svg viewBox="0 0 16 12"><circle cx="8" cy="6" r="5.5" fill="var(--accent)" opacity=".7"/></svg>Gold glow: trust in you</span>' +
       '<span><svg viewBox="0 0 16 12"><path d="M1 6 H15" stroke="var(--river)" stroke-width="4" stroke-linecap="round"/></svg>River width: water reaching a power</span>' +
@@ -2013,22 +2004,85 @@ body.in-battle { overflow: hidden; }
       '<p class="note">' + goalLine + '</p><div><button class="primary" data-do="closemodal">Begin Act ' + n + '</button></div></div></div>';
   }
 
-  /* The battle phase: fight it on the battle screen (battle-ui.js), or auto-resolve with one roll.
-     The battle needs a wide screen; a phone gets auto-resolve only. */
-  var BATTLE_MIN_W = 760;
-  function battleHtml() {
-    var b = S.battle, odds = Math.round(b.odds * 100), nm = A.FACTIONS[b.f].name, wide = window.innerWidth >= BATTLE_MIN_W;
-    return '<div class="veil"><div class="dlg co" role="dialog" aria-modal="true" aria-labelledby="dt"><h3>Battle, ' + A.season(S) + ' ' + A.year(S) + '</h3><h2 id="dt">Hold the dam</h2>' +
-      '<p>Company contractors strike from ' + esc(nm) + '\'s land to seize a dam. ' + esc(nm) + '\'s people are not the enemy.</p><div class="opts two">' +
-      '<button class="opt" data-do="battle" data-c="fight"' + (wide ? '' : ' disabled title="The battle needs a wider screen."') + '><b>Fight it</b><small>' + (wide ? 'A real-time battle, about seven minutes' : 'Needs a wider screen') + '</small><ul><li>Hold the dam and your depot through ' + AmanBattle.WAVES.length + ' waves</li><li>Better odds mean fewer Company troops</li></ul></button>' +
-      '<button class="opt" data-do="battle" data-c="auto"><b>Auto-resolve</b><small>' + odds + '% odds</small><ul><li>One roll decides it</li></ul></button>' +
-      '</div><p class="note">Win: grip falls to 1' + (S.tech.civil ? ', others trust +2' : ', but trust -6 there and -2 elsewhere') + '. Lose: Capital -3, Food -2, and it stays a Company client.</p></div></div>';
+  /* ---------- the battle, on the map ---------- */
+  /* The battle has no screen of its own. The map shows the Company's supply line into the rogue power,
+     its strike at this round's place, and allies marching there; the panel beside it holds the moves.
+     The rules, chances, and effects all come from A.battleOptions and A.battleMove. */
+  function fullName(id) { return id === ME ? A.PLAYER.name : A.FACTIONS[id].name; }
+  function at(id) { return id === ME ? HOME : POS[id]; }
+  var BT_MARK = { held: 'yes', lost: 'no', evac: 'trust' };
+  function roundKind(ev) { return ev.move === 'evac' ? 'evac' : ev.ok ? 'held' : 'lost'; }
+  function battleLayer() {
+    var b = S.battle;
+    if (S.phase !== 'battle' || !b || !b.live) return '';
+    var src = POS[b.f], h = '<g class="btl">';
+    // the Company's supply line: from its offshore base into the rogue power
+    var mx = (CO[0] + src[0]) / 2, my = Math.max(CO[1], src[1]) + 30;
+    h += '<path class="bt-supply' + (b.cutUsed ? ' tried' : '') + '" d="M' + CO[0] + ' ' + CO[1] + ' Q' + mx + ' ' + my + ' ' + src[0] + ' ' + src[1] + '"/>';
+    h += '<g class="agent"><circle cx="' + CO[0] + '" cy="' + CO[1] + '" r="9"/><use href="#i-co" x="' + (CO[0] - 6) + '" y="' + (CO[1] - 6) + '" width="12" height="12"/></g>';
+    // rounds played: a mark at each place
+    b.rounds.forEach(function (ev, i) {
+      var p = at(ev.t), k = roundKind(ev), x = p[0] + NR - 2 + i * 3, y = p[1] - NR + 2;
+      if (ev.move === 'cut') p = src, x = p[0] - NR + 2, y = p[1] - NR + 2;
+      h += '<g class="bt-mark ' + k + '"><circle cx="' + x + '" cy="' + y + '" r="7"/><use href="#i-' + BT_MARK[k] + '" x="' + (x - 5) + '" y="' + (y - 5) + '" width="10" height="10"/></g>';
+    });
+    if (!b.done) {
+      var o = A.battleOptions(S), tp = at(o.target);
+      // places still to come, numbered
+      b.targets.slice(b.round + 1).forEach(function (t, i) {
+        var p = at(t), x = p[0] - NR, y = p[1] + NR;
+        h += '<g class="bt-next"><circle cx="' + x + '" cy="' + y + '" r="6.5"/><text x="' + x + '" y="' + (y + 3.3) + '" text-anchor="middle">' + (b.round + 2 + i) + '</text></g>';
+      });
+      o.allies.forEach(function (id) { var p = POS[id]; if (id !== o.target) h += '<path class="bt-ally" d="M' + p[0] + ' ' + p[1] + ' L' + tp[0] + ' ' + tp[1] + '"/>'; });
+      if (o.target !== b.f) {
+        var dx = tp[0] - src[0], dy = tp[1] - src[1], L = Math.sqrt(dx * dx + dy * dy) || 1, e = NR + 6;
+        h += '<path class="bt-strike" marker-end="url(#ahco)" d="M' + (src[0] + dx / L * NR).toFixed(1) + ' ' + (src[1] + dy / L * NR).toFixed(1) + ' L' + (tp[0] - dx / L * e).toFixed(1) + ' ' + (tp[1] - dy / L * e).toFixed(1) + '"/>';
+      }
+      h += '<circle class="bt-target" cx="' + tp[0] + '" cy="' + tp[1] + '" r="' + (NR + 7) + '"/>';
+    }
+    return h + '</g>';
   }
-  function openBattle() {
-    var b = S.battle, nm = A.FACTIONS[b.f].name;
-    AmanBattleUI.open({ ctx: b, title: 'Hold the dam', place: 'Company contractors strike from ' + nm + '\'s land',
-      lede: 'Company contractors want the dam. Hold it, and your depot, through ' + AmanBattle.WAVES.length + ' waves. Protect the town.',
-      onDone: function (res) { A.finishBattle(S, { won: res.won }); render(); } });
+  function chanceBar(p) { return '<span class="bt-chance" aria-hidden="true"><i style="width:' + Math.round(p * 100) + '%"></i></span>'; }
+  function battlePanel() {
+    var b = S.battle, rn = fullName(b.f), h = '<section class="panel battle" aria-labelledby="bth"><header><div><h2 id="bth">Defend the federation</h2><small>Battle, ' + A.season(S) + ' ' + A.year(S) + '</small></div></header>';
+    h += '<p class="bt-lede">Company contractors strike from ' + esc(rn) + '. Its people are not the enemy. Win two rounds of three.</p>';
+    // the three rounds: where each strike lands, and how it went
+    h += '<div class="bt-score">' + b.targets.map(function (t, i) {
+      var ev = b.rounds[i], k = ev ? roundKind(ev) : '', cut = ev && ev.move === 'cut';
+      var said = !ev ? (b.done ? 'Not needed' : i === b.round ? 'Now' : 'Next') : cut ? (ev.ok ? 'Supply cut' : 'Cut failed') : k === 'held' ? 'Held' : k === 'evac' ? 'Moved out' : 'Broken';
+      return '<div class="rd ' + (k || (i === b.round && !b.done ? 'now' : '')) + '">' + (ev ? ic(BT_MARK[k]) : '') + '<b>' + esc(cut ? 'Supply' : SH(t)) + '</b><span>' + said + '</span></div>';
+    }).join('') + '</div>';
+    var last = b.rounds[b.rounds.length - 1];
+    if (last) h += '<p class="bt-last ' + (roundKind(last) === 'held' ? 'good' : roundKind(last) === 'evac' ? 'evac' : 'bad') + '" role="status">' + esc(last.text) + '</p>';
+    if (b.done) {
+      var won = b.done.won, civil = S.tech.civil;
+      h += '<div class="bt-out"><h3 class="' + (won ? 'up' : 'down') + '">' + (won ? 'The raids stop' : 'The Company holds on') + '</h3><ul>' +
+        (won ? '<li>' + esc(rn) + (b.done.cut ? ' is free of the Company: grip 0' : ': Company grip falls to 1') + '</li>' + (civil ? '<li>Others see civilians protected: trust +2</li>' : '<li>' + esc(rn) + ' resents the defeat: trust -6. Others grow wary: trust -2</li>')
+          : '<li>Raiders burn depots: Capital -3, Food -2</li><li>' + esc(rn) + ' stays a Company client: trust -4</li>') +
+        '</ul></div><div class="bt-foot"><button class="primary" data-do="battle" data-c="finish">Continue</button></div>';
+      return h + '</section>';
+    }
+    var o = A.battleOptions(S), t = o.target, tn = SH(t), home = t === ME;
+    h += '<h3>Round ' + (o.round + 1) + ': the Company strikes ' + esc(home ? 'your towns' : fullName(t)) + '</h3>';
+    h += '<div class="bt-allies">' + (o.allies.length ? o.allies.map(miniFace).join('') + '<span>march with you: +' + Math.round(A.BT_ALLY * 100) + '% each</span>' : '<span>No ally marches here. Members at trust ' + A.BT_ALLY_TRUST + ' or more that border a place join you there.</span>') + '</div>';
+    var m = {}; o.moves.forEach(function (x) { m[x.key] = x; });
+    h += '<div class="bt-moves">' +
+      '<button class="opt" data-do="bmove" data-c="hold"><b>Hold ' + esc(home ? 'your towns' : tn) + '<span class="num">' + Math.round(m.hold.p * 100) + '%</span></b>' + chanceBar(m.hold.p) +
+        '<ul><li>Win the round</li><li>Fail: ' + (home ? 'Capital -1' : esc(tn) + '\'s towns are hit, trust ' + m.hold.fail.trust) + '</li></ul></button>' +
+      '<button class="opt" data-do="bmove" data-c="evac"><b>Move people out<span class="num">Certain</span></b>' + chanceBar(1) +
+        '<ul><li>No one is hurt' + (home ? '' : ': trust +' + m.evac.gain.trust + ' with ' + esc(tn)) + '</li><li>The Company takes the round</li></ul></button>' +
+      '<button class="opt" data-do="bmove" data-c="cut"' + (m.cut.ok ? '' : ' disabled title="' + esc(m.cut.why) + '"') + '><b>Cut the supply line<span class="num">' + Math.round(m.cut.p * 100) + '%</span></b>' + chanceBar(m.cut.p) +
+        '<ul><li>Win the battle now. ' + esc(SH(b.f)) + ' goes free of the Company</li><li>Fail: the Company takes the round and sends more, -' + Math.round(A.BT_REINF * 100) + '%</li>' + (m.cut.ok ? '' : '<li>Tried once already</li>') + '</ul></button>' +
+      '</div>';
+    if (!b.rounds.length) h += '<div class="bt-foot"><button class="ghost" data-do="battle" data-c="auto">Auto-resolve at ' + Math.round(b.odds * 100) + '%</button></div>';
+    return h + '</section>';
+  }
+  /* After a move: allies travel to the place, then it bursts if held. Trust numbers float from playFx. */
+  function battleFx(ev) {
+    var layer = document.getElementById('fx'); if (!layer || !ev) return;
+    var tp = ev.move === 'cut' ? POS[S.lastBattle && !S.battle ? S.lastBattle.f : S.battle.f] : at(ev.t);
+    if (ev.move === 'hold') ev.allies.forEach(function (id, i) { if (id !== ev.t) fly(layer, POS[id], tp, 'you', 'trust', i * 120); });
+    if (ev.ok && ev.move !== 'evac') setTimeout(function () { var l = document.getElementById('fx'); if (l) burst(l, tp); }, REDUCE ? 0 : 450);
   }
 
   function overlay() {
@@ -2037,11 +2091,10 @@ body.in-battle { overflow: hidden; }
       return '<div class="veil"><div class="dlg co" role="dialog" aria-modal="true" aria-labelledby="dt"><h2 id="dt">' + esc(d.name) + ' has gone rogue</h2>' +
         '<p>Company contractors are raiding federation towns from its land. Its people are not the enemy. It still has a grievance, and a way back in.</p><div class="opts">' +
         '<button class="opt" data-do="crisis" data-c="address"' + (S.res.capital < 4 ? ' disabled' : '') + '><b>Address the grievance</b><small>4 Capital' + (S.res.capital < 4 ? ' (you have ' + S.res.capital + ')' : '') + '</small><ul><li>Company grip falls to zero</li><li>Trust +12</li></ul></button>' +
-        '<button class="opt" data-do="crisis" data-c="battle"><b>Defend the towns</b><small>Battle against Company contractors. Fight it, or auto-resolve at ' + odds + '% odds</small><ul><li>Win: grip falls to 1' + (S.tech.civil ? ', others trust +2' : ', but trust -6 there and -2 elsewhere') + '</li><li>Lose: Capital -3, Food -2</li></ul></button>' +
+        '<button class="opt" data-do="crisis" data-c="battle"><b>Defend the towns</b><small>Three rounds on the map against Company contractors, or auto-resolve at ' + odds + '%</small><ul><li>Win: grip falls to 1' + (S.tech.civil ? ', others trust +2' : ', but trust -6 there and -2 elsewhere') + '</li><li>Lose: Capital -3, Food -2</li></ul></button>' +
         '<button class="opt" data-do="crisis" data-c="contain"><b>Contain</b><small>Seal the border and wait</small><ul><li>Capital -1, Food -1</li><li>It stays a Company client</li></ul></button>' +
         '</div></div></div>';
     }
-    if (S.phase === 'battle') return battleHtml();
     if (S.phase === 'dispute') return disputeScene();
     if (S.phase === 'council') return councilHtml();
     if (S.phase === 'over') {
@@ -2070,7 +2123,7 @@ body.in-battle { overflow: hidden; }
         '<div class="helprow"><span class="gi"><svg aria-hidden="true"><use href="#i-needs"/></svg></span><p><b>' + cap(words(A.JOIN_NEEDS)) + ' of six need points met.</b> Each power has two needs. Open a power to see what raises them.</p></div>' +
         '<div class="helprow"><span class="gi"><svg aria-hidden="true"><use href="#i-co"/></svg></span><p><b>Free of the Company.</b> It courts whoever trusts you least. Outbid it or counter it.</p></div>' +
         '<div class="helprow"><span class="gi"><svg aria-hidden="true"><use href="#i-rival"/></svg></span><p><b>No rival inside.</b> A power will not join beside its rival. Broker talks first.</p></div>' +
-        '<p class="note">When every gate is open, invite the power. Every action costs Influence, and you get more as the federation grows. New systems arrive one season at a time, and your council suggests moves on the map. Battles are auto-resolved in this prototype.</p>' +
+        '<p class="note">When every gate is open, invite the power. Every action costs Influence, and you get more as the federation grows. New systems arrive one season at a time, and your council suggests moves on the map. When the Company raids from a rogue power, you defend on the map in three short rounds.</p>' +
         '<div><button class="primary" data-do="closemodal">' + (first ? 'Begin' : 'Back to the game') + '</button></div></div></div>';
     }
     if (modal === 'act') return actCard();
@@ -2093,7 +2146,8 @@ body.in-battle { overflow: hidden; }
     ATT = A.attention(S);
     if (view === 'relations' && !A.unlocked(S).relations) view = 'home';
     if (!play && !modal && S.phase !== 'over' && S.act > seenAct) modal = 'act';
-    if (view === 'home') main = '<div class="home">' + map() + (sel ? powerPanel(av) : seasonPanel()) + '</div>';
+    if (S.phase === 'battle') { view = 'home'; sel = null; }
+    if (view === 'home') main = '<div class="home">' + map() + (S.phase === 'battle' ? battlePanel() : sel ? powerPanel(av) : seasonPanel()) + '</div>';
     else if (view === 'relations') main = relationsView(av);
     else if (view === 'build') main = buildView(av);
     else if (view === 'charter') main = charterView();
@@ -2152,10 +2206,8 @@ body.in-battle { overflow: hidden; }
     }
     else if (doit === 'dispute') { r = A.resolveDispute(S, el.getAttribute('data-c')); said = r.msg; }
     else if (doit === 'crisis') { r = A.resolveCrisis(S, el.getAttribute('data-c')); said = r.msg; }
-    else if (doit === 'battle') {
-      if (el.getAttribute('data-c') === 'fight') { openBattle(); return; }
-      r = A.autoBattle(S); said = r.msg;
-    }
+    else if (doit === 'battle') { r = el.getAttribute('data-c') === 'auto' ? A.autoBattle(S) : A.finishBattle(S); said = r.msg; }
+    else if (doit === 'bmove') { r = A.battleMove(S, el.getAttribute('data-c')); said = r.msg; render(); playFx(snap, null); battleFx(r.ev); return; }
     else if (doit === 'new') { newGame(); return; }
     if (S.turn !== before && view === 'home' && startPlay()) return;
     render();
