@@ -1089,9 +1089,9 @@
       enterBattle(S, id);
       return autoBattle(S);
     } else if (choice === 'battle') {
-      // the playable battle: the UI runs it, then calls finishBattle
+      // the battle on the map: the scene plays it round by round with battleMove, then calls finishBattle
       enterBattle(S, id, true);
-      return { ok: true, battle: true, msg: 'You march to defend the federation against Company contractors.' };
+      return { ok: true, battle: true, msg: 'You move to defend the federation against Company contractors.' };
     } else {
       S.res.capital = Math.max(0, S.res.capital - 1); S.res.food = Math.max(0, S.res.food - 1);
       f.grip = 2; trust(S, id, -2);
@@ -1103,34 +1103,124 @@
   }
 
   /* ---------- battle ---------- */
-  /* A battle is always against Company forces, never a power. S.battle holds what the battle layer needs:
-     kind ('crisis'), f (the rogue power the Company strikes from), and odds for the auto-resolved path.
-     The battle's own rules live in battle.js; the engine only enters the phase and applies the result. */
+  /* A battle is always against Company forces, never a power. It plays out on the campaign map in up to
+     three rounds. Each round the Company strikes one place next to the rogue power, and you choose a move:
+       hold:  defend it. Chance per round, plus allies who border it. A failed hold hits its towns.
+       evac:  move its people out first. Certain, and it earns trust, but the round goes to the Company.
+       cut:   strike the Company's supply line. Lower chance; success ends the battle at once and frees the
+              rogue power entirely. Once per battle. A failed cut reinforces the Company.
+     Two rounds win or lose it. fightOdds counts every member; here members count only where they march.
+     The base chance per round comes from fightOdds without the member term, so holding every round with
+     the usual allies wins about as often as auto-resolve does. */
+  const BT_ROUNDS = 3, BT_ALLY = 0.1, BT_ALLY_MAX = 3, BT_ALLY_TRUST = 50, BT_CUT = 0.15, BT_REINF = 0.1;
+  const BT_HIT = -3, BT_EVAC = 2, BT_HIT_HOME = { capital: 1 };
+  // the chance per round q whose best of three, 3q^2 - 2q^3, equals the battle odds
+  function roundChance(odds) {
+    let lo = 0, hi = 1;
+    for (let i = 0; i < 30; i++) { const m = (lo + hi) / 2; if (3 * m * m - 2 * m * m * m < odds) lo = m; else hi = m; }
+    return (lo + hi) / 2;
+  }
+  function borders(a, b) {
+    if (a === b) return true;
+    if (a === PLAYER.id) return PLAYER.neighbors.indexOf(b) >= 0;
+    if (b === PLAYER.id) return PLAYER.neighbors.indexOf(a) >= 0;
+    return NEIGHBORS[a].indexOf(b) >= 0;
+  }
+  // where the Company strikes from the rogue power: federation places first (you and members), then any free neighbor
+  function strikeTargets(S, id) {
+    const near = NEIGHBORS[id].filter(function (o) { return S.factions[o].grip < 3; });
+    if (PLAYER.neighbors.indexOf(id) >= 0) near.unshift(PLAYER.id);
+    const fed = near.filter(function (o) { return o === PLAYER.id || S.factions[o].member; });
+    const pool = fed.length ? fed : near.length ? near : [PLAYER.id];
+    const out = [];
+    for (let r = 0; r < BT_ROUNDS; r++) {
+      const fresh = pool.filter(function (o) { return out.indexOf(o) < 0; }), from = fresh.length ? fresh : pool;
+      out.push(from[Math.floor(S.rng() * from.length)]);
+    }
+    return out;
+  }
+  // members who march to a place: they trust you, they are not the rogue power, and they border it (or are it)
+  function battleAllies(S, t) {
+    const id = S.battle.f;
+    return members(S).filter(function (o) { return o !== id && S.factions[o].trust >= BT_ALLY_TRUST && borders(o, t); }).slice(0, BT_ALLY_MAX);
+  }
   function enterBattle(S, id, live) {
-    S.battle = { kind: 'crisis', site: 'dam', f: id, odds: fightOdds(S), turn: S.turn };
-    // the playable battle gets its own seed; the auto-resolved path draws nothing extra, so the sim is unchanged
-    if (live) S.battle.seed = Math.floor(S.rng() * 4294967296);
+    S.battle = { kind: 'crisis', f: id, odds: fightOdds(S), turn: S.turn };
+    // the auto-resolved path draws nothing extra, so the sim is unchanged
+    if (live) Object.assign(S.battle, { live: true, q: roundChance(S.battle.odds - FIGHT_PER * members(S).length), targets: strikeTargets(S, id), round: 0, wins: 0, losses: 0, reinf: 0, cutUsed: false, cut: false, rounds: [], done: null });
     S.phase = 'battle';
+  }
+  /* What you can do this round, with the chance of each move, for the scene and the bots. */
+  function battleOptions(S) {
+    const b = S.battle;
+    if (S.phase !== 'battle' || !b || !b.live || b.done) return null;
+    const t = b.targets[b.round], allies = battleAllies(S, t), pen = BT_REINF * b.reinf;
+    const home = t === PLAYER.id;
+    return {
+      round: b.round, rounds: BT_ROUNDS, target: t, from: b.f, allies: allies, wins: b.wins, losses: b.losses, odds: b.odds,
+      moves: [
+        { key: 'hold', ok: true, p: clamp(b.q + BT_ALLY * allies.length - pen, 0.05, 0.95), fail: home ? { res: BT_HIT_HOME } : { trust: BT_HIT } },
+        { key: 'evac', ok: true, p: 1, gain: home ? {} : { trust: BT_EVAC } },
+        { key: 'cut', ok: !b.cutUsed, why: b.cutUsed ? 'You tried the supply line once already.' : '', p: clamp(b.q - BT_CUT - pen, 0.05, 0.95) }
+      ]
+    };
+  }
+  /* Play one round. One draw from S.rng for hold and cut. Sets S.battle.done when the battle is decided. */
+  function battleMove(S, key) {
+    const o = battleOptions(S);
+    if (!o) return { ok: false, msg: 'No battle round to play.' };
+    const m = o.moves.filter(function (x) { return x.key === key; })[0];
+    if (!m || !m.ok) return { ok: false, msg: m ? m.why : 'Unknown move.' };
+    const b = S.battle, t = o.target, home = t === PLAYER.id, tn = home ? 'your towns' : fname(t);
+    const ev = { round: b.round, t: t, move: key, allies: o.allies, p: m.p, ok: true, trust: 0, res: {} };
+    if (key === 'evac') {
+      b.losses += 1;
+      if (!home) { trust(S, t, BT_EVAC); ev.trust = BT_EVAC; }
+      ev.text = 'You moved ' + (home ? 'your people' : fname(t) + '\'s people') + ' out first. No one was hurt. The Company takes the round.';
+    } else {
+      ev.ok = S.rng() < m.p;
+      if (key === 'cut') b.cutUsed = true;
+      if (ev.ok && key === 'cut') { b.cut = true; b.wins = 2; ev.text = 'You cut the Company\'s supply line. Its contractors pull out of ' + fname(b.f) + '.'; }
+      else if (ev.ok) {
+        b.wins += 1;
+        const others = o.allies.filter(function (x) { return x !== t; }).map(fname), with_ = others.length > 2 ? others.slice(0, -1).join(', ') + ', and ' + others[others.length - 1] : others.join(' and ');
+        ev.text = (others.length ? 'With ' + with_ + ', you' : 'You') + ' held ' + tn + '.';
+      }
+      else {
+        b.losses += 1;
+        if (key === 'cut') { b.reinf += 1; ev.text = 'The strike on the supply line failed. The Company sends more contractors.'; }
+        else if (home) { Object.keys(BT_HIT_HOME).forEach(function (r) { S.res[r] = Math.max(0, S.res[r] - BT_HIT_HOME[r]); ev.res[r] = -BT_HIT_HOME[r]; }); ev.text = 'Contractors broke through at your towns. Capital -1.'; }
+        else { trust(S, t, BT_HIT); ev.trust = BT_HIT; ev.text = 'Contractors broke through at ' + tn + '. Its towns were hit, and it blames you. Trust ' + BT_HIT + '.'; }
+      }
+    }
+    b.rounds.push(ev);
+    b.round += 1;
+    if (b.wins >= 2 || b.losses >= 2 || b.round >= BT_ROUNDS) b.done = { won: b.wins >= 2, cut: b.cut };
+    return { ok: true, msg: ev.text, ev: ev, done: b.done };
   }
   /* Roll the battle with fightOdds. One draw from S.rng, exactly as the old dice roll, so the sim is unchanged. */
   function autoBattle(S) {
     if (S.phase !== 'battle') return { ok: false, msg: 'No battle to fight.' };
     return finishBattle(S, { won: S.rng() < S.battle.odds, auto: true });
   }
-  /* result: { won, auto }. Applies the outcome the crisis dialog promised. */
+  /* result: { won, auto }, or nothing once the rounds have decided it. Applies the outcome the crisis dialog promised.
+     Cutting the supply line frees the rogue power entirely: grip falls to zero, not one. */
   function finishBattle(S, result) {
     if (S.phase !== 'battle' || !S.battle) return { ok: false, msg: 'No battle to finish.' };
+    result = result || S.battle.done;
+    if (!result) return { ok: false, msg: 'The battle is not decided yet.' };
     const id = S.battle.f, f = S.factions[id], how = result.auto ? ' (auto-resolved)' : '';
     let msg;
     if (result.won) {
-      f.grip = 1;
+      f.grip = result.cut ? 0 : 1;
+      const freed = result.cut ? ' ' + fname(id) + ' is free of the Company.' : '';
       if (S.tech.civil) {
         ORDER.forEach(function (o) { if (o !== id) trust(S, o, 2); });
-        msg = 'Battle won' + how + '. Your forces held the line and protected civilians. Other factions take note: trust +2.';
+        msg = 'Battle won' + how + '.' + freed + ' Your forces held the line and protected civilians. Other factions take note: trust +2.';
       } else {
         trust(S, id, -6);
         ORDER.forEach(function (o) { if (o !== id) trust(S, o, -2); });
-        msg = 'Battle won' + how + '. The raids stop, but ' + fname(id) + ' resents the defeat (trust -6) and the others grow wary (trust -2).';
+        msg = 'Battle won' + how + '.' + freed + ' The raids stop, but ' + fname(id) + ' resents the defeat (trust -6) and the others grow wary (trust -2).';
       }
       log(S, msg, 'warn');
     } else {
@@ -1139,7 +1229,7 @@
       msg = 'Battle lost' + how + '. Raiders burn depots: Capital -3, Food -2. ' + fname(id) + ' stays a Company client.';
       log(S, msg, 'bad');
     }
-    S.lastBattle = { f: id, won: !!result.won, auto: !!result.auto, turn: S.turn, msg: msg };
+    S.lastBattle = { f: id, won: !!result.won, auto: !!result.auto, cut: !!result.cut, turn: S.turn, msg: msg, rounds: S.battle.rounds || [] };
     S.battle = null;
     nextPhase(S);
     return { ok: true, msg: msg, won: !!result.won };
@@ -1820,7 +1910,7 @@
   root.Aman = {
     digest: digest,
     create: create, available: available, act: act, endSeason: endSeason, chooseCharter: chooseCharter,
-    resolveCrisis: resolveCrisis, resolveDispute: resolveDispute, finishBattle: finishBattle, autoBattle: autoBattle, advise: advise, gates: gates, unlocked: unlocked, rel: rel, gaps: gaps, planOf: planOf, REL_NAMES: REL_NAMES, PAIRS: PAIRS, yields: yields, fightOdds: fightOdds, canJoin: canJoin, needTotal: needTotal,
+    resolveCrisis: resolveCrisis, resolveDispute: resolveDispute, finishBattle: finishBattle, autoBattle: autoBattle, battleOptions: battleOptions, battleMove: battleMove, roundChance: roundChance, BT_ALLY: BT_ALLY, BT_ALLY_TRUST: BT_ALLY_TRUST, BT_REINF: BT_REINF, advise: advise, gates: gates, unlocked: unlocked, rel: rel, gaps: gaps, planOf: planOf, REL_NAMES: REL_NAMES, PAIRS: PAIRS, yields: yields, fightOdds: fightOdds, canJoin: canJoin, needTotal: needTotal,
     members: members, clients: clients, season: season, year: year,
     FACTIONS: FACTIONS, PROJECTS: PROJECTS, TECH: TECH, CHARTER: CHARTER, ORDER: ORDER,
     BLOCK_GAIN: BLOCK_GAIN, MAX_TURNS: MAX_TURNS, JOIN_TRUST: JOIN_TRUST, JOIN_NEEDS: JOIN_NEEDS,

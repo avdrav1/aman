@@ -54,12 +54,18 @@ def act_now(pg):
 
 
 def finish_battle(pg):
-    """A battle screen opened from a crisis: let the battle bot play it out, then continue."""
-    if not pg.locator("#battle").count():
+    """A battle on the map, entered from a crisis: pick moves at random until it is decided, then continue."""
+    if not pg.locator(".panel.battle").count():
         return False
-    pg.evaluate("AmanBattleUI.runBot()")
-    click(pg.locator("#battle [data-bt=done]"))
-    seen.add("battle fought")
+    for _ in range(6):
+        done = pg.locator(".panel.battle [data-do=battle][data-c=finish]")
+        if done.count() and click(done):
+            seen.add("battle fought")
+            return True
+        moves = pg.locator(".panel.battle [data-do=bmove]:not([disabled])")
+        if not moves.count():
+            break
+        click(moves.nth(random.randrange(moves.count())))
     return True
 
 
@@ -203,30 +209,44 @@ def touch_checks(browser):
     ctx.close()
 
 
-def battle_checks(pg):
-    """The battle screen on its own: the how-to card, a building placed by key and click, the bot to the end, Continue."""
-    pg.evaluate("window.__bt = null; AmanBattleUI.open({ ctx: { seed: 777, odds: 0.6 }, title: 'Hold the dam', place: 'test', onDone: function (r) { window.__bt = r; } })")
-    pg.wait_for_timeout(200)
-    check("the battle opens on a how-to card", pg.locator("#battle .bt-card.on [data-bt=start]").count() == 1)
-    pg.locator("#battle [data-bt=start]").click()
-    check("the battle shows gauges for the dam, depot, and town", pg.locator("#battle .bt-g").count() == 3)
-    box = pg.locator("#battle canvas").bounding_box()
-    W, H = pg.evaluate("[AmanBattle.W, AmanBattle.H]")
-    s = min(box["width"] / W, box["height"] / H)
-    ox, oy = box["x"] + (box["width"] - W * s) / 2, box["y"] + (box["height"] - H * s) / 2
-    before = pg.evaluate("AmanBattleUI.state().supply")
-    pg.keyboard.press("w")
-    pg.mouse.click(ox + 300 * s, oy + 200 * s)
-    placed = pg.evaluate("AmanBattleUI.state().ents.filter(function (e) { return e.kind === 'watchtower'; }).length")
-    check("a watchtower is placed by key and click, and costs supply", placed == 1 and pg.evaluate("AmanBattleUI.state().supply") < before)
-    pg.keyboard.press(" ")
-    check("Space pauses the battle", "Resume" in pg.locator("#battle [data-bt=pause]").inner_text())
-    pg.keyboard.press(" ")
-    r = pg.evaluate("AmanBattleUI.runBot()")
-    check("the battle bot plays a battle to its end", r and r["over"])
-    check("the battle ends on a result card", pg.locator("#battle .bt-card.on [data-bt=done]").count() == 1)
-    pg.locator("#battle [data-bt=done]").click()
-    check("Continue closes the battle and reports the result", pg.locator("#battle").count() == 0 and pg.evaluate("window.__bt && window.__bt.over") is True)
+# Opens a new game on a rogue crisis next to six members, by patching Aman.create as the engine loads.
+FORCE_CRISIS = """
+(function () { var A; Object.defineProperty(window, 'Aman', { configurable: true, get: function () { return A; }, set: function (v) {
+  A = v; var c = v.create; v.create = function (seed) { var S = c(seed);
+    ['ganga', 'himal', 'narmada', 'mahanadi', 'aravalli', 'seaboard'].forEach(function (id) { S.factions[id].member = true; S.factions[id].trust = 62; });
+    S.factions.yamuna.grip = 3; S.crisis = 'yamuna'; S.phase = 'crisis'; return S; }; } }); })();
+"""
+
+
+def battle_checks(browser, width):
+    """The battle on the map: entered from a crisis, three rounds of moves, and Continue applies the result."""
+    bp = browser.new_page(viewport={"width": width, "height": 900})
+    bp.on("console", lambda m: errors.append(m.text) if m.type == "error" else None)
+    bp.on("pageerror", lambda e: errors.append(str(e)))
+    bp.add_init_script(FORCE_CRISIS)
+    bp.goto(PAGE)
+    bp.wait_for_timeout(400)
+    while bp.locator(".dlg [data-do=closemodal]").count():
+        bp.locator(".dlg [data-do=closemodal]").last.click()
+    w = " at %d px" % width
+    check("a rogue crisis offers to defend the towns" + w, bp.locator(".dlg [data-do=crisis][data-c=battle]").count() == 1)
+    bp.locator(".dlg [data-do=crisis][data-c=battle]").click()
+    check("the battle opens beside the map, with no dialog" + w, bp.locator(".panel.battle").count() == 1 and bp.locator(".dlg").count() == 0 and bp.locator(".mapwrap > svg").count() == 1)
+    check("the map shows the strike, the target, and the supply line" + w, bp.locator(".map .bt-strike").count() == 1 and bp.locator(".map .bt-target").count() == 1 and bp.locator(".map .bt-supply").count() == 1)
+    check("the panel offers hold, move out, cut, and auto-resolve" + w, bp.locator(".panel.battle [data-do=bmove]").count() == 3 and bp.locator(".panel.battle [data-c=auto]").count() == 1)
+    check("allies march to the strike" + w, bp.locator(".map .bt-ally").count() >= 1 and bp.locator(".bt-allies .mf").count() >= 1)
+    bp.locator(".panel.battle [data-do=bmove][data-c=evac]").click()
+    check("moving people out loses the round and earns trust" + w, bp.locator(".bt-score .rd.evac").count() == 1 and bp.locator(".map .bt-mark.evac").count() == 1)
+    check("auto-resolve goes once a round is played" + w, bp.locator(".panel.battle [data-c=auto]").count() == 0)
+    for _ in range(2):
+        if bp.locator(".panel.battle [data-c=finish]").count():
+            break
+        bp.locator(".panel.battle [data-do=bmove][data-c=hold]").click()
+    check("the battle is decided within three rounds" + w, bp.locator(".panel.battle [data-c=finish]").count() == 1)
+    bp.locator(".panel.battle [data-c=finish]").click()
+    check("Continue ends the battle and the season goes on" + w, bp.locator(".panel.battle").count() == 0 and bp.locator(".map .btl").count() == 0)
+    check("no sideways scroll in the battle" + w, bp.evaluate("document.documentElement.scrollWidth") <= width)
+    bp.close()
 
 
 def A_UNLOCKED_RELATIONS(pg):
@@ -256,7 +276,8 @@ with sync_playwright() as p:
     check("welcome guide closes", pg.locator(".dlg").count() == 0)
     check("the track shows three acts", pg.locator(".top .track .ag").count() == 3 and act_now(pg) == 1)
 
-    battle_checks(pg)
+    battle_checks(browser, 1280)
+    battle_checks(browser, 390)
 
     pg.locator("[data-do=help]").click()
     check("How to win opens", pg.locator(".dlg").count() == 1)

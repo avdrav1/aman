@@ -1,12 +1,11 @@
 /* Balance check for Aman. Plays games with three bots, all the way through the three acts, and prints outcomes.
-   Then plays the real-time battle (battle.js) with its bot at four odds.
+   Then fights every rogue crisis as a battle on the map, with three fixed policies, to check it against auto-resolve.
    "greedy" always takes the adviser's first suggestion (Aman.advise).
    "random" picks any legal action.
    "neglect" follows the adviser but never meets demands, hears grievances, or counters the Company.
    Run: node tools/sim.js [games per bot, default 2000]
    Games run in parallel worker threads, one chunk of seeds each. Results are gathered in seed order, so the output repeats exactly. */
 const A = require('../public/engine.js');
-const AB = require('../public/battle.js');
 const { Worker, isMainThread, parentPort, workerData } = require('worker_threads');
 const os = require('os');
 
@@ -28,12 +27,23 @@ function councilChoice(S, bot) {
   return score(ks[0]) >= score(ks[1]) ? ks[0] : ks[1];
 }
 
-function play(seed, bot, trace) {
+/* scene: { policy, log } fights every crisis as a battle on the map instead, and logs each one. */
+function play(seed, bot, trace, scene) {
   const S = A.create(seed);
   rnd = mulberry32((seed ^ 0x5bd1e995) >>> 0);
   let guard = 0, act = S.act;
   while (S.phase !== 'over' && guard++ < 5000) {
     if (S.act !== act) { act = S.act; if (trace) console.log('  season ' + S.turn + ': act ' + act + ' (' + A.ACTS[act].name + ') begins with ' + A.members(S).length + ' members'); }
+    if (S.phase === 'crisis' && scene) {
+      const id = S.crisis, t0 = A.ORDER.reduce((s, o) => s + S.factions[o].trust, 0);
+      if (!A.resolveCrisis(S, 'battle').ok) throw new Error('crisis');
+      const odds = S.battle.odds, allies = [];
+      while (!S.battle.done) { const o = A.battleOptions(S); allies.push(o.allies.length); if (!A.battleMove(S, scene.policy(o)).ok) throw new Error('battle move'); }
+      const won = S.battle.done.won, cut = S.battle.done.cut;
+      A.finishBattle(S);
+      scene.log.push({ odds, won, cut, freed: S.factions[id].grip === 0, allies: allies.reduce((a, b) => a + b, 0) / allies.length, rounds: allies.length, dtrust: A.ORDER.reduce((s, o) => s + S.factions[o].trust, 0) - t0 });
+      continue;
+    }
     if (S.phase === 'crisis') { const r = A.resolveCrisis(S, S.res.capital >= 4 ? 'address' : 'fight'); if (!r.ok) throw new Error('crisis'); continue; }
     if (S.phase === 'dispute') {
       let r = A.resolveDispute(S, 'mediate');
@@ -110,14 +120,16 @@ function report(name, games) {
   console.log('        ' + JSON.stringify(tally));
 }
 
-/* The playable battle (battle.js) played by its bot at several odds. Auto-resolve wins at exactly the odds;
-   the bot is a fixed plan, so a fair battle has it winning roughly as often, and a human more. */
+/* Every rogue crisis fought as a battle on the map, in greedy games, with three fixed policies.
+   Auto-resolve wins at exactly the odds; holding every round should win about as often. */
 function battles() {
-  const n = 100, line = [];
-  [0.45, 0.6, 0.75, 0.95].forEach(function (odds) {
-    let won = 0, secs = 0, dam = 0, town = 0;
-    for (let i = 1; i <= n; i++) { const r = AB.simulate({ seed: i * 7919, odds: odds }); if (r.won) won++; secs += r.seconds; dam += r.dam; town += r.town; }
-    line.push('odds ' + Math.round(odds * 100) + '%: bot wins ' + pct(won, n) + ', ' + Math.round(secs / n) + ' s, dam ' + Math.round(100 * dam / n) + '%, town ' + Math.round(100 * town / n) + '%');
+  const n = 300, pol = { 'hold all': o => 'hold', 'cut first': o => o.moves[2].ok ? 'cut' : 'hold', 'evac first': o => o.round === 0 ? 'evac' : 'hold' };
+  const line = [];
+  Object.keys(pol).forEach(function (k) {
+    const log = [];
+    for (let i = 1; i <= n; i++) play(i * 7919, greedy, false, { policy: pol[k], log: log });
+    const m = log.length, sum = f => log.reduce((s, b) => s + f(b), 0);
+    line.push(k.padEnd(10) + ' wins ' + pct(sum(b => b.won), m) + ' at mean odds ' + pct(sum(b => b.odds), m) + ', freed ' + pct(sum(b => b.freed), m) + ', allies/round ' + (sum(b => b.allies) / m).toFixed(2) + ', rounds ' + (sum(b => b.rounds) / m).toFixed(2) + ', trust change ' + (sum(b => b.dtrust) / m).toFixed(1) + '  (' + m + ' battles)');
   });
   console.log('battle  ' + line.join('\n        '));
 }
