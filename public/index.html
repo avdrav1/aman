@@ -789,6 +789,45 @@ ul.fx { margin: 0; padding: 0; list-style: none; font-size: 12.5px; display: fle
 .bt-out h3.up { color: var(--good); } .bt-out h3.down { color: var(--bad); }
 .bt-out ul { margin: 0; padding-left: 18px; font-size: 14px; }
 .bt-foot { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.map .bt-dim { pointer-events: none; }
+.map .bt-houses path { stroke-width: 1.4; stroke-linejoin: round; }
+.map .bt-houses.risk path { fill: var(--surface); stroke: var(--company); }
+.map .bt-houses.held path { fill: var(--good); stroke: var(--surface); }
+.map .bt-houses.burnt path { fill: color-mix(in srgb, var(--bad) 70%, #000); stroke: var(--bad); }
+.map .bt-houses.empty path { fill: none; stroke: var(--muted); stroke-dasharray: 2 1.6; }
+.map .bt-pv { opacity: 0; transition: opacity .15s; pointer-events: none; }
+.map .bt-pv text { font-size: 11px; font-weight: 700; paint-order: stroke; stroke: var(--surface); stroke-width: 3px; }
+.map .bt-pv text.up { fill: var(--good); } .map .bt-pv text.down { fill: var(--bad); }
+.map .bt-pv path { fill: none; stroke: var(--accent); stroke-width: 2.4; stroke-dasharray: 3 4; stroke-linecap: round; }
+.map .bt-pv .cutx { stroke: var(--accent); stroke-width: 3; stroke-dasharray: none; }
+.mapwrap[data-pv=hold] .pv-hold, .mapwrap[data-pv=evac] .pv-evac, .mapwrap[data-pv=cut] .pv-cut { opacity: 1; }
+.mapwrap[data-pv=hold] .bt-ally { stroke-width: 3.6; }
+.mapwrap[data-pv=hold] .bt-houses.risk path { stroke-width: 2; }
+.mapwrap[data-pv=cut] .bt-supply { stroke-width: 3.4; opacity: 1; }
+.mapwrap[data-pv=evac] .bt-strike, .mapwrap[data-pv=cut] .bt-strike { opacity: .45; }
+.map .tok.people circle { fill: var(--surface); stroke: var(--accent); stroke-width: 1.4; } .map .tok.people use { color: var(--accent); }
+.map .spark { fill: var(--bad); }
+.bt-tug { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 10px; font-size: 13px; }
+.bt-tug .me { color: var(--ink); } .bt-tug .co { color: var(--company); text-align: right; }
+.bt-tug b { font-family: var(--font-display); font-size: 18px; }
+.bt-tug .rope { position: relative; height: 10px; border-radius: 5px; background: linear-gradient(90deg, color-mix(in srgb, var(--accent) 55%, var(--sunk)) 0 50%, color-mix(in srgb, var(--company) 45%, var(--sunk)) 50% 100%); }
+.bt-tug .knot { position: absolute; top: 50%; width: 16px; height: 16px; margin: -8px 0 0 -8px; border-radius: 50%; background: var(--surface); border: 3px solid var(--ink); box-sizing: border-box; }
+.bt-round { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; }
+.bt-stake { font-size: 11px; letter-spacing: .02em; padding: 2px 8px; border-radius: 99px; border: 1.5px solid var(--company); color: var(--company); }
+.bt-stake.final { background: var(--company); color: var(--surface); }
+.bt-chance { position: relative; overflow: visible; }
+.bt-chance i { border-radius: 3px; }
+.bt-needle { position: absolute; top: -5px; width: 4px; height: 16px; margin-left: -2px; border-radius: 2px; background: var(--ink); box-shadow: 0 0 0 1.5px var(--surface); }
+.panel.battle.resolving .opt:not(.rolling) { opacity: .35; }
+.panel.battle .opt.rolling { border-color: var(--ink); opacity: 1 !important; }
+.panel.battle .opt.rolling .bt-chance { height: 10px; transition: height .2s; }
+.panel.battle .opt.hit { border-color: var(--good); box-shadow: 0 0 0 2px var(--good); }
+.panel.battle .opt.miss { border-color: var(--bad); box-shadow: 0 0 0 2px var(--bad); }
+@media (prefers-reduced-motion: no-preference) {
+  .bt-stake.final { animation: btpulse 1.4s ease-in-out infinite; }
+  .panel.battle .opt.miss { animation: btshake .3s ease-in-out; }
+}
+@keyframes btshake { 25% { transform: translateX(-4px); } 75% { transform: translateX(4px); } }
 </style>
 </head>
 <body>
@@ -1333,6 +1372,9 @@ ul.fx { margin: 0; padding: 0; list-style: none; font-size: 12.5px; display: fle
     var lg = '<span><svg viewBox="0 0 16 12"><circle cx="8" cy="6" r="5.5" fill="var(--accent)" opacity=".7"/></svg>Gold glow: trust in you</span>' +
       '<span><svg viewBox="0 0 16 12"><path d="M1 6 H15" stroke="var(--river)" stroke-width="4" stroke-linecap="round"/></svg>River width: water reaching a power</span>' +
       '<span><svg viewBox="0 0 16 12"><circle cx="4" cy="6" r="2.6" fill="var(--good)"/><circle cx="12" cy="6" r="2.6" fill="none" stroke="var(--muted)" stroke-width="1.2"/></svg>Gates open</span>';
+    if (S.phase === 'battle') lg += '<span><svg viewBox="0 0 16 12"><path d="M3 11 V6 L8 1.5 L13 6 V11 Z" fill="var(--surface)" stroke="var(--company)" stroke-width="1.5" stroke-linejoin="round"/></svg>Towns at stake</span>' +
+      '<span><svg viewBox="0 0 16 12"><path d="M1 6 H15" stroke="var(--company)" stroke-width="2" stroke-dasharray="2 3" stroke-linecap="round"/></svg>Company supply line</span>' +
+      '<span><svg viewBox="0 0 16 12"><path d="M1 6 H15" stroke="var(--accent)" stroke-width="2" stroke-dasharray="4 3"/></svg>Allies march</span>';
     if (u.company) lg += '<span><svg viewBox="0 0 16 16" style="height:14px;color:var(--company)"><use href="#i-co"/></svg>Company agent. Stripes: its grip</span>';
     if (u.relations) lg += '<span><svg viewBox="0 0 16 12"><path d="M1 6 H15" stroke="var(--bad)" stroke-width="2" stroke-dasharray="4 3"/></svg>Tense or rival</span>';
     if (u.plans) lg += '<span><svg viewBox="0 0 16 12"><rect x="2" y="0" width="12" height="12" rx="3" fill="var(--accent)"/></svg>Seasons until its plan lands</span>';
@@ -2006,31 +2048,65 @@ ul.fx { margin: 0; padding: 0; list-style: none; font-size: 12.5px; display: fle
 
   /* ---------- the battle, on the map ---------- */
   /* The battle has no screen of its own. The map shows the Company's supply line into the rogue power,
-     its strike at this round's place, and allies marching there; the panel beside it holds the moves.
-     The rules, chances, and effects all come from A.battleOptions and A.battleMove. */
+     its strike at this round's place, the towns at stake there, and allies marching; everything outside
+     the fight dims. The panel beside it holds the score and the moves. Pointing at a move previews it on
+     the map. A move plays out as a short beat (tokens converge, a needle sweeps the chance bar) before
+     the result shows. The rules, chances, and effects all come from A.battleOptions and A.battleMove. */
   function fullName(id) { return id === ME ? A.PLAYER.name : A.FACTIONS[id].name; }
   function at(id) { return id === ME ? HOME : POS[id]; }
   var BT_MARK = { held: 'yes', lost: 'no', evac: 'trust' };
+  var BEAT = 1900, beating = false;
   function roundKind(ev) { return ev.move === 'evac' ? 'evac' : ev.ok ? 'held' : 'lost'; }
+  // the supply line is a quadratic curve from the Company's base into the rogue power
+  function supplyCurve(src) { return [CO, [(CO[0] + src[0]) / 2, Math.max(CO[1], src[1]) + 30], src]; }
+  function curvePts(c, n) {
+    var out = [];
+    for (var i = 0; i <= n; i++) { var t = i / n, u = 1 - t; out.push([u * u * c[0][0] + 2 * u * t * c[1][0] + t * t * c[2][0], u * u * c[0][1] + 2 * u * t * c[1][1] + t * t * c[2][1]]); }
+    return out;
+  }
+  // three small houses beside a place: the towns at stake
+  var HOUSE_AT = [[0, 0], [11, 0], [22, 0]];
+  function housesAt(p) { return HOUSE_AT.map(function (o) { return [p[0] + NR + 14 - o[0], p[1] + NR - 4 + o[1] / 2]; }); }
+  // where you strike the supply line: out at sea, a third of the way from the Company's base
+  function cutPoint(src) { return curvePts(supplyCurve(src), 10)[3]; }
+  function housesSvg(p, st) {
+    return '<g class="bt-houses ' + st + '">' + housesAt(p).map(function (q) {
+      var x = q[0], y = q[1];
+      return '<path d="M' + (x - 4.6) + ' ' + (y + 4.4) + ' V' + (y - 0.8) + ' L' + x + ' ' + (y - 5.4) + ' L' + (x + 4.6) + ' ' + (y - 0.8) + ' V' + (y + 4.4) + ' Z"/>';
+    }).join('') + '</g>';
+  }
+  function fightCenter(b) {
+    var pts = [POS[b.f]].concat(b.targets.map(at)), cx = 0, cy = 0, r = 0;
+    pts.forEach(function (p) { cx += p[0] / pts.length; cy += p[1] / pts.length; });
+    pts.forEach(function (p) { r = Math.max(r, Math.sqrt((p[0] - cx) * (p[0] - cx) + (p[1] - cy) * (p[1] - cy))); });
+    return [cx, cy, r + 75];
+  }
   function battleLayer() {
     var b = S.battle;
     if (S.phase !== 'battle' || !b || !b.live) return '';
-    var src = POS[b.f], h = '<g class="btl">';
-    // the Company's supply line: from its offshore base into the rogue power
-    var mx = (CO[0] + src[0]) / 2, my = Math.max(CO[1], src[1]) + 30;
-    h += '<path class="bt-supply' + (b.cutUsed ? ' tried' : '') + '" d="M' + CO[0] + ' ' + CO[1] + ' Q' + mx + ' ' + my + ' ' + src[0] + ' ' + src[1] + '"/>';
+    var src = POS[b.f], fc = fightCenter(b), sc = supplyCurve(src), h = '<g class="btl">';
+    // everything outside the fight dims
+    h += '<defs><radialGradient id="btdim" gradientUnits="userSpaceOnUse" cx="' + fc[0].toFixed(0) + '" cy="' + fc[1].toFixed(0) + '" r="' + fc[2].toFixed(0) + '"><stop offset=".6" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".34"/></radialGradient></defs>';
+    h += '<rect class="bt-dim" width="' + MAPW + '" height="' + MAPH + '" fill="url(#btdim)"/>';
+    h += '<path class="bt-supply' + (b.cutUsed ? ' tried' : '') + '" d="M' + sc[0].join(' ') + ' Q' + sc[1].join(' ') + ' ' + sc[2].join(' ') + '"/>';
     h += '<g class="agent"><circle cx="' + CO[0] + '" cy="' + CO[1] + '" r="9"/><use href="#i-co" x="' + (CO[0] - 6) + '" y="' + (CO[1] - 6) + '" width="12" height="12"/></g>';
-    // rounds played: a mark at each place
+    // the towns at each place struck so far, as the round left them; the latest round wins
+    var town = {};
+    b.rounds.forEach(function (ev) { if (ev.move !== 'cut') town[ev.t] = { held: 'held', lost: 'burnt', evac: 'empty' }[roundKind(ev)]; });
+    var o = b.done ? null : A.battleOptions(S);
+    if (o) town[o.target] = 'risk';
+    Object.keys(town).forEach(function (t) { h += housesSvg(at(t), town[t]); });
+    // a mark for each round played
     b.rounds.forEach(function (ev, i) {
       var p = at(ev.t), k = roundKind(ev), x = p[0] + NR - 2 + i * 3, y = p[1] - NR + 2;
       if (ev.move === 'cut') p = src, x = p[0] - NR + 2, y = p[1] - NR + 2;
       h += '<g class="bt-mark ' + k + '"><circle cx="' + x + '" cy="' + y + '" r="7"/><use href="#i-' + BT_MARK[k] + '" x="' + (x - 5) + '" y="' + (y - 5) + '" width="10" height="10"/></g>';
     });
-    if (!b.done) {
-      var o = A.battleOptions(S), tp = at(o.target);
-      // places still to come, numbered
+    if (o) {
+      var tp = at(o.target), m = {};
+      o.moves.forEach(function (x) { m[x.key] = x; });
       b.targets.slice(b.round + 1).forEach(function (t, i) {
-        var p = at(t), x = p[0] - NR, y = p[1] + NR;
+        var p = at(t), x = p[0] - NR, y = p[1] + NR + 12;
         h += '<g class="bt-next"><circle cx="' + x + '" cy="' + y + '" r="6.5"/><text x="' + x + '" y="' + (y + 3.3) + '" text-anchor="middle">' + (b.round + 2 + i) + '</text></g>';
       });
       o.allies.forEach(function (id) { var p = POS[id]; if (id !== o.target) h += '<path class="bt-ally" d="M' + p[0] + ' ' + p[1] + ' L' + tp[0] + ' ' + tp[1] + '"/>'; });
@@ -2039,17 +2115,31 @@ ul.fx { margin: 0; padding: 0; list-style: none; font-size: 12.5px; display: fle
         h += '<path class="bt-strike" marker-end="url(#ahco)" d="M' + (src[0] + dx / L * NR).toFixed(1) + ' ' + (src[1] + dy / L * NR).toFixed(1) + ' L' + (tp[0] - dx / L * e).toFixed(1) + ' ' + (tp[1] - dy / L * e).toFixed(1) + '"/>';
       }
       h += '<circle class="bt-target" cx="' + tp[0] + '" cy="' + tp[1] + '" r="' + (NR + 7) + '"/>';
+      // previews, shown while you point at a move
+      var home = o.target === ME, tx = tp[0] + NR + 10, ty = tp[1] - 4, mid = cutPoint(src);
+      h += '<g class="bt-pv pv-hold"><text class="down" x="' + tx + '" y="' + ty + '">' + (home ? 'Fail: Capital -1' : 'Fail: trust ' + m.hold.fail.trust) + '</text></g>';
+      h += '<g class="bt-pv pv-evac">' + (home ? '' : '<path d="M' + tp[0] + ' ' + tp[1] + ' L' + HOME[0] + ' ' + HOME[1] + '"/>') + '<text class="up" x="' + tx + '" y="' + ty + '">' + (home ? 'No one hurt' : 'Trust +' + m.evac.gain.trust) + '</text></g>';
+      if (m.cut.ok) h += '<g class="bt-pv pv-cut"><path class="cutx" d="M' + (mid[0] - 6) + ' ' + (mid[1] - 6) + ' L' + (mid[0] + 6) + ' ' + (mid[1] + 6) + ' M' + (mid[0] + 6) + ' ' + (mid[1] - 6) + ' L' + (mid[0] - 6) + ' ' + (mid[1] + 6) + '"/><text class="up" x="' + (src[0] - NR - 8) + '" y="' + (src[1] + 4) + '" text-anchor="end">Free of the Company</text></g>';
     }
     return h + '</g>';
   }
   function chanceBar(p) { return '<span class="bt-chance" aria-hidden="true"><i style="width:' + Math.round(p * 100) + '%"></i></span>'; }
+  // the tug of war: you on the left, the Company on the right, first to two
+  var tugWas = 0;
+  function tugLeft(d) { return 50 - 21 * d; }
+  function tugHtml(b) {
+    var d = b.wins - b.losses;
+    return '<div class="bt-tug" role="img" aria-label="You ' + b.wins + ', the Company ' + b.losses + '. First to two wins."><span class="me">You <b class="num">' + b.wins + '</b></span>' +
+      '<span class="rope" aria-hidden="true"><i class="knot" style="left:' + tugLeft(d) + '%"></i></span><span class="co"><b class="num">' + b.losses + '</b> Company</span></div>';
+  }
   function battlePanel() {
     var b = S.battle, rn = fullName(b.f), h = '<section class="panel battle" aria-labelledby="bth"><header><div><h2 id="bth">Defend the federation</h2><small>Battle, ' + A.season(S) + ' ' + A.year(S) + '</small></div></header>';
-    h += '<p class="bt-lede">Company contractors strike from ' + esc(rn) + '. Its people are not the enemy. Win two rounds of three.</p>';
+    if (!b.rounds.length) h += '<p class="bt-lede">Company contractors strike from ' + esc(rn) + '. Its people are not the enemy.</p>';
+    h += tugHtml(b);
     // the three rounds: where each strike lands, and how it went
     h += '<div class="bt-score">' + b.targets.map(function (t, i) {
       var ev = b.rounds[i], k = ev ? roundKind(ev) : '', cut = ev && ev.move === 'cut';
-      var said = !ev ? (b.done ? 'Not needed' : i === b.round ? 'Now' : 'Next') : cut ? (ev.ok ? 'Supply cut' : 'Cut failed') : k === 'held' ? 'Held' : k === 'evac' ? 'Moved out' : 'Broken';
+      var said = !ev ? (b.done ? 'Not needed' : i === b.round ? 'Now' : 'Next') : cut ? (ev.ok ? 'Cut' : 'Cut failed') : k === 'held' ? 'Held' : k === 'evac' ? 'Moved out' : 'Broken';
       return '<div class="rd ' + (k || (i === b.round && !b.done ? 'now' : '')) + '">' + (ev ? ic(BT_MARK[k]) : '') + '<b>' + esc(cut ? 'Supply' : SH(t)) + '</b><span>' + said + '</span></div>';
     }).join('') + '</div>';
     var last = b.rounds[b.rounds.length - 1];
@@ -2063,7 +2153,9 @@ ul.fx { margin: 0; padding: 0; list-style: none; font-size: 12.5px; display: fle
       return h + '</section>';
     }
     var o = A.battleOptions(S), t = o.target, tn = SH(t), home = t === ME;
-    h += '<h3>Round ' + (o.round + 1) + ': the Company strikes ' + esc(home ? 'your towns' : fullName(t)) + '</h3>';
+    // the stakes of this round: the last one, or one that can end it
+    var stake = b.wins === 1 && b.losses === 1 ? '<span class="bt-stake final">Final round</span>' : b.wins + b.losses === 1 ? '<span class="bt-stake">' + (b.wins ? 'Hold it and you win' : 'Lose it and the Company wins') + '</span>' : '';
+    h += '<h3 class="bt-round">Round ' + (o.round + 1) + ': the Company strikes ' + esc(home ? 'your towns' : fullName(t)) + stake + '</h3>';
     h += '<div class="bt-allies">' + (o.allies.length ? o.allies.map(miniFace).join('') + '<span>march with you: +' + Math.round(A.BT_ALLY * 100) + '% each</span>' : '<span>No ally marches here. Members at trust ' + A.BT_ALLY_TRUST + ' or more that border a place join you there.</span>') + '</div>';
     var m = {}; o.moves.forEach(function (x) { m[x.key] = x; });
     h += '<div class="bt-moves">' +
@@ -2077,13 +2169,85 @@ ul.fx { margin: 0; padding: 0; list-style: none; font-size: 12.5px; display: fle
     if (!b.rounds.length) h += '<div class="bt-foot"><button class="ghost" data-do="battle" data-c="auto">Auto-resolve at ' + Math.round(b.odds * 100) + '%</button></div>';
     return h + '</section>';
   }
-  /* After a move: allies travel to the place, then it bursts if held. Trust numbers float from playFx. */
+  /* A token that travels through a list of points. */
+  function travel(layer, pts, cls, icon, dur, delay) {
+    if (REDUCE || !layer.animate) return;
+    var g = sv('g', { 'class': 'tok ' + cls });
+    g.appendChild(sv('circle', { r: 7 }));
+    g.appendChild(sv('use', { href: '#i-' + icon, x: -5, y: -5, width: 10, height: 10 }));
+    g.style.opacity = 0;
+    layer.appendChild(g);
+    var kf = pts.map(function (p, i) { return { transform: 'translate(' + p[0].toFixed(1) + 'px,' + p[1].toFixed(1) + 'px)', opacity: i === 0 ? 0 : i === pts.length - 1 ? 0.2 : 1 }; });
+    g.animate(kf, { duration: dur, delay: delay || 0, easing: 'ease-in-out', fill: 'both' }).onfinish = function () { g.remove(); };
+  }
+  function line(a, b, n, stop) {
+    var out = [];
+    for (var i = 0; i <= n; i++) { var t = i / n * (stop || 1); out.push([a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t]); }
+    return out;
+  }
+  /* The beat between choosing a move and seeing how it went. The engine has already decided; this only
+     stages it. Contractors advance, allies converge, people walk out, and a needle sweeps the chance bar
+     to land in the green or the red. Under reduced motion the result shows at once. */
+  function battleBeat(btn, key, o, ev, done) {
+    var layer = document.getElementById('fx');
+    if (REDUCE || !layer || !layer.animate) { done(); return; }
+    beating = true;
+    document.querySelectorAll('.panel.battle button').forEach(function (x) { x.disabled = true; });
+    btn.classList.add('rolling');
+    document.querySelector('.panel.battle').classList.add('resolving');
+    var src = POS[o.from], tp = at(o.target), D = BEAT - 300;
+    if (key === 'cut') {
+      var mid = cutPoint(src);
+      travel(layer, line(HOME, mid, 4), 'you', 'trust', D, 0);
+      travel(layer, line(HOME, mid, 4), 'you', 'trust', D, 160);
+      travel(layer, curvePts(supplyCurve(src), 10).slice(0, 4), 'co', 'co', D, 80);
+    } else {
+      [0, 180, 360].forEach(function (d) { travel(layer, line(src, tp, 6, 0.86), 'co', 'co', D - d, d); });
+      if (key === 'hold') o.allies.forEach(function (id, i) { if (id !== o.target) travel(layer, line(POS[id], tp, 6, 0.86), 'you', 'trust', D - 100, 100 + i * 120); });
+      if (key === 'evac' && o.target !== ME) [0, 200, 400].forEach(function (d) { travel(layer, line(tp, HOME, 6), 'people', 'trust', D - d, d); });
+    }
+    // the needle: sweeps, slows, and lands where the engine's draw fell, in the green or the red
+    var bar = btn.querySelector('.bt-chance'), m = o.moves.filter(function (x) { return x.key === key; })[0];
+    if (bar && key !== 'evac' && bar.animate) {
+      var p = m.p, land = ev.ok ? 0.04 + Math.random() * Math.max(0.01, p - 0.08) : p + 0.04 + Math.random() * Math.max(0.01, 0.92 - p);
+      var nd = document.createElement('b'); nd.className = 'bt-needle'; bar.appendChild(nd);
+      nd.animate([{ left: '0%' }, { left: '100%', offset: 0.3 }, { left: '8%', offset: 0.55 }, { left: '88%', offset: 0.75 }, { left: (land * 100).toFixed(1) + '%' }],
+        { duration: D, easing: 'cubic-bezier(.2,.7,.3,1)', fill: 'forwards' });
+      setTimeout(function () { btn.classList.add(ev.ok ? 'hit' : 'miss'); }, D);
+    }
+    setTimeout(function () { beating = false; done(); }, BEAT);
+  }
+  /* After the result shows: a burst where you held or cut, sparks where towns burned, reinforcements up
+     the supply line after a failed cut, and the tug-of-war knot sliding to its new place. */
   function battleFx(ev) {
     var layer = document.getElementById('fx'); if (!layer || !ev) return;
-    var tp = ev.move === 'cut' ? POS[S.lastBattle && !S.battle ? S.lastBattle.f : S.battle.f] : at(ev.t);
-    if (ev.move === 'hold') ev.allies.forEach(function (id, i) { if (id !== ev.t) fly(layer, POS[id], tp, 'you', 'trust', i * 120); });
-    if (ev.ok && ev.move !== 'evac') setTimeout(function () { var l = document.getElementById('fx'); if (l) burst(l, tp); }, REDUCE ? 0 : 450);
+    var f = S.battle ? S.battle.f : S.lastBattle.f, src = POS[f];
+    if (ev.move === 'cut') {
+      if (ev.ok) { burst(layer, src); burst(layer, cutPoint(src)); }
+      else [0, 150, 300, 450].forEach(function (d) { travel(layer, curvePts(supplyCurve(src), 12), 'co', 'co', 1300, d); });
+    } else if (ev.move === 'hold') {
+      if (ev.ok) burst(layer, at(ev.t)); else scorch(layer, at(ev.t));
+    }
+    var knot = document.querySelector('.bt-tug .knot'), b = S.battle;
+    if (knot && b && knot.animate && !REDUCE) knot.animate([{ left: tugLeft(tugWas) + '%' }, { left: tugLeft(b.wins - b.losses) + '%' }], { duration: 650, easing: 'cubic-bezier(.3,1.4,.5,1)' });
   }
+  function scorch(layer, p) {
+    if (REDUCE || !layer.animate) return;
+    housesAt(p).forEach(function (q, i) {
+      var c = sv('circle', { 'class': 'spark', cx: q[0], cy: q[1] - 2, r: 4 });
+      c.style.transformOrigin = q[0] + 'px ' + (q[1] - 2) + 'px';
+      layer.appendChild(c);
+      c.animate([{ transform: 'scale(.4)', opacity: 0.95 }, { transform: 'scale(2.6) translateY(-3px)', opacity: 0 }], { duration: 900, delay: i * 140, easing: 'ease-out', fill: 'both' }).onfinish = function () { c.remove(); };
+    });
+  }
+  // pointing at a move previews it on the map
+  function battlePreview(e) {
+    var wrap = document.querySelector('.mapwrap'); if (!wrap || S.phase !== 'battle') return;
+    var c = e.target.closest && e.target.closest('.panel.battle [data-do=bmove]'), v = c && !c.disabled && !beating ? c.getAttribute('data-c') : '';
+    if ((wrap.getAttribute('data-pv') || '') !== v) { if (v) wrap.setAttribute('data-pv', v); else wrap.removeAttribute('data-pv'); }
+  }
+  document.addEventListener('mouseover', battlePreview);
+  document.addEventListener('focusin', battlePreview);
 
   function overlay() {
     if (S.phase === 'crisis') {
@@ -2160,6 +2324,7 @@ ul.fx { margin: 0; padding: 0; list-style: none; font-size: 12.5px; display: fle
   }
 
   function handle(el) {
+    if (beating) return;   // a battle round is still playing out
     var doit = el.getAttribute('data-do'), r, before = S.turn, snap = snapshot(), info = null;
     stopPlay();
     if (doit === 'skip') { render(); return; }
@@ -2207,7 +2372,15 @@ ul.fx { margin: 0; padding: 0; list-style: none; font-size: 12.5px; display: fle
     else if (doit === 'dispute') { r = A.resolveDispute(S, el.getAttribute('data-c')); said = r.msg; }
     else if (doit === 'crisis') { r = A.resolveCrisis(S, el.getAttribute('data-c')); said = r.msg; }
     else if (doit === 'battle') { r = el.getAttribute('data-c') === 'auto' ? A.autoBattle(S) : A.finishBattle(S); said = r.msg; }
-    else if (doit === 'bmove') { r = A.battleMove(S, el.getAttribute('data-c')); said = r.msg; render(); playFx(snap, null); battleFx(r.ev); return; }
+    else if (doit === 'bmove') {
+      if (beating) return;
+      var key = el.getAttribute('data-c'), bo = A.battleOptions(S);
+      tugWas = S.battle.wins - S.battle.losses;
+      r = A.battleMove(S, key);
+      if (!r.ok) { said = r.msg; render(); return; }
+      battleBeat(el, key, bo, r.ev, function () { said = r.msg; render(); playFx(snap, null); battleFx(r.ev); });
+      return;
+    }
     else if (doit === 'new') { newGame(); return; }
     if (S.turn !== before && view === 'home' && startPlay()) return;
     render();
