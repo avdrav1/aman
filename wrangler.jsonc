@@ -1,5 +1,11 @@
 {
   "name": "aman",
   "compatibility_date": "2025-09-01",
-  "assets": { "directory": "./public" }
+  // Static files in public/ are served first. worker/index.js only runs for other paths: POST /api/event.
+  "main": "worker/index.js",
+  "assets": { "directory": "./public", "binding": "ASSETS" },
+  // Anonymous playtest events. Schema: worker/schema.sql. Read them with: node tools/playtests.js
+  "d1_databases": [
+    { "binding": "DB", "database_name": "aman-events", "database_id": "7edf6275-127a-4a6d-98f3-4102661694e0" }
+  ]
 }

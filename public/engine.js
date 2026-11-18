@@ -600,18 +600,29 @@
     Object.defineProperty(CHARTER, 'article:' + ARTICLES[as].key, { enumerable: false, value: itemView({ kind: 'article', as: +as }) });
   });
 
-  function mulberry32(a) {
-    return function () {
-      a |= 0; a = (a + 0x6D2B79F5) | 0;
+  /* Mulberry32, with its state kept on S.rs so a game saves as plain JSON and resumes on the same draws. */
+  function attachRng(S) {
+    Object.defineProperty(S, 'rng', { enumerable: false, configurable: true, writable: true, value: function () {
+      let a = S.rs = (S.rs + 0x6D2B79F5) | 0;
       let t = Math.imul(a ^ (a >>> 15), 1 | a);
       t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
       return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-    };
+    } });
+    return S;
+  }
+
+  /* Save and resume. A save is JSON of the whole state; SAVE_V changes whenever the state's shape does, and older saves are refused. */
+  const SAVE_V = 1;
+  function save(S) { return JSON.stringify({ v: SAVE_V, S: S }); }
+  function load(str) {
+    let d; try { d = JSON.parse(str); } catch (e) { return null; }
+    if (!d || d.v !== SAVE_V || !d.S || typeof d.S.rs !== 'number' || !d.S.factions || ORDER.some(function (id) { return !d.S.factions[id]; })) return null;
+    return attachRng(d.S);
   }
 
   function create(seed) {
     const S = {
-      seed: seed >>> 0, rng: mulberry32(seed >>> 0),
+      seed: seed >>> 0, rs: seed | 0,
       turn: 0, phase: 'actions', outcome: null,
       res: { water: 3, energy: 3, food: 3, capital: 5 },
       influence: 3, shortage: false,
@@ -629,6 +640,7 @@
         demand: null, strain: 0, lastStrain: null, motion: null, motionIdx: 0, left: null, leftHow: null, grievance: null, pledged: false, terms: false, lastAsk: 0 };
     });
     PAIRS.forEach(function (p) { const k = pk(p[0], p[1]); S.rel[k] = REL_START[k] || 0; });
+    attachRng(S);
     S.history.push(histEntry(S, 1));
     startTurn(S);
     return S;
@@ -1909,7 +1921,7 @@
 
   root.Aman = {
     digest: digest,
-    create: create, available: available, act: act, endSeason: endSeason, chooseCharter: chooseCharter,
+    create: create, save: save, load: load, SAVE_V: SAVE_V, available: available, act: act, endSeason: endSeason, chooseCharter: chooseCharter,
     resolveCrisis: resolveCrisis, resolveDispute: resolveDispute, finishBattle: finishBattle, autoBattle: autoBattle, battleOptions: battleOptions, battleMove: battleMove, roundChance: roundChance, BT_ALLY: BT_ALLY, BT_ALLY_TRUST: BT_ALLY_TRUST, BT_REINF: BT_REINF, advise: advise, gates: gates, unlocked: unlocked, rel: rel, gaps: gaps, planOf: planOf, REL_NAMES: REL_NAMES, PAIRS: PAIRS, yields: yields, fightOdds: fightOdds, canJoin: canJoin, needTotal: needTotal,
     members: members, clients: clients, season: season, year: year,
     FACTIONS: FACTIONS, PROJECTS: PROJECTS, TECH: TECH, CHARTER: CHARTER, ORDER: ORDER,

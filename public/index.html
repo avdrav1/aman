@@ -860,6 +860,58 @@ ul.fx { margin: 0; padding: 0; list-style: none; font-size: 12.5px; display: fle
   try { var p = JSON.parse(localStorage.getItem('aman-prefs') || '{}'); if (typeof p.adviser === 'boolean') prefs.adviser = p.adviser; if (typeof p.details === 'boolean') prefs.details = p.details; if (p.seenHelp === true) prefs.seenHelp = true; } catch (e) {}
   function savePrefs() { try { localStorage.setItem('aman-prefs', JSON.stringify(prefs)); } catch (e) {} }
 
+  /* ---------- save and resume: the game saves itself in this browser after every change ---------- */
+  var SAVE_KEY = 'aman-save', savedAt = null;
+  function persist() {
+    if (!S) return;
+    try { if (S.phase === 'over') localStorage.removeItem(SAVE_KEY); else localStorage.setItem(SAVE_KEY, A.save(S)); } catch (e) {}
+  }
+  function resume() {
+    var T = null; try { T = A.load(localStorage.getItem(SAVE_KEY) || ''); } catch (e) {}
+    if (!T || T.phase === 'over') return false;
+    S = T; GID = stored('aman-gid'); sel = null; view = 'home'; hover = null; modal = null; seenAct = S.act;
+    said = 'Welcome back. Your game resumes in ' + A.season(S) + ' ' + A.year(S) + '.';
+    track('resume', {}); seen = look(); render();
+    return true;
+  }
+
+  /* ---------- playtest analytics: anonymous events, sent to this site's own /api/event ----------
+     Off on localhost and from disk, under Global Privacy Control, or with the switch in How to win. Nothing names the player. */
+  var NOTRACK = location.protocol === 'file:' || /^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname) || !!navigator.globalPrivacyControl;
+  if (typeof prefs.share !== 'boolean') prefs.share = true;
+  try { var p2 = JSON.parse(localStorage.getItem('aman-prefs') || '{}'); if (typeof p2.share === 'boolean') prefs.share = p2.share; } catch (e) {}
+  function rid() { try { return crypto.randomUUID(); } catch (e) { return Date.now().toString(36) + Math.random().toString(36).slice(2); } }
+  function stored(k, make) { var v = null; try { v = localStorage.getItem(k); if (!v || make === true) { v = rid(); localStorage.setItem(k, v); } } catch (e) { v = v || rid(); } return v; }
+  var PID = stored('aman-pid'), GID = null, queue = [], tally = {}, seasonT0 = Date.now(), seen = null;
+  function track(k, d) {
+    if (NOTRACK || !prefs.share || !S) return;
+    queue.push({ k: k, turn: S.turn, act: S.act, d: d || {} });
+    if (queue.length >= 25 || k === 'season' || k === 'over') flush();
+  }
+  function flush() {
+    if (!queue.length) return;
+    var body = JSON.stringify({ pid: PID, gid: GID, ev: queue.splice(0, 50) });
+    try { if (!(navigator.sendBeacon && navigator.sendBeacon('/api/event', new Blob([body], { type: 'application/json' })))) fetch('/api/event', { method: 'POST', body: body, keepalive: true, headers: { 'content-type': 'application/json' } }).catch(function () {}); } catch (e) {}
+  }
+  /* What render() compares against, so each transition is logged once wherever it came from. */
+  function look() { return { S: S, turn: S.turn, act: S.act, phase: S.phase, battle: S.lastBattle, vote: S.lastVote, over: !!S.outcome }; }
+  function observe() {
+    if (!seen || seen.S !== S) { seen = look(); return; }
+    var was = seen; seen = look();
+    if (S.turn > was.turn) {
+      track('season', { s: was.turn, members: A.members(S).length, inf: S.influence, res: S.res, acts: tally, ms: Date.now() - seasonT0 });
+      tally = {}; seasonT0 = Date.now();
+    }
+    if (S.act !== was.act) track('act', { from: was.act });
+    if (S.phase !== was.phase && /^(crisis|dispute|council)$/.test(S.phase)) track(S.phase, S.phase === 'crisis' ? { f: S.crisis } : S.phase === 'dispute' && S.dispute ? { a: S.dispute.a, b: S.dispute.b } : {});
+    if (S.lastBattle && S.lastBattle !== was.battle) { var b = S.lastBattle; track('battle', { f: b.f, won: b.won, auto: b.auto, cut: b.cut, rounds: b.rounds.map(function (r) { return r.move + (r.ok ? '+' : '-'); }) }); }
+    if (S.lastVote && S.lastVote !== was.vote) { var v = S.lastVote; track('vote', { kind: v.kind, key: v.key, chosen: v.chosen, passed: v.passed, yes: v.yes, no: v.no }); }
+    if (S.outcome && !was.over) track('over', { result: S.outcome.result, title: S.outcome.title, members: A.members(S).length, pledges: S.outcome.pledges });
+  }
+  /* Where a player stops: the last screen they saw. Sent when the tab is hidden or closed. */
+  function leave() { if (S) { track('leave', { phase: S.phase, view: view, modal: modal || null, over: !!S.outcome }); flush(); } }
+  document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'hidden') leave(); });
+
   // BEGIN GENERATED MAP (tools/build_map.py; rerun it instead of editing by hand)
   // Natural Earth land, rivers, and physical regions only, Lambert conic, 460x520 frame. No borders.
   var MAPW = 460, MAPH = 520;
@@ -960,6 +1012,7 @@ ul.fx { margin: 0; padding: 0; list-style: none; font-size: 12.5px; display: fle
 
   function newGame() {
     S = A.create((Math.random() * 2147483647) | 0);
+    GID = stored('aman-gid', true); tally = {}; seasonT0 = Date.now(); track('start', { seed: S.seed }); seen = look();
     sel = null; view = 'home'; hover = null; modal = prefs.seenHelp ? null : 'help'; seenAct = 1;
     said = 'You lead the ' + A.PLAYER.name + '. Bring ' + words(A.ACTS[1].goal) + ' powers into your federation within ' + words(A.ACTS[1].max) + ' seasons.';    render();
   }
@@ -2288,6 +2341,8 @@ ul.fx { margin: 0; padding: 0; list-style: none; font-size: 12.5px; display: fle
         '<div class="helprow"><span class="gi"><svg aria-hidden="true"><use href="#i-co"/></svg></span><p><b>Free of the Company.</b> It courts whoever trusts you least. Outbid it or counter it.</p></div>' +
         '<div class="helprow"><span class="gi"><svg aria-hidden="true"><use href="#i-rival"/></svg></span><p><b>No rival inside.</b> A power will not join beside its rival. Broker talks first.</p></div>' +
         '<p class="note">When every gate is open, invite the power. Every action costs Influence, and you get more as the federation grows. New systems arrive one season at a time, and your council suggests moves on the map. When the Company raids from a rogue power, you defend on the map in three short rounds.</p>' +
+        '<p class="note">Your game saves itself in this browser. ' + (NOTRACK ? '' : 'To help tune it, the game sends anonymous play data, such as seasons played and battle results, to this site. It never names you.') + '</p>' +
+        (NOTRACK ? '' : '<p><label class="sw"><input type="checkbox" role="switch" data-do="pref" data-p="share"' + (prefs.share ? ' checked' : '') + '>Share anonymous play data</label></p>') +
         '<div><button class="primary" data-do="closemodal">' + (first ? 'Begin' : 'Back to the game') + '</button></div></div></div>';
     }
     if (modal === 'act') return actCard();
@@ -2316,6 +2371,7 @@ ul.fx { margin: 0; padding: 0; list-style: none; font-size: 12.5px; display: fle
     else if (view === 'build') main = buildView(av);
     else if (view === 'charter') main = charterView();
     else main = recordView();
+    observe(); persist();
     document.getElementById('app').innerHTML = top() + goal() + nav() + main + (modal ? modalHtml() : (play && (S.phase === 'crisis' || S.phase === 'battle' || S.phase === 'dispute') ? '' : overlay()));
     tipFor = null;
     if (hlLock && !document.querySelector('.achip[data-hl="' + hlLock + '"]')) hlLock = null;
@@ -2345,7 +2401,7 @@ ul.fx { margin: 0; padding: 0; list-style: none; font-size: 12.5px; display: fle
       return;
     }
     if (doit === 'replay') { view = 'home'; sel = null; if (!startPlay()) render(); return; }
-    if (doit === 'pref') { var k = el.getAttribute('data-p'); prefs[k] = el.checked; savePrefs(); }
+    if (doit === 'pref') { var k = el.getAttribute('data-p'); if (k === 'share' && !el.checked) { track('optout', {}); flush(); } prefs[k] = el.checked; savePrefs(); }
     else if (doit === 'sel') { sel = el.getAttribute('data-f'); view = 'home'; hover = null; }
     else if (doit === 'close') { sel = null; hover = null; }
     else if (doit === 'view') { view = el.getAttribute('data-v'); }
@@ -2361,6 +2417,7 @@ ul.fx { margin: 0; padding: 0; list-style: none; font-size: 12.5px; display: fle
           if (ao.type === 'aid') info.res = A.FACTIONS[ao.f].needs.filter(function (n) { return n.key === ao.need; })[0].res;
         }
         r = A.act(S, aid); said = r.msg; hover = null;
+        if (r.ok && ao) tally[ao.type] = (tally[ao.type] || 0) + 1;
       }
     }
     else if (doit === 'end') { r = A.endSeason(S); sel = null; view = 'home'; if (!r.council) said = A.season(S) + ' ' + A.year(S) + ' begins.'; }
@@ -2369,8 +2426,8 @@ ul.fx { margin: 0; padding: 0; list-style: none; font-size: 12.5px; display: fle
       // show the chamber lighting its votes first; the season playback waits for Continue
       if (r.ok) { voteShow = S.lastVote; modal = 'vote'; pendingPlay = pendingPlay || S.turn !== before; render(); return; }
     }
-    else if (doit === 'dispute') { r = A.resolveDispute(S, el.getAttribute('data-c')); said = r.msg; }
-    else if (doit === 'crisis') { r = A.resolveCrisis(S, el.getAttribute('data-c')); said = r.msg; }
+    else if (doit === 'dispute') { track('choice', { on: 'dispute', c: el.getAttribute('data-c') }); r = A.resolveDispute(S, el.getAttribute('data-c')); said = r.msg; }
+    else if (doit === 'crisis') { track('choice', { on: 'crisis', c: el.getAttribute('data-c') }); r = A.resolveCrisis(S, el.getAttribute('data-c')); said = r.msg; }
     else if (doit === 'battle') { r = el.getAttribute('data-c') === 'auto' ? A.autoBattle(S) : A.finishBattle(S); said = r.msg; }
     else if (doit === 'bmove') {
       if (beating) return;
@@ -2381,7 +2438,7 @@ ul.fx { margin: 0; padding: 0; list-style: none; font-size: 12.5px; display: fle
       battleBeat(el, key, bo, r.ev, function () { said = r.msg; render(); playFx(snap, null); battleFx(r.ev); });
       return;
     }
-    else if (doit === 'new') { newGame(); return; }
+    else if (doit === 'new') { if (S && S.phase !== 'over') track('abandon', {}); newGame(); return; }
     if (S.turn !== before && view === 'home' && startPlay()) return;
     render();
     if (doit !== 'pref' && doit !== 'sel' && doit !== 'close' && doit !== 'view') playFx(snap, info);
@@ -2549,7 +2606,7 @@ ul.fx { margin: 0; padding: 0; list-style: none; font-size: 12.5px; display: fle
   document.addEventListener('mouseover', chartRead);
   document.addEventListener('focusin', chartRead);
   document.addEventListener('click', chartRead);
-  newGame();
+  if (!resume()) newGame();
 })();
 </script>
 </body>

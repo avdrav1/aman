@@ -14,8 +14,8 @@ Nothing here is committed. The owner chooses what comes next.
 - **Several rogue crises can land in one season.** They resolve one after another. It happened in about 1 game in 20 in the sim.
 - **Motion was tuned from screenshots.** Token flight (620 ms), floating numbers (1.9 s), and playback (1.8 s per step, 1.45 s over five steps, 1.15 s over eight) have never been judged by eye.
 - **Inviting is a chore.** When every gate is open there is no decision in clicking Invite. It could happen on its own at season's end.
-- **No save.** Closing the tab ends the game. Only two preferences persist, in `localStorage` under `aman-prefs`.
-- **No analytics.** Playtest results would have to be reported by hand.
+- **One save per browser.** The game saves itself and resumes, but there is one slot and no way to move a game between devices. A change to the shape of the state refuses older saves.
+- **The analytics endpoint is open.** Anyone can post events to `/api/event`. It checks the shape and size of each batch, but a determined person could add junk. Fine for playtests; add rate limiting or a token before a wide release.
 - **The north of the map is dense.** Western Passes, Indus, Yamuna, Aravalli, and Gangetic sit within 60 px of each other. The map script pushes their nodes apart, mirrors badges away from neighbors, and places labels to avoid every node, but in Act 3 a power there can carry four pins at once, and floating numbers and Company tokens overlap during playback. On a 390 px phone the map is about 0.77 of its frame size, so badges are small even though names are enlarged.
 - **Attention pins have not been tried on a real phone.** On touch, the first tap on a pin or a power that needs you shows its sentences, and a second tap or the Open button opens the dossier. Playwright's touch emulation passes; a thumb has not tried it.
 - **Weather motion has not been judged by eye.** Clouds cross the map in 40 to 70 seconds, fog drifts on a 22-second swing, and spring heat rises every 3 seconds. All were set from still screenshots. The parched-ground crack pattern is a repeating tile and may read as mechanical.
