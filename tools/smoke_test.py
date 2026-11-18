@@ -164,8 +164,18 @@ def attention_checks(pg):
     pins = pg.locator(".map .pin:not(.done)")
     check("attention chips count the pins on the map", chips.count() > 0 and total == pins.count())
     check("the full sentences sit in a details list", pg.locator(".attlist li").count() >= total)
-    pins.first.hover(force=True)
+    pg.locator(".map .pin:not(.done):not(.memring)").first.hover(force=True)
     check("hovering a pin shows its sentence", pg.locator("#tip").is_visible() and len(pg.locator("#tip p").first.inner_text()) > 10)
+    ring = pg.locator(".map .memring.pin")
+    if ring.count():
+        # a memory ring is a dashed circle around the node: point at its edge, not its middle
+        bb = ring.first.bounding_box()
+        cx, cy, r = bb["x"] + bb["width"] / 2, bb["y"] + bb["height"] / 2, bb["width"] / 2 - 3
+        for dx, dy in ((0, -1), (1, 0), (0, 1), (-1, 0)):
+            pg.mouse.move(cx + dx * r, cy + dy * r)
+            if pg.locator("#tip").is_visible() and "one " in pg.locator("#tip").inner_text():
+                break
+        check("hovering a memory ring shows its sentence", pg.locator("#tip").is_visible() and ("favor" in pg.locator("#tip").inner_text() or "slight" in pg.locator("#tip").inner_text()))
     k = chips.first.get_attribute("data-hl")
     chips.first.hover()
     lit = pg.locator(".map svg.hl .pin.lit")
@@ -334,6 +344,8 @@ with sync_playwright() as p:
 
     pg.locator(".pc").nth(0).click()
     check("power dossier opens", pg.locator(".portrait").count() == 1 and pg.locator(".dial").count() == 1)
+    check("the dossier shows what the power remembers", pg.locator(".sec .memtrack i").count() == 7)
+    check("each memory reads as a favor or a slight", pg.evaluate("Array.prototype.every.call(document.querySelectorAll('.memlist li'), function (l) { return l.classList.contains('pos') || l.classList.contains('neg'); })"))
     pg.locator("[data-do=asknew]").click()
     check("New game asks for confirmation mid-game", "abandon" in pg.locator(".dlg h2").inner_text().lower())
     pg.locator(".dlg .ghost").click()

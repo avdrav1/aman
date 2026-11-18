@@ -38,7 +38,7 @@ The scaled numbers are constants at the top of `engine.js` and are exported as `
 
 One turn is one season: Spring, Monsoon, Autumn, Winter. The game starts in Spring 2050.
 
-1. **Start of season:** research completes, income arrives, the monsoon is rolled (Monsoon seasons only), requests appear, demands appear (Act 2 on), the Company picks targets, powers start plans, a dispute may arise.
+1. **Start of season:** research completes, income arrives, the monsoon is rolled (Monsoon seasons only), requests appear, demands appear (Act 2 on), the Company picks targets, powers reply to what they remember (season 5 on), powers start plans, a dispute may arise.
 2. **Crisis,** if a power has gone rogue. Then **dispute,** if one arose.
 3. **Actions:** spend Influence and resources.
 4. **Council:** charter votes at the end of seasons 3, 6, and 9; motions at Act 2 seasons 3, 6, 9, and 12; articles at Act 3 seasons 3 and 6.
@@ -155,6 +155,31 @@ Only neighbors and river partners have a relation: 26 pairs, listed in `docs/pow
 
 Each power runs plans of its own from a fixed list of two, on a countdown of 3 or 4 seasons, with a 2-season pause between plans. From Act 2, a plan that has landed does not start again, except the six Company plans (seek a security contract, hire Company guards, appeal for flood aid, buy cyclone shelters, float bonds, lease a harbor). Each plan has an effect when it lands and a condition that makes the power drop it. Cross-power harm is data: a plan names the powers it harms and lists its effects on them. The full list is in `docs/powers.md`.
 
+## Memory (replies from season 5)
+
+Each power remembers your last 4 favors and slights toward it. A favor counts +1 and a slight -1. Memories fade after 8 seasons.
+
+- **Favors:** answering its request, aid, a pact, hearing its grievances, accession terms, backing its plan, backing it in a dispute, mediating its dispute, brokering talks with it.
+- **Slights:** ignoring its request, leaving its demand unmet, talking it out of its plan, siding against it in a dispute, staying out of its dispute, backing a plan that harms it, a project that costs it trust, inviting its rival (relation -2) while it stays outside.
+- A met demand is a member's due, not a favor, so it is not remembered.
+
+At the start of a season, a power whose memory nets +3 or -3 replies, and the memory is spent. Replies use no randomness. Rogue powers do not reply.
+
+| Net | Who | Reply |
+| --- | --- | --- |
+| +3 | member with strain | drops a grievance: strain -1 |
+| +3 | member without strain | none; it keeps the memory |
+| +3 | outside, with friends | vouches for you: trust +3 with each power it is friendly with or allied to |
+| +3 | outside, no friends | sends 3 of the resource of its first resource need, else Capital |
+| -3 | member, Act 2 on | nurses a grudge: strain +1 |
+| -3 | with friends | speaks against you: trust -3 with each friend |
+| -3 | outside, no friends, grip under 2 | invites the Company in: it is courted this season |
+| -3 | otherwise | cools on you: trust -3 |
+
+A power at +2 or -2 shows a dashed ring on the map (green or red) and a "favor" or "grudge" chip under Needs you. The dossier shows the scale, the reply at each end, and each memory.
+
+Balance (2,000 games per bot): greedy 53.4% win, 44.6% partial, 2.0% loss (54.0, 44.3, 1.8 before). The neglect bot loses to the Company in 23.6% (about 22% before). About 8 replies per greedy game.
+
 ## Charter votes
 
 At the end of seasons 3, 6, and 9. You propose one of two options. Each member votes yes if the option does not cost it trust. You hold one vote and in Act 1 ties go your way. If your proposal fails, the other option is adopted.
@@ -192,7 +217,7 @@ At the end of seasons 3, 6, and 9. You propose one of two options. Each member v
 
 ## Staged introduction
 
-Season 1: trust, needs, requests. Season 2: the Company. Season 3: relations and disputes. Season 4: plans.
+Season 1: trust, needs, requests. Season 2: the Company. Season 3: relations and disputes. Season 4: plans. Season 5: memory and replies.
 
 Act 2: demands, strain, and hearing grievances in its 1st season; motions and the new vote rules in its 2nd; hardening in its 3rd. Act 3: pledges in its 1st season; the Company goes all in in its 2nd; holdouts and terms in its 3rd; calling the vote in its 8th.
 

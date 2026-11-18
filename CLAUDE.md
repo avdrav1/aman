@@ -79,12 +79,12 @@ The setting touches a live political question. These decisions were deliberate; 
 
 ## Current state, honestly
 
-Working: three acts over about 33 seasons (Neighbors, Strain, Charter), sixteen powers (the player and fifteen rivals) defined as data in `POWERS`, needs and trust, the Company, relations between powers, powers' own plans, disputes, three charter votes, the adviser, the living map, season playback, the dossier panel, staged introduction of systems in each act, attention pins and weather on a Natural Earth map, decision scenes, and trust charts.
+Working: three acts over about 33 seasons (Neighbors, Strain, Charter), sixteen powers (the player and fifteen rivals) defined as data in `POWERS`, needs and trust, the Company, relations between powers, powers' own plans, powers' memory of your favors and slights, disputes, three charter votes, the adviser, the living map, season playback, the dossier panel, staged introduction of systems in each act, attention pins and weather on a Natural Earth map, decision scenes, and trust charts.
 
 Known weak points are in `docs/backlog.md`. The three that matter most:
 
 1. Balance is a knife edge at sixteen powers: Act 3 Influence of 8, 9, or 10 swings the win rate from about 40% to 63%.
-2. The other powers follow fixed plan lists. They do not react to what the player does.
+2. The other powers follow fixed plan lists. They react to the player only through memory: favors and slights, with a reply at three either way.
 3. Motion timing (token flights, grouped playback, weather, signing seals) was tuned from still screenshots and has never been judged by eye. The north of the map is still crowded.
 
 ## Deployment
@@ -98,4 +98,4 @@ The owner asked about hosting. The game is static files in `public/`, so any sta
 
 ## Likely next steps
 
-The owner chose a battle against Company forces only. The real-time base-builder was built and playtested, and the owner did not like it, so the battle now plays on the campaign map in three rounds (`docs/battle.md`). Playtest it next. Save and resume and playtest analytics are built. Other candidates, not started: give the Company a budget and goals, make powers react to the player. Ask before starting any of these.
+The owner chose a battle against Company forces only. The real-time base-builder was built and playtested, and the owner did not like it, so the battle now plays on the campaign map in three rounds (`docs/battle.md`). Playtest it next. Save and resume, playtest analytics, and powers' memory are built. Other candidates, not started: give the Company a budget and goals, reactive plans (powers choosing plans from the situation). Ask before starting any of these.

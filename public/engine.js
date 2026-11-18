@@ -506,11 +506,12 @@
   }
   function addIncome(y, inc) { Object.keys(inc || {}).forEach(function (r) { y[r] += inc[r]; }); }
   /* Systems arrive one season at a time so a new player is not handed everything at once. */
-  const UNLOCK = { company: 2, relations: 3, plans: 4 };
+  const UNLOCK = { company: 2, relations: 3, plans: 4, memory: 5 };
   const INTRO = {
     2: 'New this season: the Company. Each season it courts the powers that trust you least. Raise a courted power\'s trust by 10 within the season, or counter the Company there, or its grip tightens. Three steps and the power goes rogue.',
     3: 'New this season: ties between powers. Helping a power pleases its friends and irritates its rivals, and a power will not join while its rival is a member. Open Relations to broker talks.',
-    4: 'New this season: the powers act on their own. Each runs a plan on a countdown. Open a power to back its plan or talk it out of it.'
+    4: 'New this season: the powers act on their own. Each runs a plan on a countdown. Open a power to back its plan or talk it out of it.',
+    5: 'New this season: powers remember. Two favors and a power repays you. Two slights and it hits back. Open a power to see what it remembers.'
   };
   /* From act 2, intros are keyed by act and act season. */
   const ACT_INTRO = {
@@ -526,7 +527,7 @@
   function unlocked(S) {
     const as = actSeason(S), a = S.act;
     return {
-      company: S.turn >= UNLOCK.company, relations: S.turn >= UNLOCK.relations, plans: S.turn >= UNLOCK.plans,
+      company: S.turn >= UNLOCK.company, relations: S.turn >= UNLOCK.relations, plans: S.turn >= UNLOCK.plans, memory: S.turn >= UNLOCK.memory,
       demands: a >= 2, motions: a === 2 && as >= 2, harden: (a === 2 && as >= 3) || a === 3,
       pledges: a === 3, allIn: a === 3 && as >= 2, terms: a === 3 && as >= 3, callVote: a === 3 && as >= ACTS[3].callFrom
     };
@@ -612,10 +613,12 @@
   }
 
   /* Save and resume. A save is JSON of the whole state; SAVE_V changes whenever the state's shape does, and older saves are refused. */
-  const SAVE_V = 1;
+  const SAVE_V = 2;
   function save(S) { return JSON.stringify({ v: SAVE_V, S: S }); }
   function load(str) {
     let d; try { d = JSON.parse(str); } catch (e) { return null; }
+    // version 1 had no memory: give every power an empty one
+    if (d && d.v === 1 && d.S && d.S.factions) { Object.keys(d.S.factions).forEach(function (id) { d.S.factions[id].mem = d.S.factions[id].mem || []; }); d.v = 2; }
     if (!d || d.v !== SAVE_V || !d.S || typeof d.S.rs !== 'number' || !d.S.factions || ORDER.some(function (id) { return !d.S.factions[id]; })) return null;
     return attachRng(d.S);
   }
@@ -637,7 +640,7 @@
       const pips = {};
       d.needs.forEach(function (n) { pips[n.key] = 0; });
       S.factions[id] = { id: id, trust: d.trust, pips: pips, grip: 0, member: false, pact: false, request: null, touched: false, countered: false, trustAtStart: d.trust, plan: null, planIdx: 0, planWait: PLAN_WAIT[id],
-        demand: null, strain: 0, lastStrain: null, motion: null, motionIdx: 0, left: null, leftHow: null, grievance: null, pledged: false, terms: false, lastAsk: 0 };
+        demand: null, mem: [], strain: 0, lastStrain: null, motion: null, motionIdx: 0, left: null, leftHow: null, grievance: null, pledged: false, terms: false, lastAsk: 0 };
     });
     PAIRS.forEach(function (p) { const k = pk(p[0], p[1]); S.rel[k] = REL_START[k] || 0; });
     attachRng(S);
@@ -700,6 +703,57 @@
     f.strain = clamp(f.strain + d, 0, STRAIN_MAX);
     if (d > 0 && why) f.lastStrain = why;
   }
+  /* ---------- memory: each power keeps your last few favors (+1) and slights (-1) toward it ----------
+     A met demand is a duty, not a favor, so only a missed one is remembered. At a net of REPLY_AT either way it replies at the start of a season, and the memory is spent. Entries fade after MEM_AGE seasons. */
+  const MEM_MAX = 4, MEM_AGE = 8, REPLY_AT = 3, REPLY_GIFT = 3, REPLY_VOUCH = 3, REPLY_SNUB = 3;
+  function remember(S, id, d, text) {
+    const f = S.factions[id];
+    f.mem.push({ t: S.turn, d: d, text: text });
+    if (f.mem.length > MEM_MAX) f.mem.shift();
+  }
+  function memScore(S, id) { return S.factions[id].mem.reduce(function (a, m) { return a + m.d; }, 0); }
+  /* Its friends: powers it is friendly with or allied to, not rogue. */
+  function friendsOf(S, id) { return NEIGHBORS[id].filter(function (o) { return rel(S, id, o) >= 1 && S.factions[o].grip < 3; }); }
+  /* What a power will do when its memory comes due, or null. Reads state only, so the dossier can show it.
+     sc overrides the memory's score, to preview the reply at either end. */
+  function replyOf(S, id, sc) {
+    const f = S.factions[id];
+    if (sc === undefined) sc = memScore(S, id);
+    if (f.grip >= 3 || Math.abs(sc) < REPLY_AT) return null;
+    const fr = friendsOf(S, id);
+    if (sc > 0) {
+      // a member repays only by dropping a grievance; with none, it keeps the memory
+      if (f.member) return f.strain > 0 ? { k: 'mend', good: true, text: 'drops a grievance. Strain -1' } : null;
+      if (fr.length) return { k: 'vouch', good: true, fs: fr, text: 'vouches for you with ' + andList(fr.map(fname)) + '. Trust +' + REPLY_VOUCH + ' there' };
+      const nd = FACTIONS[id].needs.filter(function (n) { return n.res; })[0], r = nd ? nd.res : 'capital';
+      return { k: 'gift', good: true, res: r, text: 'sends you ' + REPLY_GIFT + ' ' + cap(r) };
+    }
+    if (f.member && S.act >= 2) return { k: 'grudge', good: false, text: 'nurses a grudge. Strain +1' };
+    if (fr.length) return { k: 'snub', good: false, fs: fr, text: 'speaks against you to ' + andList(fr.map(fname)) + '. Trust -' + REPLY_SNUB + ' there' };
+    if (S.turn >= UNLOCK.company && !f.member && f.grip < 2) return { k: 'court', good: false, text: 'invites the Company in. Its agents court it this season' };
+    return { k: 'cool', good: false, text: 'cools on you. Trust -' + REPLY_SNUB };
+  }
+  /* Season start: memories fade, and powers whose memory has come due reply. Uses no randomness. */
+  function replies(S) {
+    ORDER.forEach(function (id) {
+      const f = S.factions[id];
+      f.mem = f.mem.filter(function (m) { return m.t > S.turn - MEM_AGE; });
+      if (S.turn < UNLOCK.memory) return;
+      const r = replyOf(S, id);
+      if (!r) return;
+      f.mem = [];
+      if (r.k === 'mend') addStrain(S, id, -1);
+      else if (r.k === 'vouch') r.fs.forEach(function (o) { trust(S, o, REPLY_VOUCH); });
+      else if (r.k === 'gift') S.res[r.res] += REPLY_GIFT;
+      else if (r.k === 'grudge') addStrain(S, id, 1, 'it held a grudge over your slights');
+      else if (r.k === 'snub') r.fs.forEach(function (o) { trust(S, o, -REPLY_SNUB); });
+      else if (r.k === 'court') S.companyTargets.push(id);
+      else trust(S, id, -REPLY_SNUB);
+      S.briefing.push({ g: 'reply', f: id, fs: r.fs, res: r.res, co: r.k === 'court' ? 'court' : undefined, kind: r.good ? 'good' : 'bad', reply: r.k,
+        text: (r.good ? 'Remembering your favors, ' : 'Remembering your slights, ') + fname(id) + ' ' + r.text + '.' });
+    });
+  }
+
   /* Goodwill spills over: a power's friends warm to you when you help it, its rivals cool. */
   function spillList(S, id, amt) {
     if (S.turn < UNLOCK.relations) return [];
@@ -971,6 +1025,9 @@
       if (S.companyTargets.length > (S.coReach || CO_TARGETS[1])) { S.escalated = true; B.push({ fs: S.companyTargets.slice(), kind: 'warn', text: 'Your federation alarms the Company. It now courts ' + numw(S.companyTargets.length) + ' powers each season.' }); }
       S.coReach = Math.max(S.coReach || 0, S.companyTargets.length);
     }
+
+    // powers reply to what they remember of you
+    replies(S);
 
     // powers start plans of their own
     ORDER.forEach(function (id) {
@@ -1278,11 +1335,13 @@
       if (S.res.capital < DISPUTE.cost.capital || S.influence < DISPUTE.cost.inf) return { ok: false, msg: 'Mediation costs 3 Capital and 1 Influence.' };
       S.res.capital -= DISPUTE.cost.capital; S.influence -= DISPUTE.cost.inf; shiftRel(S, a, b, 1); trust(S, a, DISPUTE.talks); trust(S, b, DISPUTE.talks);
       S.factions[a].touched = S.factions[b].touched = true;
+      remember(S, a, 1, 'You hosted talks on ' + S.dispute.topic + '.'); remember(S, b, 1, 'You hosted talks on ' + S.dispute.topic + '.');
       msg = 'You hosted talks on ' + S.dispute.topic + '. ' + fname(a) + ' and ' + fname(b) + ' are now ' + REL_NAMES[rel(S, a, b)].toLowerCase() + '. Trust +' + DISPUTE.talks + ' with each.';
       log(S, msg, 'good');
     } else if (choice === 'a' || choice === 'b') {
       const w = choice === 'a' ? a : b, l = choice === 'a' ? b : a;
       trust(S, w, DISPUTE.back); trust(S, l, -DISPUTE.back);
+      remember(S, w, 1, 'You backed it over ' + S.dispute.topic + '.'); remember(S, l, -1, 'You backed ' + fname(w) + ' over ' + S.dispute.topic + '.');
       msg = 'You backed ' + fname(w) + ' over ' + S.dispute.topic + '. Trust +' + DISPUTE.back + ' there, -' + DISPUTE.back + ' with ' + fname(l) + '.';
       if (S.act >= 2 && S.factions[w].member && S.factions[l].member) {
         addStrain(S, l, 1, 'you sided against it over ' + S.dispute.topic);
@@ -1291,6 +1350,7 @@
       log(S, msg, 'warn');
     } else {
       trust(S, a, DISPUTE.out); trust(S, b, DISPUTE.out); shiftRel(S, a, b, -1);
+      remember(S, a, -1, 'You stayed out of its quarrel over ' + S.dispute.topic + '.'); remember(S, b, -1, 'You stayed out of its quarrel over ' + S.dispute.topic + '.');
       msg = 'You stayed out of it. Both resent your silence (trust ' + DISPUTE.out + '), and they are now ' + REL_NAMES[rel(S, a, b)].toLowerCase() + '.';
       log(S, msg, 'warn');
     }
@@ -1416,15 +1476,15 @@
       case 'envoy':
         trust(S, a.f, 5); msg = 'Your envoy is received in ' + FACTIONS[a.f].seat + '. Trust +5.'; break;
       case 'answer': {
-        const r = f.request.res; f.request = null; trust(S, a.f, 8); spill(S, a.f, 2);
+        const r = f.request.res; f.request = null; trust(S, a.f, 8); spill(S, a.f, 2); remember(S, a.f, 1, 'You answered its call for ' + r + '.');
         FACTIONS[a.f].needs.forEach(function (n) { if (n.res === r) pip(S, a.f, n.key, 1); });
         msg = 'You answered ' + fname(a.f) + '\'s call for ' + r + '. Trust +8.'; break;
       }
       case 'aid':
-        trust(S, a.f, 5); pip(S, a.f, a.need, 1); spill(S, a.f, 2);
+        trust(S, a.f, 5); pip(S, a.f, a.need, 1); spill(S, a.f, 2); remember(S, a.f, 1, 'You sent it aid.');
         msg = 'Aid convoy reaches ' + fname(a.f) + '. Trust +5.'; break;
       case 'pact': {
-        f.pact = true; trust(S, a.f, 6); spill(S, a.f, 4);
+        f.pact = true; trust(S, a.f, 6); spill(S, a.f, 4); remember(S, a.f, 1, 'You signed its pact.');
         runEffects(S, FACTIONS[a.f].pact.does);
         msg = FACTIONS[a.f].pact.name + ' signed with ' + fname(a.f) + '.' + (FACTIONS[a.f].pact.msg || '');
         break;
@@ -1434,6 +1494,7 @@
         msg = 'You exposed Company arms deals in ' + FACTIONS[a.f].seat + '. Its grip loosens.'; break;
       case 'invite':
         f.member = true; trust(S, a.f, 5); spill(S, a.f, JOIN_SPILL[S.act]);
+        NEIGHBORS[a.f].forEach(function (o) { if (rel(S, a.f, o) <= -2 && !S.factions[o].member) remember(S, o, -1, 'You let its rival, ' + fname(a.f) + ', into the federation.'); });
         msg = fname(a.f) + (f.left !== null ? ' returns to the federation.' : ' signs the charter and joins the federation.');
         f.grievance = null; f.left = null; break;
       case 'demand': {
@@ -1443,14 +1504,14 @@
         msg = 'You met ' + fname(a.f) + '\'s ' + (dm.kind === 'claim' ? 'claim' : 'budget share') + '. Trust +' + DEMAND_GAIN + '.'; break;
       }
       case 'hear':
-        addStrain(S, a.f, -1); trust(S, a.f, 3);
+        addStrain(S, a.f, -1); trust(S, a.f, 3); remember(S, a.f, 1, 'You heard its grievances.');
         msg = 'You heard ' + fname(a.f) + '\'s grievances in ' + FACTIONS[a.f].seat + '. Strain -1.'; break;
       case 'pledge':
         f.pledged = true; trust(S, a.f, 3);
         msg = fname(a.f) + ' pledges to ratify the charter.'; break;
       case 'terms': {
         const w = weakestNeed(a.f, f);
-        trust(S, a.f, 8); pip(S, a.f, w.key, 1); f.grievance = null; f.terms = true; S.stats.termsOffered += 1;
+        trust(S, a.f, 8); pip(S, a.f, w.key, 1); f.grievance = null; f.terms = true; S.stats.termsOffered += 1; remember(S, a.f, 1, 'You offered it fair terms.');
         msg = fname(a.f) + ' accepts accession terms. Its grievance is settled.'; break;
       }
       case 'callvote':
@@ -1460,24 +1521,26 @@
         S.projects[a.p] = true;
         const pj = PROJECTS[a.p];
         runEffects(S, pj.does); msg = pj.msg;
-        if (pj.hurts && !S.tech[pj.spared]) { runEffects(S, pj.hurts); msg += pj.hurtMsg; }
+        if (pj.hurts && !S.tech[pj.spared]) { runEffects(S, pj.hurts); msg += pj.hurtMsg; pj.hurts.forEach(function (e) { if (e[0] === 'trust' && e[2] < 0) remember(S, e[1], -1, 'Your ' + pj.name + ' hurt it.'); }); }
         break;
       }
       case 'broker':
         shiftRel(S, a.a, a.b, 1); trust(S, a.a, 2); trust(S, a.b, 2);
+        remember(S, a.a, 1, 'You brokered talks with ' + fname(a.b) + '.'); remember(S, a.b, 1, 'You brokered talks with ' + fname(a.a) + '.');
         S.factions[a.a].touched = S.factions[a.b].touched = true;
         msg = 'Talks succeed. ' + fname(a.a) + ' and ' + fname(a.b) + ' are now ' + REL_NAMES[rel(S, a.a, a.b)].toLowerCase() + '.'; break;
       case 'back': {
         const p = planOf(S, a.f);
         f.plan.backed = true; f.plan.eta -= 1; trust(S, a.f, 6);
-        p.harmed.forEach(function (h) { trust(S, h, -4); });
+        p.harmed.forEach(function (h) { trust(S, h, -4); remember(S, h, -1, 'You backed ' + fname(a.f) + '\'s plan against it.'); });
+        remember(S, a.f, 1, 'You backed its plan.');
         msg = 'You put your name behind ' + fname(a.f) + '\'s plan. Trust +6.' + (p.harmed.length ? ' ' + p.harmed.map(fname).join(' and ') + ' notice whose side you took.' : '');
         if (f.plan.eta <= 0) { runEffects(S, p.does); S.plansDone[p.key] = true; f.plan = null; f.planWait = 2; msg += ' The plan is complete: ' + p.then; if (f.grip >= 3) msg += ' ' + fname(a.f) + ' goes rogue.'; }
         break;
       }
       case 'dissuade': {
         const p = planOf(S, a.f);
-        f.plan = null; f.planWait = 2; trust(S, a.f, -3);
+        f.plan = null; f.planWait = 2; trust(S, a.f, -3); remember(S, a.f, -1, 'You talked it out of its plan.');
         msg = fname(a.f) + ' shelves its plan to ' + p.name.charAt(0).toLowerCase() + p.name.slice(1) + ', grudgingly. Trust -3.'; break;
       }
       case 'research':
@@ -1591,7 +1654,7 @@
     ORDER.forEach(function (id) {
       const f = S.factions[id];
       if (f.request) {
-        const d = f.member ? -10 : -6; trust(S, id, d);
+        const d = f.member ? -10 : -6; trust(S, id, d); remember(S, id, -1, 'You ignored its call for ' + f.request.res + '.');
         R.push({ g: 'unanswered', f: id, d: d, kind: 'bad', text: fname(id) + '\'s request went unanswered. Trust ' + d + '.' });
         f.request = null;
       }
@@ -1602,7 +1665,7 @@
       if (!dm) return;
       f.demand = null;
       if (!f.member) return;
-      trust(S, id, -DEMAND_TRUST);
+      trust(S, id, -DEMAND_TRUST); remember(S, id, -1, 'You left its ' + (dm.kind === 'claim' ? 'claim' : 'budget share') + ' unmet.');
       // a pledged member takes it out on its trust, not as a grievance: the pledge holds while trust stays at PLEDGE_KEEP
       const pledgedNow = S.act === 3 && f.pledged;
       if (!pledgedNow) addStrain(S, id, 1, dm.kind === 'claim' ? 'its claim for ' + dm.res + ' went unmet' : 'its budget share went unpaid');
@@ -1854,6 +1917,12 @@
         const miss = S.act === 3 && f.pledged ? ' it costs ' + DEMAND_TRUST + ' trust. Below ' + PLEDGE_KEEP + ' its pledge breaks.' : ' it adds a strain mark.';
         t.push({ k: 'demand', tone: 'ask', f: id, res: f.demand.kind === 'claim' ? f.demand.res : 'capital', text: f.demand.kind === 'claim' ? nm + ' claims ' + f.demand.amount + ' ' + cap(f.demand.res) + '. Unmet,' + miss : nm + ' wants its budget share: ' + f.demand.amount + ' Capital. Unpaid,' + miss });
       }
+      // memory one step from coming due
+      if (S.turn >= UNLOCK.memory - 1 && f.grip < 3) {
+        const sc = memScore(S, id);
+        if (sc === REPLY_AT - 1 && !(f.member && !f.strain)) t.push({ k: 'warm', tone: 'good', f: id, text: nm + ' is one favor from repaying you.' });
+        if (sc === 1 - REPLY_AT) t.push({ k: 'grudge', tone: 'bad', f: id, text: nm + ' is one slight from hitting back.' });
+      }
       if (f.member && f.motion && f.motion.at === S.turn) t.push({ k: 'motion', tone: 'plan', f: id, text: nm + '\'s motion goes to council at the end of this season.' });
     });
     S.companyTargets.forEach(function (id) {
@@ -1921,6 +1990,7 @@
 
   root.Aman = {
     digest: digest,
+    memScore: memScore, replyOf: replyOf, REPLY_AT: REPLY_AT, MEM_AGE: MEM_AGE,
     create: create, save: save, load: load, SAVE_V: SAVE_V, available: available, act: act, endSeason: endSeason, chooseCharter: chooseCharter,
     resolveCrisis: resolveCrisis, resolveDispute: resolveDispute, finishBattle: finishBattle, autoBattle: autoBattle, battleOptions: battleOptions, battleMove: battleMove, roundChance: roundChance, BT_ALLY: BT_ALLY, BT_ALLY_TRUST: BT_ALLY_TRUST, BT_REINF: BT_REINF, advise: advise, gates: gates, unlocked: unlocked, rel: rel, gaps: gaps, planOf: planOf, REL_NAMES: REL_NAMES, PAIRS: PAIRS, yields: yields, fightOdds: fightOdds, canJoin: canJoin, needTotal: needTotal,
     members: members, clients: clients, season: season, year: year,

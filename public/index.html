@@ -327,6 +327,22 @@ button:focus-visible, summary:focus-visible, [tabindex]:focus-visible, input:foc
 .star text { font-family: var(--font-body); font-size: 12.5px; font-weight: 600; fill: var(--ink); paint-order: stroke; stroke: var(--surface); stroke-width: 3px; }
 .star text.r { font-size: 11px; }
 .planbox { display: flex; gap: 10px; align-items: center; }
+.memring circle { fill: none; }
+.memring .ln { stroke-width: 1.8; stroke-dasharray: 2.5 3; pointer-events: none; }
+.memring .hitr { stroke: transparent; stroke-width: 8; pointer-events: stroke; }
+.memring.t-good .ln { stroke: var(--good); } .memring.t-bad .ln { stroke: var(--bad); }
+.memtrack { display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px; max-width: 320px; }
+.memtrack i { height: 10px; border-radius: 3px; border: 1.5px solid var(--line); background: var(--surface); }
+.memtrack i.mid { border-color: var(--muted); background: var(--sunk); }
+.memtrack i.pos.on { background: var(--good); border-color: var(--good); }
+.memtrack i.neg.on { background: var(--bad); border-color: var(--bad); }
+.memends { display: flex; justify-content: space-between; gap: 12px; max-width: 320px; font-size: 11.5px; margin-top: 3px; }
+.memends .neg { color: var(--bad); } .memends .pos { color: var(--good); text-align: right; }
+.memlist { list-style: none; margin: 8px 0 0; padding: 0; display: flex; flex-direction: column; gap: 3px; }
+.memlist li { display: flex; gap: 8px; align-items: baseline; font-size: 13px; }
+.memlist b { width: 16px; height: 16px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 12px; flex: none; color: var(--surface); }
+.memlist .pos b { background: var(--good); } .memlist .neg b { background: var(--bad); }
+.memlist small { margin-left: auto; color: var(--muted); }
 .planbox .cd { width: 34px; height: 34px; border-radius: 8px; background: var(--accent); color: var(--accent-ink); font-family: var(--font-display); font-weight: 700; font-size: 18px; display: flex; align-items: center; justify-content: center; flex: none; }
 .planbox div { display: flex; flex-direction: column; gap: 2px; }
 .act .nbadge { margin-right: 6px; }
@@ -899,7 +915,7 @@ ul.fx { margin: 0; padding: 0; list-style: none; font-size: 12.5px; display: fle
     if (!seen || seen.S !== S) { seen = look(); return; }
     var was = seen; seen = look();
     if (S.turn > was.turn) {
-      track('season', { s: was.turn, members: A.members(S).length, inf: S.influence, res: S.res, acts: tally, ms: Date.now() - seasonT0 });
+      track('season', { s: was.turn, members: A.members(S).length, inf: S.influence, res: S.res, acts: tally, ms: Date.now() - seasonT0, replies: S.briefing.filter(function (b) { return b.g === 'reply'; }).map(function (b) { return b.f + ':' + b.reply; }) });
       tally = {}; seasonT0 = Date.now();
     }
     if (S.act !== was.act) track('act', { from: was.act });
@@ -1353,6 +1369,9 @@ ul.fx { margin: 0; padding: 0; list-style: none; font-size: 12.5px; display: fle
         '<circle class="base" cx="' + x + '" cy="' + y + '" r="' + NR + '"/>' +
         '<circle class="ring" cx="' + x + '" cy="' + y + '" r="' + NR + '" stroke-dasharray="' + (C * f.trust / 100).toFixed(1) + ' ' + C.toFixed(1) + '" transform="rotate(-90 ' + x + ' ' + y + ')"/>' +
         '<text class="t" x="' + x + '" y="' + y + '">' + f.trust + '</text>';
+      // a dashed ring: one favor from repaying you (green), or one slight from hitting back (red)
+      var mm = itemOf(id, 'warm') || itemOf(id, 'grudge');
+      if (mm && !play) h += '<g class="memring' + pin(mm) + '" tabindex="0" role="img" aria-label="' + esc(mm.text) + '"><circle class="hitr" cx="' + x + '" cy="' + y + '" r="' + (NR + 9) + '"/><circle class="ln" cx="' + x + '" cy="' + y + '" r="' + (NR + 9) + '"/></g>';
       if (!f.member && f.leftHow === 'walkout') h += '<circle class="left" cx="' + x + '" cy="' + y + '" r="' + (NR + 3.5) + '"><title>Walked out in season ' + f.left + '</title></circle>';
       // gate dots (to join, or in Act 3 to pledge), then strain marks, under the node
       var dots = !f.member || (S.act === 3 && !f.pledged), sy = y + AT.gates;
@@ -1436,6 +1455,7 @@ ul.fx { margin: 0; padding: 0; list-style: none; font-size: 12.5px; display: fle
     if (u.motions) lg += '<span><svg viewBox="0 0 16 12"><rect x="2.5" y="0.8" width="10.5" height="10.5" rx="2" fill="var(--surface)" stroke="var(--accent)" stroke-width="1.5"/><path d="M2.5 3.4 H13" stroke="var(--accent)"/></svg>Seasons until its motion goes to council</span>';
     if (u.pledges) lg += '<span><svg viewBox="0 0 16 16" style="height:13px;color:var(--good)"><use href="#i-seal"/></svg>Pledged to ratify</span>';
     if (ATT.length && !play) lg += '<span><svg viewBox="0 0 16 12"><circle cx="8" cy="6" r="5" fill="none" stroke="var(--good)" stroke-width="1.6"/></svg>Ring: needs you. Point at a pin to read it</span>';
+    if (!play && ATT.some(function (x) { return x.k === 'warm' || x.k === 'grudge'; })) lg += '<span><svg viewBox="0 0 16 12"><circle cx="8" cy="6" r="5" fill="none" stroke="var(--good)" stroke-width="1.6" stroke-dasharray="2 2"/></svg>Dashed: one favor from repaying you</span><span><svg viewBox="0 0 16 12"><circle cx="8" cy="6" r="5" fill="none" stroke="var(--bad)" stroke-width="1.6" stroke-dasharray="2 2"/></svg>one slight from hitting back</span>';
     if (prefs.adviser && SUG.length && !play) lg += '<span><span class="nbadge" style="width:14px;height:14px;font-size:9px">1</span>Council suggestion: select to act</span>';
     var capt = '';
     if (play) { var ev = play.q[play.i]; capt = '<div class="caption ' + ev.kind + '" role="status"><span class="step num">' + ev.when + ' &middot; ' + (play.i + 1) + ' of ' + play.q.length + '</span><span class="txt">' + esc(ev.text) + '</span><button class="ghost" data-do="skip">Skip</button></div>'; }
@@ -1537,7 +1557,7 @@ ul.fx { margin: 0; padding: 0; list-style: none; font-size: 12.5px; display: fle
   var KINDS = [
     ['ready', 'ready', 'ready to join or pledge'], ['vote', 'vote', 'vote to call'], ['strain', 'strain', 'near walking out'],
     ['demand', 'demand', 'member demands'], ['court', 'Company', 'Company agents courting'], ['ask', 'request', 'requests'],
-    ['motion', 'motion', 'motions due'], ['plan', 'plan', 'plans landing']];
+    ['motion', 'motion', 'motions due'], ['plan', 'plan', 'plans landing'], ['grudge', 'grudge', 'one slight from hitting back'], ['warm', 'favor', 'one favor from repaying you']];
   /* The same glyph the map draws for each kind, at chip size. */
   function kindIcon(k) {
     var g = {
@@ -1548,6 +1568,8 @@ ul.fx { margin: 0; padding: 0; list-style: none; font-size: 12.5px; display: fle
       court: '<circle cx="10" cy="10" r="7.5" fill="var(--surface)" stroke="var(--company)" stroke-width="1.6"/><use href="#i-co" x="5" y="5" width="10" height="10" style="color:var(--company)"/>',
       ask: '<circle cx="10" cy="10" r="7.5" fill="var(--surface)" stroke="var(--river)" stroke-width="1.6"/><circle cx="10" cy="10" r="3" fill="var(--river)"/>',
       motion: '<rect x="3" y="3" width="14" height="14" rx="2" fill="var(--surface)" stroke="var(--accent)" stroke-width="1.6"/><path d="M3 6 h14" stroke="var(--accent)" stroke-width="1.3"/><text x="10" y="15" font-size="8" font-weight="700" text-anchor="middle" fill="var(--ink)">0</text>',
+      warm: '<circle cx="10" cy="10" r="7.5" fill="var(--surface)" stroke="var(--good)" stroke-width="1.6"/><path d="M6.5 10 h7 M10 6.5 v7" stroke="var(--good)" stroke-width="1.8" stroke-linecap="round"/>',
+      grudge: '<circle cx="10" cy="10" r="7.5" fill="var(--surface)" stroke="var(--bad)" stroke-width="1.6"/><path d="M6.5 10 h7" stroke="var(--bad)" stroke-width="1.8" stroke-linecap="round"/>',
       plan: '<rect x="3" y="3" width="14" height="14" rx="3" fill="var(--accent)"/><text x="10" y="13.5" font-size="9" font-weight="700" text-anchor="middle" fill="var(--accent-ink)">1</text>'
     }[k];
     return '<svg viewBox="0 0 20 20" aria-hidden="true">' + g + '</svg>';
@@ -1925,6 +1947,7 @@ ul.fx { margin: 0; padding: 0; list-style: none; font-size: 12.5px; display: fle
     h += '<div class="sec"><h3>Its needs: ' + nt + ' points (' + (pg ? 'a pledge wants ' + A.RATIFY_NEEDS : 'it wants ' + A.JOIN_NEEDS) + ')</h3><div class="gauges">' + d.needs.map(function (n) { return gauge(n, f.pips[n.key]); }).join('') +
       (u.demands && (f.member || f.strain > 0 || f.leftHow === 'walkout') ? strainGauge(f) : '') + '</div></div>';
     if (u.relations) h += '<div class="sec"><h3>Its ties</h3>' + tiesStar(id) + '</div>';
+    if (u.memory) h += memorySec(id);
     var p = A.planOf(S, id);
     if (f.motion && f.member) { var mi = A.motionInfo(f.motion.key), mw = f.motion.at - S.turn; h += '<div class="planbox"><span class="cd num" style="background:var(--surface);color:var(--ink);border:2px solid var(--accent)" title="Seasons until the council votes">' + mw + '</span><div><b>Its motion: ' + esc(mi.name) + '</b><span>' + esc(mi.text) + ' The council votes ' + (mw ? 'in ' + seasons(mw) : 'at the end of this season') + '.</span></div></div>'; }
     if (p) h += '<div class="planbox"><span class="cd num" title="Seasons until the plan lands">' + f.plan.eta + '</span><div><b>Its own plan: ' + esc(p.name) + '</b><span>Lands in ' + seasons(f.plan.eta) + '. ' + esc(p.then) + '</span>' + (p.endIf ? '<span>It drops the plan if ' + esc(p.endIf) + '.</span>' : '') + '</div></div>';
@@ -1938,6 +1961,17 @@ ul.fx { margin: 0; padding: 0; list-style: none; font-size: 12.5px; display: fle
     h += '<div class="acts">' + mine.map(function (a) { return actBtn(a, { key: a.type === 'invite' || a.type === 'answer' || a.type === 'demand' || a.type === 'pledge', n: picks[a.id] }); }).join('') + '</div>';
     if (!prefs.details) h += '<div class="detail" id="detail">' + detailHtml() + '</div>';
     return h + '</div></section>';
+  }
+  /* What a power remembers of you: a scale from three slights to three favors, its reply at each end, and the memories themselves. */
+  function memorySec(id) {
+    var f = S.factions[id], sc = A.memScore(S, id), R = A.REPLY_AT, up = A.replyOf(S, id, R), dn = A.replyOf(S, id, -R), cells = '';
+    for (var i = -R; i <= R; i++) cells += '<i class="' + (i === 0 ? 'mid' : (i < 0 ? 'neg' : 'pos') + ((i < 0 && sc <= i) || (i > 0 && sc >= i) ? ' on' : '')) + '"></i>';
+    var h = '<div class="sec"><h3>What it remembers' + (sc ? ': <span class="num">' + (sc > 0 ? '+' : '') + sc + '</span>' : '') + '</h3>' +
+      '<div class="memtrack" role="img" aria-label="' + esc('Net ' + sc + ' of ' + R + ' either way') + '">' + cells + '</div>' +
+      '<div class="memends"><span class="neg">' + (dn ? esc(R + ' slights: it ' + dn.text) : '') + '</span><span class="pos">' + esc(up ? R + ' favors: it ' + up.text : 'A member repays only by dropping a grievance') + '</span></div>';
+    h += f.mem.length ? '<ul class="memlist">' + f.mem.slice().reverse().map(function (m) { return '<li class="' + (m.d > 0 ? 'pos' : 'neg') + '"><b>' + (m.d > 0 ? '+' : '&minus;') + '</b><span>' + esc(m.text) + '</span><small class="num">S' + m.t + '</small></li>'; }).join('') + '</ul>'
+      : '<p class="note">Nothing yet. Aid, answered calls, pacts, and backing it in a dispute count as favors. Ignored calls, unmet demands, and siding against it count as slights.</p>';
+    return h + '<p class="note">Memories fade after ' + A.MEM_AGE + ' seasons. A reply spends them.</p></div>';
   }
   function detailHtml() {
     if (!hover) return 'Point at an action or a need, or focus it, to see more.';
