@@ -178,7 +178,7 @@ At the start of a season, a power whose memory nets +3 or -3 replies, and the me
 
 A power at +2 or -2 shows a dashed ring on the map (green or red) and a "favor" or "grudge" chip under Needs you. The dossier shows the scale, the reply at each end, and each memory.
 
-Balance (2,000 games per bot): greedy 53.4% win, 44.6% partial, 2.0% loss (54.0, 44.3, 1.8 before). The neglect bot loses to the Company in 23.6% (about 22% before). About 8 replies per greedy game.
+Balance (2,000 games per bot): with memory but before the adviser aimed for replies, greedy 53.4% win, 44.6% partial, 2.0% loss (54.0, 44.3, 1.8 before memory). With the adviser aiming for replies, see The adviser below. The neglect bot loses to the Company in 23.6% (about 22% before). About 8 replies per greedy game.
 
 ## Charter votes
 
@@ -224,3 +224,7 @@ Act 2: demands, strain, and hearing grievances in its 1st season; motions and th
 ## The adviser
 
 `Aman.advise(S)` scores every available action. With fifteen rivals it focuses: `Aman.prospects(S)` ranks the powers outside by a rough cost to join (trust gap / 5, plus 1.5 per missing need point, plus 4 if its rival is inside, plus Company grip and strain), and the adviser favors the first 4. Envoys to a prospect score 20, aid to a prospect 24 (14 otherwise). Countering a Company client scores 60 only for a prospect, a member, or when the Company is within 2 clients of winning (16 otherwise). Talking a power out of a plan scores 27 only when the plan buys Company arms or touches a member or a prospect (8 otherwise).
+
+It also aims for replies (season 4 on). A favor (answer, aid, pact, hear, terms, back a plan, broker talks) gets +10 when the power is one slight from hitting back, since the favor defuses it. It gets +12 when the power is one favor from repaying, but only when the repayment counts: a vouch that reaches a member or one of the 4 prospects, or a member dropping a grievance. Talking a power out of its plan loses 10 when that power is one slight from hitting back. The reason shows with the suggestion.
+
+Measured (2,000 games): defusing alone takes greedy from 53.4% to 58.5% win; chasing every repayment lowers it (49.5% at +6, 47.4% at +12), because favors go to powers whose repayment does not matter. With both, as built: 57.6% win, 40.4% partial, 2.0% loss. Grudge replies per greedy game fall from 2.9 to 1.8.
