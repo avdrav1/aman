@@ -57,7 +57,7 @@ Opening `public/index.html` straight from disk also works.
 
 ## Working conventions
 
-- **Balance changes need the sim.** State the before and after win rates in the commit message. Current baseline, with the bot taking the adviser's first suggestion every time: about 54% win, 44% partial, 2% loss over 2,000 games, averaging 33 seasons. A bot that neglects its members should let the Company win sometimes (about 22%). A random bot should almost never win.
+- **Balance changes need the sim.** State the before and after win rates in the commit message. Current baseline, with the bot taking the adviser's first suggestion every time: about 58% win, 40% partial, 2% loss over 2,000 games, averaging 33 seasons (54% before the adviser aimed for memory replies). A bot that neglects its members should let the Company win sometimes (about 22%). A random bot should almost never win.
 - **UI changes need a look.** Run the smoke test, then open the page. The test catches errors, not ugliness.
 - **Every mechanic must be visible.** The prototype only became playable once each need showed what raises it. A rule the player cannot see on screen is a bug.
 - **Prefer pictures to sentences.** The last several rounds of feedback were all "too much to read" and "more visual." New information should go on the map or into a gauge before it goes into a paragraph.

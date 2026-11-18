@@ -901,10 +901,36 @@
           else s = 5;
           break;
       }
+      // memory: a favor that brings a power's reply due, or one that defuses a grudge about to land
+      const mem = FAVOR_TYPES[a.type] ? memoryNudge(S, a.type === 'broker' ? [a.a, a.b] : [a.f]) : null;
+      if (mem) { s += mem.bonus; why = why ? why + ' ' + mem.why : mem.why; }
+      if (a.type === 'dissuade' && s > 0 && memScore(S, a.f) === 1 - REPLY_AT) { s -= ADV_MEM_DEFUSE; why += ' It is one slight from hitting back.'; }
       if (s > 0) out.push({ id: a.id, score: s, why: why, label: label, cost: a.cost });
     });
     out.sort(function (x, y) { return y.score - x.score; });
     return out;
+  }
+  /* Actions the memory counts as favors to the power they name (both powers, for brokered talks). */
+  const FAVOR_TYPES = { answer: true, aid: true, pact: true, hear: true, terms: true, back: true, broker: true };
+  const ADV_MEM_REPAY = 12, ADV_MEM_DEFUSE = 10;
+  /* The adviser's bonus for a favor to these powers, with its reason, or null. */
+  function memoryNudge(S, ids) {
+    if (S.turn < UNLOCK.memory - 1) return null;
+    let best = null;
+    ids.forEach(function (id) {
+      const sc = memScore(S, id);
+      let n = null;
+      // repayment is worth chasing only when it lands where it counts: a vouch reaching a member or a close prospect, or a member's grievance
+      if (sc === REPLY_AT - 1) {
+        const r = replyOf(S, id, REPLY_AT), close = {};
+        prospects(S).slice(0, FOCUS).forEach(function (p) { close[p.id] = true; });
+        const counts = r && (r.k === 'mend' || (r.k === 'vouch' && r.fs.some(function (o) { return S.factions[o].member || close[o]; })));
+        if (counts) n = { bonus: ADV_MEM_REPAY, why: 'One more favor and ' + fname(id) + ' ' + r.text + '.' };
+      }
+      else if (sc === 1 - REPLY_AT) { const r = replyOf(S, id, -REPLY_AT); if (r) n = { bonus: ADV_MEM_DEFUSE, why: fname(id) + ' is one slight from hitting back: it ' + r.text + '. A favor defuses it.' }; }
+      if (n && (!best || n.bonus > best.bonus)) best = n;
+    });
+    return best;
   }
 
   /* A pact that costs trust with a power already in the federation. */
