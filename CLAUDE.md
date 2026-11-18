@@ -19,6 +19,8 @@ No build step, no dependencies for the game itself.
 python3 -m http.server 8000 -d public   # then open http://localhost:8000
 node tools/sim.js                       # balance check: 2,000 games per bot, about 20 seconds (worker threads)
 python3 tools/smoke_test.py             # browser smoke test (needs: pip install playwright && playwright install chromium)
+node tools/save_test.js                 # save and resume: games saved and reloaded after every step must end the same
+node tools/playtests.js [--days N]      # summary of playtest analytics from D1 (needs: npx wrangler login)
 ```
 
 Opening `public/index.html` straight from disk also works.
@@ -31,6 +33,9 @@ Opening `public/index.html` straight from disk also works.
 | `public/index.html` | All UI: CSS, the SVG map, panels, dialogs, animation. Talks to the engine only through `window.Aman`. |
 | `tools/sim.js` | Plays thousands of games with two bots and prints outcome counts. |
 | `tools/smoke_test.py` | Playwright script: plays full games by clicking, fails on any console error. |
+| `tools/save_test.js` | Plays games straight through and with a save and reload after every step, and fails if they end differently. |
+| `tools/playtests.js` | Reads the playtest events from D1 and prints who played, how far they got, where they stopped, battles, and actions used. |
+| `worker/index.js` | The site's Worker. Static files are served first; it only handles `POST /api/event`, which stores anonymous playtest events in D1. Schema in `worker/schema.sql`. |
 | `tools/build_map.py` | Stdlib Python. Builds the map (land, rivers, every placed point) from Natural Earth land and river layers only, and writes it into `index.html` between the `GENERATED MAP` markers. Run `python3 tools/build_map.py --write`; move map items by editing its lon/lat tables, not the pixels. |
 | `docs/design.md` | The one-page design doc and the core-loop doc. |
 | `docs/rules.md` | Every rule and number as currently implemented. |
@@ -47,7 +52,8 @@ Opening `public/index.html` straight from disk also works.
 4. **The engine is deterministic given a seed.** All randomness goes through `S.rng`. Do not call `Math.random` in the engine.
 5. **The UI re-renders everything on each state change** by rebuilding `#app.innerHTML`. Transient animation (tokens, floating numbers, bursts) is added to the `#fx` SVG layer after render and removes itself. Anything that must survive a re-render has to be derived from state.
 6. **Battles live in the engine too.** `battleOptions` and `battleMove` hold every chance and effect; `index.html` only draws the battle on the map and the panel beside it.
-7. **Every event carries a location.** Entries in `S.lastResolution` and `S.briefing` have `f` (a power id), `fs`, or `f2`, so the season playback can spotlight them on the map. Keep this when adding events.
+7. **Saves are the whole state as JSON.** `Aman.save(S)` and `Aman.load(str)`; the RNG's state lives on `S.rs`. Keep `S` plain data (no functions, Maps, or shared object references). If you change the shape of `S`, bump `SAVE_V` in `engine.js`, which refuses older saves, and run `node tools/save_test.js`.
+8. **Every event carries a location.** Entries in `S.lastResolution` and `S.briefing` have `f` (a power id), `fs`, or `f2`, so the season playback can spotlight them on the map. Keep this when adding events.
 
 ## Working conventions
 
@@ -83,8 +89,13 @@ Known weak points are in `docs/backlog.md`. The three that matter most:
 
 ## Deployment
 
-The owner asked about hosting. The game is static files in `public/`, so any static host works. Only `public/` is served; docs, tools, and this file stay out of the deployed site. Set the host's build output directory to `public` with no build command. The recommendation given was Cloudflare Pages connected to a GitHub repository, so each push deploys. Note that a Cloudflare Pages project created by drag-and-drop Direct Upload cannot be switched to Git integration later, so create it from the repository from the start. It is deployed as a Cloudflare Worker at https://aman.av-667.workers.dev/ connected to GitHub `avdrav1/aman`: every push to `main` deploys. `wrangler.jsonc` serves only `public/`, and the build runs `npm run build`, which is a no-op.
+The owner asked about hosting. The game is static files in `public/`, so any static host works. Only `public/` is served; docs, tools, and this file stay out of the deployed site. Set the host's build output directory to `public` with no build command. The recommendation given was Cloudflare Pages connected to a GitHub repository, so each push deploys. Note that a Cloudflare Pages project created by drag-and-drop Direct Upload cannot be switched to Git integration later, so create it from the repository from the start. It is deployed as a Cloudflare Worker at https://aman.av-667.workers.dev/ connected to GitHub `avdrav1/aman`: every push to `main` deploys. `wrangler.jsonc` serves only `public/`, and the build runs `npm run build`, which is a no-op. `worker/index.js` runs only for paths that are not a static file, and handles `POST /api/event`.
+
+## Save and analytics
+
+- **Save:** the game saves itself to `localStorage` (`aman-save`) on every render and resumes on load. A finished game clears it.
+- **Analytics:** anonymous events (start, season, act, crisis, dispute, council, vote, battle, choice, over, leave, abandon, optout) go to `POST /api/event` and into the D1 database `aman-events`. Each carries a random player id and game id kept in the browser. No IP, user agent, or name is stored. Sending is off on localhost and from disk, under Global Privacy Control, and when the player turns off "Share anonymous play data" in How to win. Read them with `node tools/playtests.js`. To test locally, run `npx wrangler dev` and open `http://aman.localhost:8787/` (plain localhost does not send).
 
 ## Likely next steps
 
-The owner chose a battle against Company forces only. The real-time base-builder was built and playtested, and the owner did not like it, so the battle now plays on the campaign map in three rounds (`docs/battle.md`). Playtest it next. Other candidates, not started: give the Company a budget and goals, make powers react to the player, save and resume, analytics for playtests. Ask before starting any of these.
+The owner chose a battle against Company forces only. The real-time base-builder was built and playtested, and the owner did not like it, so the battle now plays on the campaign map in three rounds (`docs/battle.md`). Playtest it next. Save and resume and playtest analytics are built. Other candidates, not started: give the Company a budget and goals, make powers react to the player. Ask before starting any of these.

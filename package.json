@@ -7,6 +7,8 @@
     "start": "python3 -m http.server 8000 -d public",
     "build": "echo No build step. The game is static files in public/.",
     "sim": "node tools/sim.js",
-    "test": "python3 tools/smoke_test.py"
+    "test": "python3 tools/smoke_test.py",
+    "playtests": "node tools/playtests.js",
+    "save-test": "node tools/save_test.js"
   }
 }

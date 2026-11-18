@@ -323,6 +323,15 @@ with sync_playwright() as p:
     pg.locator("[data-do=view][data-v=home]").click()
     attention_checks(pg)
 
+    label = pg.locator(".top .track").get_attribute("aria-label")
+    log_len = pg.evaluate("JSON.parse(localStorage.getItem('aman-save')).S.log.length")
+    pg.reload()
+    pg.wait_for_timeout(600)
+    check("a reload resumes the same season", pg.locator(".top .track").get_attribute("aria-label") == label and pg.locator(".dlg").count() == 0)
+    check("the resumed game keeps its log", pg.evaluate("JSON.parse(localStorage.getItem('aman-save')).S.log.length") == log_len)
+    check("the resumed game says welcome back", "Welcome back" in pg.locator("body").inner_text())
+    check("no analytics are sent from localhost", pg.evaluate("performance.getEntriesByType('resource').every(function (r) { return r.name.indexOf('/api/event') < 0; })"))
+
     pg.locator(".pc").nth(0).click()
     check("power dossier opens", pg.locator(".portrait").count() == 1 and pg.locator(".dial").count() == 1)
     pg.locator("[data-do=asknew]").click()
@@ -347,6 +356,7 @@ with sync_playwright() as p:
     if not game_over(pg):
         adviser_game(pg)
     check("the adviser game reaches an ending", game_over(pg))
+    check("a finished game clears its save", pg.evaluate("localStorage.getItem('aman-save') === null"))
     check("the ending draws a trust line per power", pg.locator(".dlg .hchart path.tl:not(.mem)").count() == RIVALS)
     check("the ending shows a seal slot per rival", pg.locator(".dlg .endseals span").count() in (0, RIVALS))
     check("the ending chart marks events", pg.locator(".dlg .hchart .hm").count() > 0)
