@@ -511,7 +511,7 @@
     2: 'New this season: the Company. Each season it courts the powers that trust you least. Raise a courted power\'s trust by 10 within the season, or counter the Company there, or its grip tightens. Three steps and the power goes rogue.',
     3: 'New this season: ties between powers. Helping a power pleases its friends and irritates its rivals, and a power will not join while its rival is a member. Open Relations to broker talks.',
     4: 'New this season: the powers act on their own. Each runs a plan on a countdown. Open a power to back its plan or talk it out of it.',
-    5: 'New this season: powers remember. Two favors and a power repays you. Two slights and it hits back. Open a power to see what it remembers.'
+    5: 'New this season: powers remember. Three favors and a power repays you. Three slights and it hits back. Open a power to see what it remembers.'
   };
   /* From act 2, intros are keyed by act and act season. */
   const ACT_INTRO = {
